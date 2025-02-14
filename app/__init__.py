@@ -1,1 +1,1 @@
-# __init__.py - Indica que 'Gerador de Solicitação de Pagamento' é um módulo Python
+# __init__.py é um módulo Python

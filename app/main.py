@@ -9,14 +9,25 @@ import locale
 
 locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil')
 
+# Definir o caminho absoluto para o diretório de logs
+log_dir = os.path.join(os.getcwd(), "logs")
+
+# Criar diretório "logs" se não existir
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
+# Configuração do logging
 logging.basicConfig(
-    level=logging.INFO,  # Define o nível mínimo de log (INFO)
-    format="%(asctime)s - %(levelname)s - %(message)s",  # Formato das mensagens
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler("logs/app.log"),  # Salva os logs em um arquivo "app.log"
-        logging.StreamHandler(sys.stdout)  # Exibe os logs no console
+        logging.FileHandler(os.path.join(log_dir, "app.log"), encoding='utf-8'),  # Agora será salvo dentro da pasta logs
+        logging.StreamHandler()
     ]
 )
+
+# Testando o log
+logging.info("Aplicação iniciada.")
 
 # Criar uma classe personalizada para o ComboBox
 class CustomComboBox(ctk.CTkComboBox):
@@ -144,14 +155,29 @@ def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrat
         notification_manager = NotificationManager(root)  # passando a instância da janela principal
         notification_manager.show_notification(f"Sucesso!\nArquivo salvo no local selecionado.", NotifyType.SUCCESS, bg_color="#404040", text_color="#FFFFFF")
     except Exception as e:
-        messagebox.showerror("Erro", f"Erro ao gerar o arquivo Excel: {e}")
+        notification_manager = NotificationManager(root)  # passando a instância da janela principal
+        notification_manager.show_notification(f"Erro ao gerar o arquivo Excel: {e}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")        
+        logging.error("Erro ao gerar o arquivo Excel: {e}")
+
 
 def arrumar_texto(texto):
     return ' '.join(texto.strip().split()) if texto else ''
 
+def verificar_se_numero(texto):
+    try:
+        if not texto:
+            return ""  # Valor padrão caso o campo esteja vazio
+        # Tenta converter o valor em número
+        float(texto.replace(",", "."))
+        # Se for um número, chama a função arrumar_numero
+        resultado = arrumar_numero(texto)
+        return resultado
+    except ValueError:
+        return ValueError
+
 def arrumar_numero(texto):
     if not texto:
-        return "0,00"  # Valor padrão caso o campo esteja vazio
+        return ""  # Valor padrão caso o campo esteja vazio
 
     texto = texto.replace(" ", "")  # Remove todos os espaços
 
@@ -159,7 +185,7 @@ def arrumar_numero(texto):
         numero = float(texto.replace(",", "."))
         return f"{numero:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except ValueError:
-        return "0,00"  # Retorna um valor padrão caso a conversão falhe
+        return ""  # Retorna um valor padrão caso a conversão falhe
 
 def gerar_solicitacao():
     # Coletar dados dos campos
@@ -171,16 +197,13 @@ def gerar_solicitacao():
     os_num = arrumar_texto(os_entry.get())
     contrato = arrumar_texto(contrato_combobox.get().upper())
     motivo = arrumar_texto(motivo_entry.get().upper())
-    valor = arrumar_numero(valor_entry.get())
+    valor_tab1 = verificar_se_numero(valor_entry.get())
     tipo_pagamento = arrumar_texto(tipo_pagamento_combobox.get().upper())
     tecnicos = arrumar_texto(tecnicos_entry.get().upper())
     saida_destino = arrumar_texto(saida_destino_entry.get().upper())
     competencia = arrumar_texto(competencia_entry.get().upper())
     porcentagem = arrumar_texto(porcentagem_entry.get().upper())
     tipo_aquisicao = arrumar_texto(tipo_aquisicao_combobox.get().upper())
-
-    if valor == "0,00":
-        valor = ""
 
     if tipo_pagamento == "PIX":
         tipo_chave_pix = arrumar_texto(tipo_chave_pix_combobox.get())
@@ -225,7 +248,7 @@ def gerar_solicitacao():
         (tipo_servico, "TIPO DE SERVIÇO"),
         (nome_fornecedor, "NOME DO FORNECEDOR/BENEFICIÁRIO"),
         (contrato, "CONTRATO"),
-        (valor, "VALOR"),
+        (valor_tab1, "VALOR"),
         (tipo_pagamento, "TIPO DE PAGAMENTO")
     ]
 
@@ -238,7 +261,7 @@ def gerar_solicitacao():
         campos_obrigatorios.append((motivo, "MOTIVO"))
     elif tipo_servico == "REEMBOLSO UBER":
         campos_obrigatorios.append((saida_destino, "SAÍDA X DESTINO"))
-    elif tipo_servico == "ABASTECIMENTO" or tipo_servico == "ESTACIONAMENTO" or tipo_servico == "HOSPEDAGEM":
+    elif tipo_servico == "ABASTECIMENTO" or tipo_servico == "HOSPEDAGEM":
         campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
     elif tipo_servico == "ENVIO DE MATERIAL":
         campos_obrigatorios.remove((contrato, "CONTRATO"))
@@ -246,6 +269,13 @@ def gerar_solicitacao():
         campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
     elif tipo_servico == "COMPRA IN LOCO":
         campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
+    elif tipo_servico == "ESTACIONAMENTO":
+        campos_obrigatorios.extend([
+            (tecnicos, "TÉCNICOS"),
+            (prefixo, "PREFIXO"),
+            (agencia, "AGÊNCIA"),
+            (os_num, "OS")
+        ])        
     elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
         campos_obrigatorios.extend([
             (prefixo, "PREFIXO"),
@@ -268,7 +298,12 @@ def gerar_solicitacao():
 
     # Verificar campos vazios
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
-    
+
+    if valor_tab1 == ValueError:
+        notification_manager = NotificationManager(root)  # passando a instância da janela principal
+        notification_manager.show_notification(f"Por favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return
+
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
         notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -280,15 +315,15 @@ def gerar_solicitacao():
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"COMPETÊNCIA: {competencia}\n\n"
         texto += f"{porcentagem}% ADIANTAMENTO PARCEIRO\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "AQUISIÇÃO COM OS" or tipo_servico == "COMPRA IN LOCO":
         texto = f"Solicito o pagamento para {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "AQUISIÇÃO SEM OS":
         texto = f"Solicito o pagamento para {nome_fornecedor}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
         texto = f"Solicito o pagamento para {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
@@ -297,37 +332,37 @@ def gerar_solicitacao():
         texto = f"Solicito o pagamento ao {nome_fornecedor}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"MOTIVO: {motivo}\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ABASTECIMENTO":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao abastecimento dos técnicos {tecnicos}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ESTACIONAMENTO":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao estaciomanento dos técnicos {tecnicos}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO UBER":
         texto = f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {saida_destino}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"MOTIVO: {motivo}\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"        
+        texto += f"VALOR: R$ {valor_tab1}\n\n"        
     elif tipo_servico == "HOSPEDAGEM":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor} pela hospedagem dos técnicos {tecnicos} referente à obra: {prefixo} - {agencia} - {os_num}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "SOLICITAÇÃO SEM OS":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"MOTIVO: {motivo}\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ENVIO DE MATERIAL":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"      
+        texto += f"VALOR: R$ {valor_tab1}\n\n"      
     else:
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"VALOR: R$ {valor}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
 
     if tipo_pagamento == "PIX":
         texto += f"Segue pix {tipo_chave_pix} ⬇\n\n{chave_pix}"
@@ -340,7 +375,7 @@ def gerar_solicitacao():
 
     #Insere os dados no BD
     inserir_dados(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
-                  contrato, motivo, valor, tipo_pagamento, tecnicos, saida_destino, 
+                  contrato, motivo, valor_tab1, tipo_pagamento, tecnicos, saida_destino, 
                   competencia, porcentagem)
 
     # Copiar automaticamente o texto gerado caso o switch esteja ativo
@@ -371,20 +406,43 @@ def gerar_solicitacao():
         data_atual = datetime.now().strftime("%d.%m.%Y")
         
         if os_num == "":
-            nome_arquivo = f"{valor.replace(".", "")} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
+            nome_arquivo = f"{valor_tab1.replace(".", "")} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
         else:
-            nome_arquivo = f"{valor.replace(".", "")} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
+            nome_arquivo = f"{valor_tab1.replace(".", "")} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
 
         gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, departamento, tipo_pagamento)
 
 def limpar_dados():
-    for widget in widgets_para_limpar:
-        if isinstance(widget, ctk.CTkEntry):  
-            widget.delete(0, tk.END)  # Limpa o campo de entrada
-        if isinstance(widget, ctk.CTkTextbox):  
-            widget.delete(0, tk.END)  # Limpa o campo de entrada
-        elif isinstance(widget, ctk.CTkComboBox):  
-            widget.set("")  # Reseta a seleção do ComboBox
+    aba_ativa  = tabview.get()
+    
+    # Limpar widgets da aba ativa
+    if aba_ativa == "PAGAMENTO":
+        # Limpar os widgets da Tab 1
+        for widget in widgets_para_limpar:
+            if isinstance(widget, ctk.CTkEntry):
+                widget.delete(0, tk.END)  # Limpa o campo de entrada
+            elif isinstance(widget, ctk.CTkTextbox):
+                widget.delete(0, tk.END)  # Limpa o campo de texto
+            elif isinstance(widget, ctk.CTkComboBox):
+                widget.set("")  # Reseta o ComboBox
+    elif aba_ativa == "E-MAIL":
+        # Limpar os widgets da Tab 2
+        for widget in widgets_para_limpar_tab2:
+            if isinstance(widget, ctk.CTkEntry):
+                widget.delete(0, tk.END)  # Limpa o campo de entrada
+            elif isinstance(widget, ctk.CTkTextbox):
+                widget.delete(0, tk.END)  # Limpa o campo de texto
+            elif isinstance(widget, ctk.CTkComboBox):
+                widget.set("")  # Reseta o ComboBox
+    elif aba_ativa == "AQUISIÇÃO":
+        # Limpar os widgets da Tab 3
+        for widget in widgets_para_limpar_tab3:
+            if isinstance(widget, ctk.CTkEntry):
+                widget.delete(0, tk.END)  # Limpa o campo de entrada
+            elif isinstance(widget, ctk.CTkTextbox):
+                widget.delete(0, tk.END)  # Limpa o campo de texto
+            elif isinstance(widget, ctk.CTkComboBox):
+                widget.set("")  # Reseta o ComboBox
 
 def gerar_texto_email():
     # Coletar dados dos campos
@@ -395,11 +453,9 @@ def gerar_texto_email():
     agencia_tab2 = arrumar_texto(agencia_entry_tab2.get().upper())
     os_num_tab2 = arrumar_texto(os_entry_tab2.get())
     endereco_tab2 = arrumar_texto(endereco_entry_tab2.get().upper())
-    valor_tab2 = arrumar_numero(valor_entry_tab2.get())
+    valor_tab2 = verificar_se_numero(valor_entry_tab2.get())
     tipo_pagamento_tab2 = arrumar_texto(tipo_pagamento_combobox_tab2.get().upper())
-
-    if valor_tab2 == "0,00":
-        valor_tab2 = ""
+    num_orcamento_tab2 = arrumar_texto(num_orcamento_entry_tab2.get().upper())
 
     # Verificar se algum campo obrigatório está vazio
     campos_obrigatorios = [
@@ -421,12 +477,18 @@ def gerar_texto_email():
         # Adiciona o campo "ENDEREÇO" apenas para "LOCAÇÃO"
         if tipo_servico_tab2 == "LOCAÇÃO":
             campos_obrigatorios.append((endereco_tab2, "ENDEREÇO"))           
-    
+
     # Verificar campos vazios
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
+
+    if valor_tab2 == ValueError:
+        notification_manager = NotificationManager(root)  # passando a instância da janela principal
+        notification_manager.show_notification(f"Por favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return
+
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
-        notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        notification_manager.show_notification(f"Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return    
 
     if tipo_servico_tab2 == "COMPRAS EM GERAL - COM OS":
@@ -435,7 +497,7 @@ def gerar_texto_email():
         if tipo_pagamento_combobox_tab2 == "FATURAMENTO":
             texto += f"Comunico que está autorizado para FATURAMENTO o pedido {os_num_tab2}, no valor de R$ {valor_tab2}.\n\n"
         else:
-            texto += f"Comunico que está autorizado para pagamento via {tipo_pagamento_tab2} pedido {os_num_tab2}, no valor de R$ {valor_tab2}.\n\n"
+            texto += f"Comunico que está autorizado para pagamento via {tipo_pagamento_tab2} o pedido {num_orcamento_tab2}, no valor de R$ {valor_tab2}.\n\n" if num_orcamento_tab2 else f"Comunico que está autorizado para pagamento via {tipo_pagamento_tab2} o pedido S/N, no valor de R$ {valor_tab2}.\n\n"
         
         texto += f"SEGUE INFORMAÇÕES PARA NOTA FISCAL:\n{prefixo_tab2} - {agencia_tab2} - {os_num_tab2}\n\n"
         texto += f"Prezado fornecedor, solicito por gentileza que a partir deste momento todos os e-mails enviados sejam respondidos para todos.\n"
@@ -445,11 +507,11 @@ def gerar_texto_email():
     
     elif tipo_servico_tab2 == "COMPRAS EM GERAL - SEM OS":
         texto = f"Prezado(a),\n\n"
-        texto += f"Comunico que está autorizado para pagamento via {tipo_pagamento_tab2} o pedido {os_num_tab2}, no valor de R$ {valor_tab2}."
+        texto += f"Comunico que está autorizado para pagamento via {tipo_pagamento_tab2} o pedido {num_orcamento_tab2}, no valor de R$ {valor_tab2}.\n\n" if num_orcamento_tab2 else f"Comunico que está autorizado para pagamento via {tipo_pagamento_tab2} o pedido S/N, no valor de R$ {valor_tab2}.\n\n"
     
     else:
         texto = f"Prezado Fornecedor {nome_fornecedor_tab2},\n\n"
-        texto += f"Comunico que está autorizado a locação de EQUIPAMENTO via {tipo_pagamento_tab2}, no valor de R$ {valor_tab2}.\n\n"    
+        texto += f"Comunico que está autorizado a locação de EQUIPAMENTO via {tipo_pagamento_tab2}, referente ao pedido {num_orcamento_tab2}, no valor de R$ {valor_tab2}.\n\n" if num_orcamento_tab2 else f"Comunico que está autorizado a locação de EQUIPAMENTO via {tipo_pagamento_tab2}, no valor de R$ {valor_tab2}.\n\n"
         texto += f"Segue informação referente ao local para entrega do material:\n{endereco_tab2}\n\n"
         texto += f"SEGUE INFORMAÇÕES PARA NOTA FISCAL:\n{prefixo_tab2} - {agencia_tab2} - {os_num_tab2}\n\n"
         texto += f"Prezado fornecedor, solicito por gentileza que a partir deste momento todos os e-mails enviados sejam respondidos para todos.\n"
@@ -862,6 +924,8 @@ frame.grid_columnconfigure(1, weight=1)  # Expande a coluna 1
 
 # Lista para armazenar os widgets que precisam ser limpos
 widgets_para_limpar = []
+widgets_para_limpar_tab2 = []
+widgets_para_limpar_tab3 = []
 
 # Campos de entrada
 ctk.CTkLabel(master=frame, text="USUÁRIO:").grid(row=0, column=0, sticky="w", padx=(10, 10), pady=(10, 0))
@@ -1043,33 +1107,32 @@ tipo_servico_combobox_tab2 = CustomComboBox(master=frame_tab2, values=[
 ], command=lambda choice: add_campos_tab2())
 tipo_servico_combobox_tab2.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
 tipo_servico_combobox_tab2.set("")
-widgets_para_limpar.append(tipo_servico_combobox_tab2)
 
 prefixo_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="PREFIXO:")
 prefixo_entry_tab2 = CustomEntry(master=frame_tab2)
-widgets_para_limpar.append(prefixo_entry_tab2)
+widgets_para_limpar_tab2.append(prefixo_entry_tab2)
 
 os_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="OS:")
 os_entry_tab2 = CustomEntry(master=frame_tab2)
-widgets_para_limpar.append(os_entry_tab2)
+widgets_para_limpar_tab2.append(os_entry_tab2)
 
 agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="AGÊNCIA:")
 agencia_entry_tab2 = CustomEntry(master=frame_tab2)
-widgets_para_limpar.append(agencia_entry_tab2)
+widgets_para_limpar_tab2.append(agencia_entry_tab2)
 
 endereco_agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="ENDEREÇO DA AGÊNCIA:")
 endereco_entry_tab2 = CustomEntry(master=frame_tab2)
-widgets_para_limpar.append(agencia_entry_tab2)
+widgets_para_limpar_tab2.append(agencia_entry_tab2)
 
 ctk.CTkLabel(master=frame_tab2, text="NOME FORNEC./BENEF.:").grid(row=8, column=0, sticky="w", padx=(10, 10))
 nome_fornecedor_entry_tab2 = CustomEntry(master=frame_tab2)
 nome_fornecedor_entry_tab2.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
-widgets_para_limpar.append(nome_fornecedor_entry_tab2)
+widgets_para_limpar_tab2.append(nome_fornecedor_entry_tab2)
 
 ctk.CTkLabel(master=frame_tab2, text="VALOR:").grid(row=9, column=0, sticky="w", padx=(10, 10))
 valor_entry_tab2 = CustomEntry(master=frame_tab2)
 valor_entry_tab2.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-widgets_para_limpar.append(valor_entry)
+widgets_para_limpar_tab2.append(valor_entry_tab2)
 
 ctk.CTkLabel(master=frame_tab2, text="TIPO DE PAGAMENTO:").grid(row=10, column=0, sticky="w", padx=(10, 10))
 tipo_pagamento_combobox_tab2 = CustomComboBox(master=frame_tab2, values=[
@@ -1077,11 +1140,12 @@ tipo_pagamento_combobox_tab2 = CustomComboBox(master=frame_tab2, values=[
 ], command=lambda choice: adiciona_campo_pix())
 tipo_pagamento_combobox_tab2.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
 tipo_pagamento_combobox_tab2.set("")
+widgets_para_limpar_tab2.append(tipo_pagamento_combobox_tab2)
 
 num_orcamento_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="NÚMERO ORÇAMENTO/PEDIDO:").grid(row=11, column=0, sticky="w", padx=(10, 10))
 num_orcamento_entry_tab2 = CustomEntry(master=frame_tab2)
 num_orcamento_entry_tab2.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
-widgets_para_limpar.append(num_orcamento_entry_tab2)
+widgets_para_limpar_tab2.append(num_orcamento_entry_tab2)
 
 gerar_button_tab2 = ctk.CTkButton(master=frame_tab2, text="GERAR", command=gerar_texto_email)
 gerar_button_tab2.grid(row=12, column=0, sticky="ew", padx=(10, 10), pady=10)
@@ -1099,7 +1163,7 @@ switch_autocopia_frame_tab2.grid(row=13, column=0, columnspan=2, sticky="n", pad
 # Caixa de texto para a solicitação
 texto_email = ctk.CTkTextbox(master=frame_tab2)
 texto_email.grid(row=14, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
-widgets_para_limpar.append(texto_email)
+widgets_para_limpar_tab2.append(texto_email)
 
 # -------------------------------
 # Aba "AQUISIÇÃO"
@@ -1143,7 +1207,6 @@ tipo_aquisicao_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
 ], command=lambda choice: add_campos_tab3())
 tipo_aquisicao_combobox_tab3.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
 tipo_aquisicao_combobox_tab3.set("")
-widgets_para_limpar.append(tipo_aquisicao_combobox_tab3)
 
 ctk.CTkLabel(master=frame_tab3, text="CONTRATO:").grid(row=2, column=0, sticky="w", padx=(10, 10))
 contrato_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
@@ -1157,57 +1220,66 @@ contrato_combobox_tab3.set("")
 ctk.CTkLabel(master=frame_tab3, text="DESCRIÇÃO:").grid(row=3, column=0, sticky="w", padx=(10, 10))
 descricao_entry_tab3 = CustomEntry(master=frame_tab3)
 descricao_entry_tab3.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+widgets_para_limpar_tab3.append(descricao_entry_tab3)
 
 #row = 4
 prazo_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PRAZO:")
 prazo_entry_tab3 = CTkDatePicker(master=frame_tab3)
 prazo_entry_tab3.set_date_format("%d/%m/%Y")
 prazo_entry_tab3.set_allow_manual_input(False)
+widgets_para_limpar_tab3.append(prazo_entry_tab3)
 
 data_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DATA DA LOCAÇÃO:")
 data_entry_tab3 = CTkDatePicker(master=frame_tab3)
 data_entry_tab3.set_date_format("%d/%m/%Y")
 data_entry_tab3.set_allow_manual_input(False)
+widgets_para_limpar_tab3.append(data_entry_tab3)
 
 #row = 5
 dimensao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"DIMENSÕES\n(ALTURA x LARG. x COMPR.):", anchor="w", justify="left")
 dimensao_entry_tab3 = CustomEntry(master=frame_tab3)
+widgets_para_limpar_tab3.append(dimensao_entry_tab3)
 
 servico_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="SERVIÇO:")
 servico_entry_tab3 = CustomEntry(master=frame_tab3)
+widgets_para_limpar_tab3.append(servico_entry_tab3)
 
 #row = 6
 espessura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ESPESSURA:")
 espessura_entry_tab3 = CustomEntry(master=frame_tab3)
+widgets_para_limpar_tab3.append(espessura_entry_tab3)
 
 periodo_locacao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PERÍODO DE LOCAÇÃO:")
 periodo_locacao_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
     "DIÁRIA", "SEMANAL", "QUINZENAL", "MENSAL"
 ])
 periodo_locacao_combobox_tab3.set("")
+widgets_para_limpar_tab3.append(periodo_locacao_combobox_tab3)
 
 #row = 7
 quantidade_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="QUANTIDADE:")
 quantidade_entry_tab3 = CustomEntry(master=frame_tab3)
+widgets_para_limpar_tab3.append(quantidade_entry_tab3)
 
 #row = 8
 link_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="LINK (SE APLICÁVEL):")
 link_entry_tab3 = CustomEntry(master=frame_tab3)
+widgets_para_limpar_tab3.append(link_entry_tab3)
 
 #row = 9
 prefixo_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PREFIXO:")
 prefixo_entry_tab3 = CustomEntry(master=frame_tab3)
-widgets_para_limpar.append(prefixo_entry_tab3)
+widgets_para_limpar_tab3.append(prefixo_entry_tab3)
 
 #row = 10
 os_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="OS:")
 os_entry_tab3 = CustomEntry(master=frame_tab3)
-widgets_para_limpar.append(os_entry_tab3)
+widgets_para_limpar_tab3.append(os_entry_tab3)
 
 #row = 11
 agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="AGÊNCIA:")
 agencia_entry_tab3 = CustomEntry(master=frame_tab3)
-widgets_para_limpar.append(agencia_entry_tab3)
+widgets_para_limpar_tab3.append(agencia_entry_tab3)
 
 #row = 12
 opcao_entrega_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="OPÇÃO DE ENTREGA:")
@@ -1216,19 +1288,22 @@ opcao_entrega_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
     "RETIRADA",
 ], command=lambda choice: add_campos_tab3())
 opcao_entrega_combobox_tab3.set("")
+widgets_para_limpar_tab3.append(opcao_entrega_combobox_tab3)
 
 #row = 13
 endereco_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ENDEREÇO DA AGÊNCIA:")
 endereco_agencia_entry_tab3 = CustomEntry(master=frame_tab3)
-widgets_para_limpar.append(endereco_agencia_label_tab3)
+widgets_para_limpar_tab3.append(endereco_agencia_label_tab3)
 
 #row = 14
 nome_responsavel_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="NOME DO RESPONSÁVEL:")
 nome_responsavel_entry_tab3 = CustomEntry(master=frame_tab3)
+widgets_para_limpar_tab3.append(nome_responsavel_entry_tab3)
 
 #row = 15
 contato_responsavel_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="CONTATO DO RESPONSÁVEL:")
 contato_responsavel_entry_tab3 = CustomEntry(master=frame_tab3)
+widgets_para_limpar_tab3.append(contato_responsavel_entry_tab3)
 
 #row = 16
 gerar_button_tab3 = ctk.CTkButton(master=frame_tab3, text="GERAR", command=gerar_texto_aquisicao)
@@ -1236,8 +1311,8 @@ gerar_button_tab3.grid(row=16, column=0, sticky="ew", padx=(10, 10), pady=10)
 
 root.bind("<Return>", on_return_press)
 
-limpar_button = ctk.CTkButton(master=frame_tab3, text="LIMPAR", width=150, command=limpar_dados)
-limpar_button.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=10)
+limpar_button_tab3 = ctk.CTkButton(master=frame_tab3, text="LIMPAR", width=150, command=limpar_dados)
+limpar_button_tab3.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=10)
 
 #row = 17
 switch_autocopia_frame_tab3_var = tk.BooleanVar(value=True)
@@ -1248,6 +1323,6 @@ switch_autocopia_frame_tab3.grid(row=17, column=0, columnspan=2, sticky="n", pad
 #row = 18
 texto_aquisicao = ctk.CTkTextbox(master=frame_tab3)
 texto_aquisicao.grid(row=18, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
-widgets_para_limpar.append(texto_aquisicao)
+widgets_para_limpar_tab3.append(texto_aquisicao)
 
 root.mainloop()
