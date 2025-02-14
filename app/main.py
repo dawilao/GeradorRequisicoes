@@ -102,7 +102,7 @@ def inserir_dados(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia,
     
     conn.commit()
 
-def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, departamento, tipo_pagamento):
+def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento):
     try:
         # Caminho do arquivo modelo
         caminho_modelo = r"G:\Meu Drive\22 - MODELOS\PROGRAMAS\Gerador de Solicitação de Pagamento\dist\MODELO NOVO 2024 - ORDEM DE COMPRA.xlsx"
@@ -116,7 +116,8 @@ def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrat
         caminho_destino = filedialog.askdirectory()
 
         if not caminho_destino:  # Se o usuário cancelar a seleção
-            messagebox.showwarning("Aviso", "Nenhum diretório selecionado!")
+            notification_manager = NotificationManager(root)  # passando a instância da janela principal
+            notification_manager.show_notification(f"Nenhum diretório selecionado!", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
             return
         
         # Criar o nome do arquivo de destino
@@ -128,25 +129,21 @@ def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrat
         workbook = load_workbook(nome_arquivo_destino)
         sheet = workbook["Planilha1"] #Seleciona uma planilha específica pelo nome [Planilha1]
 
-        if os_num == 0 or os_num == '' or os_num == None:
-            # Inserir dados nas células predefinidas
-            sheet["D5"] = nome_fornecedor
-            sheet["D11"] = nome_usuario
-            sheet["D13"] = departamento
+        data_atual = datetime.now().strftime("%d/%m/%Y")
+
+        sheet["D5"] = nome_fornecedor
+        sheet["D11"] = nome_usuario
+        sheet["D16"] = contrato if contrato else "ESCRITÓRIO"
+        sheet["D41"] = tipo_pagamento
+        sheet["B47"] = f"Assinatura: {nome_usuario}"
+        sheet["B48"] = f"Data: {data_atual}"
+
+        if os_num in (0, '', None):
             sheet["D14"] = "-"
             sheet["D15"] = "-"
-            sheet["D16"] = contrato
-            sheet["D41"] = tipo_pagamento
-            
         else:
-            # Inserir dados nas células predefinidas
-            sheet["D5"] = nome_fornecedor
-            sheet["D11"] = nome_usuario
-            sheet["D13"] = departamento
             sheet["D14"] = os_num
             sheet["D15"] = f"{prefixo} - {agencia}"
-            sheet["D16"] = contrato
-            sheet["D41"] = tipo_pagamento
 
         # Salvar e fechar o arquivo
         workbook.save(nome_arquivo_destino)
@@ -162,6 +159,13 @@ def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrat
 
 def arrumar_texto(texto):
     return ' '.join(texto.strip().split()) if texto else ''
+
+def arrumar_os(texto):
+    if texto:
+        texto = ''.join(texto.strip().split())  # Remove espaços extras sem adicionar espaço entre palavras
+        texto = texto.replace(",", "").replace("-", "").replace(".", "")  # Aplica as substituições corretamente
+        return texto
+    return ''
 
 def verificar_se_numero(texto):
     try:
@@ -194,7 +198,7 @@ def gerar_solicitacao():
     nome_fornecedor = arrumar_texto(nome_fornecedor_entry.get().upper())
     prefixo = arrumar_texto(prefixo_entry.get())
     agencia = arrumar_texto(agencia_entry.get().upper())
-    os_num = arrumar_texto(os_entry.get())
+    os_num = arrumar_os(os_entry.get())
     contrato = arrumar_texto(contrato_combobox.get().upper())
     motivo = arrumar_texto(motivo_entry.get().upper())
     valor_tab1 = verificar_se_numero(valor_entry.get())
@@ -209,7 +213,7 @@ def gerar_solicitacao():
         tipo_chave_pix = arrumar_texto(tipo_chave_pix_combobox.get())
         chave_pix = arrumar_texto(chave_pix_entry.get())
     
-    # Dicionário que mapeia contratos para departamentos
+    '''# Dicionário que mapeia contratos para departamentos
     contrato_departamentos = {
         "ESCRITÓRIO": "ESCRITÓRIO",
         "SALVADOR - BA": "CONTRATO BA",
@@ -224,10 +228,11 @@ def gerar_solicitacao():
         "MANAUS - AM": "CONTRATO AM"
     } 
     
-    departamento = contrato_departamentos.get(contrato, "Departamento não encontrado")
+    departamento = contrato_departamentos.get(contrato, "Departamento não encontrado")'''
 
     dict_sigla_contrato = {
         "ESCRITÓRIO": "ESCRITÓRIO",
+        "": "ESCRITÓRIO",        
         "SALVADOR - BA": "BA",
         "SANTA CATARINA - SC": "SC",
         "RIO GRANDE DO SUL - RS": "RS",
@@ -252,24 +257,28 @@ def gerar_solicitacao():
         (tipo_pagamento, "TIPO DE PAGAMENTO")
     ]
 
-    if tipo_servico == "ADIANTAMENTO PARCEIRO":
+    if tipo_servico == "ABASTECIMENTO":
+        campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
+    elif tipo_servico == "ADIANTAMENTO PARCEIRO":
         campos_obrigatorios.extend([
+            (prefixo, "PREFIXO"),
+            (agencia, "AGÊNCIA"),
+            (os_num, "OS"),
             (competencia, "COMPETÊNCIA"),
             (porcentagem, "% DO ADIANTAMENTO DO PARCEIRO")
         ])
-    elif tipo_servico == "REEMBOLSO SEM OS" or tipo_servico == "SOLICITAÇÃO SEM OS":
-        campos_obrigatorios.append((motivo, "MOTIVO"))
-    elif tipo_servico == "REEMBOLSO UBER":
-        campos_obrigatorios.append((saida_destino, "SAÍDA X DESTINO"))
-    elif tipo_servico == "ABASTECIMENTO" or tipo_servico == "HOSPEDAGEM":
-        campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
+    elif tipo_servico in {"AQUISIÇÃO COM OS", "COMPRA IN LOCO"} :
+        campos_obrigatorios.extend([
+            (tipo_aquisicao, "TIPO DE AQUISIÇÃO"),
+            (prefixo, "PREFIXO"),
+            (agencia, "AGÊNCIA"),
+            (os_num, "OS")
+        ])
+    elif tipo_servico == "AQUISIÇÃO SEM OS":
+        campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
     elif tipo_servico == "ENVIO DE MATERIAL":
         campos_obrigatorios.remove((contrato, "CONTRATO"))
-    elif tipo_servico == "AQUISIÇÃO COM OS" or tipo_servico == "AQUISIÇÃO SEM OS":
-        campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
-    elif tipo_servico == "COMPRA IN LOCO":
-        campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
-    elif tipo_servico == "ESTACIONAMENTO":
+    elif tipo_servico in {"ESTACIONAMENTO", "HOSPEDAGEM"}:
         campos_obrigatorios.extend([
             (tecnicos, "TÉCNICOS"),
             (prefixo, "PREFIXO"),
@@ -278,12 +287,22 @@ def gerar_solicitacao():
         ])        
     elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
         campos_obrigatorios.extend([
+            (motivo, "MOTIVO"),
             (prefixo, "PREFIXO"),
             (agencia, "AGÊNCIA"),
-            (os_num, "OS"),
-            (motivo, "MOTIVO")
+            (os_num, "OS")
         ])
-    else:
+    elif tipo_servico == "REEMBOLSO SEM OS" or tipo_servico == "SOLICITAÇÃO SEM OS":
+        campos_obrigatorios.append((motivo, "MOTIVO"))
+    elif tipo_servico == "REEMBOLSO UBER":
+        campos_obrigatorios.extend([
+            (saida_destino, "SAÍDA X DESTINO"),
+            (motivo, "MOTIVO"),
+            (prefixo, "PREFIXO"),
+            (agencia, "AGÊNCIA"),
+            (os_num, "OS")
+        ])
+    elif tipo_servico in {"CARRETO", "ORÇAMENTO APROVADO", "PREST. SERVIÇO/MÃO DE OBRA", "TRANSPORTADORA"}:
         campos_obrigatorios.extend([
             (prefixo, "PREFIXO"),
             (agencia, "AGÊNCIA"),
@@ -295,6 +314,12 @@ def gerar_solicitacao():
             (tipo_chave_pix, "TIPO DA CHAVE PIX"),
             (chave_pix, "CHAVE PIX")
         ])
+
+    if contrato == "ESCRITÓRIO":
+        campos_obrigatorios = [
+            item for item in campos_obrigatorios
+            if item not in {(prefixo, "PREFIXO"), (agencia, "AGÊNCIA"), (os_num, "OS")}
+        ]
 
     # Verificar campos vazios
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
@@ -324,6 +349,10 @@ def gerar_solicitacao():
         texto = f"Solicito o pagamento para {nome_fornecedor}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    elif contrato == "ESCRITÓRIO":
+        texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
+        texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"        
     elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
         texto = f"Solicito o pagamento para {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
@@ -338,7 +367,7 @@ def gerar_solicitacao():
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ESTACIONAMENTO":
-        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao estaciomanento dos técnicos {tecnicos}, para C. O. {contrato}.\n\n"
+        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao estacionamento dos técnicos {tecnicos}, para C. O. {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO UBER":
@@ -410,7 +439,7 @@ def gerar_solicitacao():
         else:
             nome_arquivo = f"{valor_tab1.replace(".", "")} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
 
-        gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, departamento, tipo_pagamento)
+        gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento)
 
 def limpar_dados():
     aba_ativa  = tabview.get()
@@ -422,7 +451,7 @@ def limpar_dados():
             if isinstance(widget, ctk.CTkEntry):
                 widget.delete(0, tk.END)  # Limpa o campo de entrada
             elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete(0, tk.END)  # Limpa o campo de texto
+                widget.delete("0.0", tk.END)  # Limpa o campo de texto
             elif isinstance(widget, ctk.CTkComboBox):
                 widget.set("")  # Reseta o ComboBox
     elif aba_ativa == "E-MAIL":
@@ -431,7 +460,7 @@ def limpar_dados():
             if isinstance(widget, ctk.CTkEntry):
                 widget.delete(0, tk.END)  # Limpa o campo de entrada
             elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete(0, tk.END)  # Limpa o campo de texto
+                widget.delete("0.0", tk.END)  # Limpa o campo de texto
             elif isinstance(widget, ctk.CTkComboBox):
                 widget.set("")  # Reseta o ComboBox
     elif aba_ativa == "AQUISIÇÃO":
@@ -440,7 +469,7 @@ def limpar_dados():
             if isinstance(widget, ctk.CTkEntry):
                 widget.delete(0, tk.END)  # Limpa o campo de entrada
             elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete(0, tk.END)  # Limpa o campo de texto
+                widget.delete("0.0", tk.END)  # Limpa o campo de texto
             elif isinstance(widget, ctk.CTkComboBox):
                 widget.set("")  # Reseta o ComboBox
 
@@ -451,7 +480,7 @@ def gerar_texto_email():
     nome_fornecedor_tab2 = arrumar_texto(nome_fornecedor_entry_tab2.get().upper())
     prefixo_tab2 = arrumar_texto(prefixo_entry_tab2.get())
     agencia_tab2 = arrumar_texto(agencia_entry_tab2.get().upper())
-    os_num_tab2 = arrumar_texto(os_entry_tab2.get())
+    os_num_tab2 = arrumar_os(os_entry_tab2.get())
     endereco_tab2 = arrumar_texto(endereco_entry_tab2.get().upper())
     valor_tab2 = verificar_se_numero(valor_entry_tab2.get())
     tipo_pagamento_tab2 = arrumar_texto(tipo_pagamento_combobox_tab2.get().upper())
@@ -540,10 +569,10 @@ def gerar_texto_aquisicao():
     espessura_tab3 = arrumar_texto(espessura_entry_tab3.get().upper())
     periodo_locacao_tab3 = arrumar_texto(periodo_locacao_combobox_tab3.get().upper())
     quantidade_tab3 = arrumar_texto(quantidade_entry_tab3.get().upper())
-    link_tab3 = arrumar_texto(link_entry_tab3.get().upper())
+    link_tab3 = arrumar_texto(link_entry_tab3.get())
     prefixo_tab3 = arrumar_texto(prefixo_entry_tab3.get())
     agencia_tab3 = arrumar_texto(agencia_entry_tab3.get().upper())
-    os_num_tab3 = arrumar_texto(os_entry_tab3.get())
+    os_num_tab3 = arrumar_os(os_entry_tab3.get())
     opcao_entrega_tab3 = arrumar_texto(opcao_entrega_combobox_tab3.get().upper())
     endereco_agencia_tab3 = arrumar_texto(endereco_agencia_entry_tab3.get().upper())
     nome_responsavel_tab3 = arrumar_texto(nome_responsavel_entry_tab3.get().upper())
@@ -562,15 +591,11 @@ def gerar_texto_aquisicao():
         campos_obrigatorios.extend([
             (prazo_tab3, "PRAZO"),
             (quantidade_tab3, "QUANTIDADE"),
-            (prefixo_tab3, "PREFIXO"),
-            (agencia_tab3, "AGÊNCIA"),
-            (os_num_tab3, "OS"),
             (opcao_entrega_tab3, "OPÇÃO DE ENTREGA"),
             (nome_responsavel_tab3, "NOME DO RESPONSÁVEL"),
             (contato_responsavel_tab3, "CONTATO DO RESPONSÁVEL")
         ])
         
-        # Adiciona o campo "ENDEREÇO" apenas para "LOCAÇÃO"
         if opcao_entrega_tab3 == "ENTREGA":
             campos_obrigatorios.append((endereco_agencia_tab3, "ENDEREÇO"))
 
@@ -588,12 +613,18 @@ def gerar_texto_aquisicao():
             (contato_responsavel_tab3, "CONTATO DO RESPONSÁVEL")
         ])
         
-        # Adiciona o campo "ENDEREÇO" apenas para "LOCAÇÃO"
         if opcao_entrega_tab3 == "ENTREGA":
             campos_obrigatorios.append((endereco_agencia_tab3, "ENDEREÇO"))
 
+    if contrato_tab3 == "ESCRITÓRIO":
+        campos_obrigatorios = [
+            item for item in campos_obrigatorios
+            if item not in {(prefixo_tab3, "PREFIXO"), (agencia_tab3, "AGÊNCIA"), (os_num_tab3, "OS")}
+        ]
+
     # Verificar campos vazios
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
+    print(campos_vazios)
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
         notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -601,27 +632,28 @@ def gerar_texto_aquisicao():
 
     if tipo_aquisicao_tab3 == "COMPRA":
             texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
-            texto += f"▪ Contrato: {contrato_tab3}\n"
-            texto += f"▪ Descrição da aquisição: {descricao_tab3}\n"
-            texto += f"▪ Prazo para aquisição: {prazo_tab3}\n"
-            texto += f"▪ Dimensões (Altura x Largura x Comprimento): {dimensao_tab3}\n" if dimensao_tab3 else ""
-            texto += f"▪ Espessura: {espessura_tab3}\n" if espessura_tab3 else ""
-            texto += f"▪ Link: {link_tab3}\n" if link_tab3 else ""
-            texto += f"▪ Prefixo, Agência e OS: {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n"
-            texto += f"▪ Entrega ou Retirada: ENTREGA\n▪ Endereço da Agência: {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ Entrega ou Retirada: RETIRADA\n"            
-            texto += f"▪ Nome do responsável: {nome_responsavel_tab3}\n"
-            texto += f"▪ Contato do responsável: {contato_responsavel_tab3}\n"
+            texto += f"▪ *Contrato:* {contrato_tab3}\n"
+            texto += f"▪ *Descrição da aquisição:* {descricao_tab3}\n"
+            texto += f"▪ *Prazo para aquisição:* {prazo_tab3}\n"
+            texto += f"▪ *Dimensões (Altura x Largura x Comprimento):* {dimensao_tab3}\n" if dimensao_tab3 else ""
+            texto += f"▪ *Espessura:* {espessura_tab3}\n" if espessura_tab3 else ""
+            texto += f"▪ *Quantidade:* {quantidade_tab3}\n"
+            texto += f"▪ *Link:* {link_tab3}\n" if link_tab3 else ""
+            texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else f""
+            texto += f"▪ *Entrega ou Retirada:* ENTREGA\n▪ *Endereço da Agência:* {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ *Entrega ou Retirada:* RETIRADA\n"            
+            texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
+            texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
     else:        
             texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
-            texto += f"▪ Contrato: {contrato_tab3}\n"
-            texto += f"▪ Descrição da locação: {descricao_tab3}\n"
-            texto += f"▪ Data da locação: {data_tab3}\n"
-            texto += f"▪ Serviço: {servico_tab3}\n"
-            texto += f"▪ Período da locação: {periodo_locacao_tab3}\n"
-            texto += f"▪ Prefixo, Agência e OS: {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n"
-            texto += f"▪ Entrega ou Retirada: ENTREGA\n▪ Endereço da Agência: {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ Entrega ou Retirada: RETIRADA\n"            
-            texto += f"▪ Nome do responsável: {nome_responsavel_tab3}\n"
-            texto += f"▪ Contato do responsável: {contato_responsavel_tab3}\n"            
+            texto += f"▪ *Contrato:* {contrato_tab3}\n"
+            texto += f"▪ *Descrição da locação:* {descricao_tab3}\n"
+            texto += f"▪ *Data da locação:* {data_tab3}\n"
+            texto += f"▪ *Serviço:* {servico_tab3}\n"
+            texto += f"▪ *Período da locação:* {periodo_locacao_tab3}\n"
+            texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else f""
+            texto += f"▪ *Entrega ou Retirada:* ENTREGA\n▪ *Endereço da Agência:* {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ *Entrega ou Retirada:* RETIRADA\n"            
+            texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
+            texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"            
 
     # Exibir texto na caixa de texto
     texto_aquisicao.delete(1.0, tk.END)
@@ -633,6 +665,20 @@ def gerar_texto_aquisicao():
     
 def add_campos():
     tipo_servico = tipo_servico_combobox.get()
+    contrato_tab1 = contrato_combobox.get()
+
+    contrato_combobox.configure(values=[
+    "SALVADOR - BA", "SANTA CATARINA - SC", "RIO GRANDE DO SUL - RS", 
+    "RIO DE JANEIRO - RJ", "NITERÓI - RJ", "BELO HORIZONTE - MG", "RECIFE - PE", "MANAUS - AM", 
+    "RONDÔNIA - RD", "VOLTA REDONDA - RJ"
+    ])
+    contrato_combobox.set("")
+
+    tipo_pagamento_combobox.set("")
+    tipo_chave_pix_label.grid_forget()
+    tipo_chave_pix_combobox.grid_forget()
+    chave_pix_label.grid_forget()
+    chave_pix_entry.grid_forget()
 
     # Mostra o campo "COMPETÊNCIA" e "PORCENTAGEM"
     if tipo_servico == "ADIANTAMENTO PARCEIRO":
@@ -644,6 +690,8 @@ def add_campos():
         motivo_entry.grid_forget()
         saida_destino_label.grid_forget()
         saida_destino_entry.grid_forget()
+        tecnicos_label.grid_forget()
+        tecnicos_entry.grid_forget()
     # Mostra o campo "MOTIVO"
     elif tipo_servico == "REEMBOLSO SEM OS" or tipo_servico == "SOLICITAÇÃO SEM OS" or tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
         competencia_label.grid_forget()
@@ -700,7 +748,7 @@ def add_campos():
                            "AQUISIÇÃO SEM OS"
                            }
 
-    if tipo_servico in esconde_pref_age_os:
+    if tipo_servico in esconde_pref_age_os or contrato_tab1 == "ESCRITÓRIO":
         prefixo_label.grid_forget()
         prefixo_entry.grid_forget()
         os_label.grid_forget()
@@ -716,11 +764,10 @@ def add_campos():
         agencia_entry.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
 
     if tipo_servico == "ADIANTAMENTO PARCEIRO" or tipo_servico == "ABASTECIMENTO":
+        tipo_pagamento_combobox.set("")
         tipo_pagamento_combobox.configure(values=["PIX"])
-        tipo_pagamento_combobox.set("")  # Define "" como seleção padrão
     else:
         tipo_pagamento_combobox.configure(values=["PIX", "VEXPENSES"])
-        tipo_pagamento_combobox.set("")
 
     if tipo_servico == "ENVIO DE MATERIAL":
         contrato_label.grid_forget()
@@ -728,7 +775,6 @@ def add_campos():
     else:
         contrato_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
         contrato_combobox.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
-        contrato_combobox.set("")
     
     if tipo_servico == "AQUISIÇÃO COM OS":
         tipo_aquisicao_combobox.configure(values=["CORRETIVA DIÁRIA" , "LOCAÇÃO"])
@@ -736,6 +782,12 @@ def add_campos():
         tipo_aquisicao_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         tipo_aquisicao_combobox.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
     elif tipo_servico == "AQUISIÇÃO SEM OS":
+        contrato_combobox.configure(values=[
+                        "ESCRITÓRIO", "SALVADOR - BA", "SANTA CATARINA - SC", "RIO GRANDE DO SUL - RS", 
+                        "RIO DE JANEIRO - RJ", "NITERÓI - RJ", "BELO HORIZONTE - MG", "RECIFE - PE", "MANAUS - AM", 
+                        "RONDÔNIA - RD", "VOLTA REDONDA - RJ"
+                        ])
+        tipo_aquisicao_combobox.set("")
         tipo_aquisicao_combobox.configure(values=["EPI", "CRACHÁ", "FERRAMENTAS", "FARDAMENTO", "ESTOQUE"])
         tipo_aquisicao_combobox.set("")
         tipo_aquisicao_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
@@ -802,6 +854,7 @@ def on_return_press(event):
 
 def add_campos_tab3():
     tipo_aquisicao_tab3 = tipo_aquisicao_combobox_tab3.get()
+    contrato_tab3 = contrato_combobox_tab3.get()
  
     if tipo_aquisicao_tab3 == "COMPRA":
         data_label_tab3.grid_forget()
@@ -832,7 +885,7 @@ def add_campos_tab3():
         nome_responsavel_entry_tab3.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
         contato_responsavel_agencia_label_tab3.grid(row=15, column=0, sticky="w", padx=(10, 10))
         contato_responsavel_entry_tab3.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
-    else:
+    elif tipo_aquisicao_tab3 == "LOCAÇÃO":
         prazo_label_tab3.grid_forget()
         prazo_entry_tab3.grid_forget()
         data_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
@@ -861,6 +914,17 @@ def add_campos_tab3():
         nome_responsavel_entry_tab3.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
         contato_responsavel_agencia_label_tab3.grid(row=15, column=0, sticky="w", padx=(10, 10))
         contato_responsavel_entry_tab3.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
+    
+    if contrato_tab3 == "ESCRITÓRIO":
+        prefixo_label_tab3.grid_forget()
+        prefixo_entry_tab3.grid_forget()
+        prefixo_entry_tab3.delete(0, tk.END)
+        os_label_tab3.grid_forget()
+        os_entry_tab3.grid_forget()
+        os_entry_tab3.delete(0, tk.END)
+        agencia_label_tab3.grid_forget()
+        agencia_entry_tab3.grid_forget()
+        agencia_entry_tab3.delete(0, tk.END)
 
     if opcao_entrega_combobox_tab3.get() == "ENTREGA":
         endereco_agencia_label_tab3.grid(row=13, column=0, sticky="w", padx=(10, 10))
@@ -974,7 +1038,6 @@ tipo_servico_combobox = CustomComboBox(master=frame, values=[
 ], command=lambda choice: add_campos())
 tipo_servico_combobox.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
 tipo_servico_combobox.set("")
-widgets_para_limpar.append(tipo_servico_combobox)
 
 tipo_aquisicao_label = ctk.CTkLabel(master=frame, text="TIPO DE AQUISIÇÃO:")
 tipo_aquisicao_combobox = CustomComboBox(master=frame)
@@ -1001,11 +1064,10 @@ agencia_entry = CustomEntry(master=frame)
 widgets_para_limpar.append(agencia_entry)
 
 contrato_label = ctk.CTkLabel(master=frame, text="CONTRATO:")#.grid(row=6, column=0, sticky="w", padx=(10, 10))
-contrato_combobox = CustomComboBox(master=frame, values=[
-    "ESCRITÓRIO", "SALVADOR - BA", "SANTA CATARINA - SC", "RIO GRANDE DO SUL - RS", 
-    "RIO DE JANEIRO - RJ", "NITERÓI - RJ", "BELO HORIZONTE - MG", "RECIFE - PE", "MANAUS - AM", 
-    "RONDÔNIA - RD", "VOLTA REDONDA - RJ"
-])
+'''Label e Combobox de Contrato apenas aparecem após a seleção do tipo_serviço.
+Iniciado combobox sem valor, já que, ao selecionar determinado tipo_serviço, o Contrato mostra valores específicos
+'''
+contrato_combobox = CustomComboBox(master=frame, values=[])
 #contrato_combobox.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
 #contrato_combobox.set("")
 
@@ -1122,7 +1184,7 @@ widgets_para_limpar_tab2.append(agencia_entry_tab2)
 
 endereco_agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="ENDEREÇO DA AGÊNCIA:")
 endereco_entry_tab2 = CustomEntry(master=frame_tab2)
-widgets_para_limpar_tab2.append(agencia_entry_tab2)
+widgets_para_limpar_tab2.append(endereco_entry_tab2)
 
 ctk.CTkLabel(master=frame_tab2, text="NOME FORNEC./BENEF.:").grid(row=8, column=0, sticky="w", padx=(10, 10))
 nome_fornecedor_entry_tab2 = CustomEntry(master=frame_tab2)
@@ -1213,7 +1275,7 @@ contrato_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
     "ESCRITÓRIO", "SALVADOR - BA", "SANTA CATARINA - SC", "RIO GRANDE DO SUL - RS", 
     "RIO DE JANEIRO - RJ", "NITERÓI - RJ", "BELO HORIZONTE - MG", "RECIFE - PE", "MANAUS - AM", 
     "RONDÔNIA - RD", "VOLTA REDONDA - RJ"
-])
+], command=lambda choice: add_campos_tab3())
 contrato_combobox_tab3.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 contrato_combobox_tab3.set("")
 
@@ -1227,13 +1289,11 @@ prazo_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PRAZO:")
 prazo_entry_tab3 = CTkDatePicker(master=frame_tab3)
 prazo_entry_tab3.set_date_format("%d/%m/%Y")
 prazo_entry_tab3.set_allow_manual_input(False)
-widgets_para_limpar_tab3.append(prazo_entry_tab3)
 
 data_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DATA DA LOCAÇÃO:")
 data_entry_tab3 = CTkDatePicker(master=frame_tab3)
 data_entry_tab3.set_date_format("%d/%m/%Y")
 data_entry_tab3.set_allow_manual_input(False)
-widgets_para_limpar_tab3.append(data_entry_tab3)
 
 #row = 5
 dimensao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"DIMENSÕES\n(ALTURA x LARG. x COMPR.):", anchor="w", justify="left")
@@ -1293,7 +1353,7 @@ widgets_para_limpar_tab3.append(opcao_entrega_combobox_tab3)
 #row = 13
 endereco_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ENDEREÇO DA AGÊNCIA:")
 endereco_agencia_entry_tab3 = CustomEntry(master=frame_tab3)
-widgets_para_limpar_tab3.append(endereco_agencia_label_tab3)
+widgets_para_limpar_tab3.append(endereco_agencia_entry_tab3)
 
 #row = 14
 nome_responsavel_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="NOME DO RESPONSÁVEL:")
