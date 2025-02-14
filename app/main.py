@@ -2,12 +2,21 @@ import customtkinter as ctk
 from tkinter import ttk, messagebox, simpledialog, filedialog
 from openpyxl import load_workbook
 from datetime import datetime
-import shutil, os, pyperclip, sqlite3, atexit
+import shutil, os, pyperclip, sqlite3, atexit, logging, sys
 from CTkDatePicker import CTkDatePicker
 from CTkFloatingNotifications import *
 import locale
 
 locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil')
+
+logging.basicConfig(
+    level=logging.INFO,  # Define o nível mínimo de log (INFO)
+    format="%(asctime)s - %(levelname)s - %(message)s",  # Formato das mensagens
+    handlers=[
+        logging.FileHandler("logs/app.log"),  # Salva os logs em um arquivo "app.log"
+        logging.StreamHandler(sys.stdout)  # Exibe os logs no console
+    ]
+)
 
 # Criar uma classe personalizada para o ComboBox
 class CustomComboBox(ctk.CTkComboBox):
