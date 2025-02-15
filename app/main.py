@@ -27,9 +27,6 @@ logging.basicConfig(
     ]
 )
 
-# Testando o log
-logging.info("Aplicação iniciada.")
-
 # Criar uma classe personalizada para o ComboBox
 class CustomComboBox(ctk.CTkComboBox):
     def __init__(self, master, **kwargs):
@@ -184,7 +181,7 @@ def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrat
     except Exception as e:
         notification_manager = NotificationManager(root)  # passando a instância da janela principal
         notification_manager.show_notification(f"Erro ao gerar o arquivo Excel: {e}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")        
-        logging.error("Erro ao gerar o arquivo Excel: {e}")
+        logging.error("Erro ao gerar o arquivo Excel: ", exc_info=True)
 
 def arrumar_texto(texto):
     return ' '.join(texto.strip().split()) if texto else ''
@@ -241,7 +238,10 @@ def gerar_solicitacao():
     if tipo_pagamento == "PIX":
         tipo_chave_pix = arrumar_texto(tipo_chave_pix_combobox.get())
         chave_pix = arrumar_texto(chave_pix_entry.get())
-    
+
+    # Facilitar a identificação do erro pelo nome de usuário
+    logging.info(f"Aplicação iniciada. User: {nome_usuario}")
+
     # Dicionário que mapeia contratos para departamentos
     contrato_departamentos = {
         "ESCRITÓRIO": "ESCRITÓRIO",
