@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from tkinter import ttk, messagebox, simpledialog, filedialog
 from openpyxl import load_workbook
+from openpyxl.worksheet.datavalidation import DataValidation
 from datetime import datetime
 import shutil, os, pyperclip, sqlite3, atexit, logging, sys
 from CTkDatePicker import CTkDatePicker
@@ -102,7 +103,7 @@ def inserir_dados(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia,
     
     conn.commit()
 
-def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento):
+def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento):
     try:
         # Caminho do arquivo modelo
         caminho_modelo = r"G:\Meu Drive\22 - MODELOS\PROGRAMAS\Gerador de Solicitação de Pagamento\dist\MODELO NOVO 2024 - ORDEM DE COMPRA.xlsx"
@@ -125,25 +126,54 @@ def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrat
 
         shutil.copy(caminho_modelo, nome_arquivo_destino)
 
-        # Abrir a cópia do arquivo Excel
+        # Abrir o arquivo Excel copiado
         workbook = load_workbook(nome_arquivo_destino)
-        sheet = workbook["Planilha1"] #Seleciona uma planilha específica pelo nome [Planilha1]
+        sheet_dados = workbook["DADOS"]  # Planilha onde os dados serão preenchidos
+        sheet_principal = workbook["Planilha1"]  # Planilha onde será aplicada a validação
 
+        # Preenchendo os dados
         data_atual = datetime.now().strftime("%d/%m/%Y")
-
-        sheet["D5"] = nome_fornecedor
-        sheet["D11"] = nome_usuario
-        sheet["D16"] = contrato if contrato else "ESCRITÓRIO"
-        sheet["D41"] = tipo_pagamento
-        sheet["B47"] = f"Assinatura: {nome_usuario}"
-        sheet["B48"] = f"Data: {data_atual}"
+        sheet_principal["D5"] = nome_fornecedor
+        sheet_principal["D11"] = nome_usuario
+        sheet_principal["D16"] = contrato if contrato else "ESCRITÓRIO"
+        sheet_principal["D41"] = tipo_pagamento
+        sheet_principal["B47"] = f"Assinatura: {nome_usuario}"
+        sheet_principal["B48"] = f"Data: {data_atual}"
 
         if os_num in (0, '', None):
-            sheet["D14"] = "-"
-            sheet["D15"] = "-"
+            sheet_principal["D14"] = "-"
+            sheet_principal["D15"] = "-"
         else:
-            sheet["D14"] = os_num
-            sheet["D15"] = f"{prefixo} - {agencia}"
+            sheet_principal["D14"] = os_num
+            sheet_principal["D15"] = f"{prefixo} - {agencia}"
+        
+        '''Usuários que podem selecionar departamentos'''
+        # Verificação do nome do usuário
+        if nome_usuario in usuarios_varios_departamentos:
+            # Se o nome do usuário estiver na lista de 'usuarios_varios_departamentos', aplica a validação
+            workbook.active = sheet_principal
+            dv = DataValidation(
+                type="list", 
+                formula1='"ESCRITÓRIO,CONTRATO BA,CONTRATO SC,CONTRATO RS,CONTRATO RJ,CONTRATO NT,CONTRATO MG,CONTRATO PE,CONTRATO VOLTA REDONDA,CONTRATO RONDÔNIA,CONTRATO AM"', 
+                showDropDown=False,
+                allow_blank=True
+            )
+            sheet_principal.add_data_validation(dv)
+            dv.add("D13")  # Aplicando a validação na célula D13
+        elif nome_usuario in usuarios_gerais:
+            # Se o nome do usuário estiver na lista de 'usuarios_gerais' (mas não em 'usuarios_varios_departamentos'), atribui o valor diretamente
+            sheet_principal["D13"] = departamento
+
+        '''Restaurando a Validação de Dados'''
+        workbook.active = sheet_principal
+        dv = DataValidation(
+            type="list", 
+            formula1='"SEM CUSTO PARA ENTREGA,COM CUSTO PARA ENTREGA"', 
+            showDropDown=False,
+            allow_blank=True
+        )
+        sheet_principal.add_data_validation(dv)
+        dv.add("D42")  # Aplicando a validação na célula D11
 
         # Salvar e fechar o arquivo
         workbook.save(nome_arquivo_destino)
@@ -155,7 +185,6 @@ def gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrat
         notification_manager = NotificationManager(root)  # passando a instância da janela principal
         notification_manager.show_notification(f"Erro ao gerar o arquivo Excel: {e}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")        
         logging.error("Erro ao gerar o arquivo Excel: {e}")
-
 
 def arrumar_texto(texto):
     return ' '.join(texto.strip().split()) if texto else ''
@@ -213,7 +242,7 @@ def gerar_solicitacao():
         tipo_chave_pix = arrumar_texto(tipo_chave_pix_combobox.get())
         chave_pix = arrumar_texto(chave_pix_entry.get())
     
-    '''# Dicionário que mapeia contratos para departamentos
+    # Dicionário que mapeia contratos para departamentos
     contrato_departamentos = {
         "ESCRITÓRIO": "ESCRITÓRIO",
         "SALVADOR - BA": "CONTRATO BA",
@@ -228,7 +257,7 @@ def gerar_solicitacao():
         "MANAUS - AM": "CONTRATO AM"
     } 
     
-    departamento = contrato_departamentos.get(contrato, "Departamento não encontrado")'''
+    departamento = contrato_departamentos.get(contrato, "Departamento não encontrado")
 
     dict_sigla_contrato = {
         "ESCRITÓRIO": "ESCRITÓRIO",
@@ -439,7 +468,7 @@ def gerar_solicitacao():
         else:
             nome_arquivo = f"{valor_tab1.replace(".", "")} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
 
-        gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento)
+        gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento)
 
 def limpar_dados():
     aba_ativa  = tabview.get()
@@ -991,10 +1020,7 @@ widgets_para_limpar = []
 widgets_para_limpar_tab2 = []
 widgets_para_limpar_tab3 = []
 
-# Campos de entrada
-ctk.CTkLabel(master=frame, text="USUÁRIO:").grid(row=0, column=0, sticky="w", padx=(10, 10), pady=(10, 0))
-nome_usuario_combobox = CustomComboBox(master=frame, values = [
-    "AMANDA SAMPAIO",
+usuarios_gerais = ["AMANDA SAMPAIO",
     "CARLOS ALBERTO",
     "DANIEL ROMUALDO",
     "DAWISON NASCIMENTO",
@@ -1005,14 +1031,25 @@ nome_usuario_combobox = CustomComboBox(master=frame, values = [
     "HENRIQUE CARDOSO",
     "IGOR SAMPAIO",
     "IURE OLIVEIRA",
-    "LETICIA LOPES",
+    "JOÃO GABRIEL",
     "LUCAS ASSUNÇÃO",
     "LUCAS HEBERT",
     "MATEUS SILVA",
     "TÁCIO BARBOSA",
     "TAIANE MARQUES",
     "VINICIUS CRUZ"
-])
+]
+
+usuarios_varios_departamentos = ["AMANDA SAMPAIO",
+    "DAWISON NASCIMENTO",
+    "JOÃO GABRIEL",
+    "TÁCIO BARBOSA",
+    "TAIANE MARQUES"
+]
+
+# Campos de entrada
+ctk.CTkLabel(master=frame, text="USUÁRIO:").grid(row=0, column=0, sticky="w", padx=(10, 10), pady=(10, 0))
+nome_usuario_combobox = CustomComboBox(master=frame, values=usuarios_gerais)
 nome_usuario_combobox.grid(row=0, column=1, sticky="ew", padx=(0, 10), pady=(10, 2))
 nome_usuario_combobox.set("")
 
@@ -1239,26 +1276,7 @@ frame_tab3.grid_columnconfigure(0, weight=1)  # Expande a coluna 0
 frame_tab3.grid_columnconfigure(1, weight=1)  # Expande a coluna 1
 
 ctk.CTkLabel(master=frame_tab3, text="USUÁRIO:").grid(row=0, column=0, sticky="w", padx=(10, 10), pady=(10, 0))
-nome_usuario_combobox_tab3 = CustomComboBox(master=frame_tab3, values = [
-    "AMANDA SAMPAIO",
-    "CARLOS ALBERTO",
-    "DANIEL ROMUALDO",
-    "DAWISON NASCIMENTO",
-    "FELIPE COSTA",
-    "FELIPE MOTA",
-    "GABRIEL BARBOSA",
-    "GUILHERME GOMES",
-    "HENRIQUE CARDOSO",
-    "IGOR SAMPAIO",
-    "IURE OLIVEIRA",
-    "LETICIA LOPES",
-    "LUCAS ASSUNÇÃO",
-    "LUCAS HEBERT",
-    "MATEUS SILVA",
-    "TÁCIO BARBOSA",
-    "TAIANE MARQUES",
-    "VINICIUS CRUZ"
-])
+nome_usuario_combobox_tab3 = CustomComboBox(master=frame_tab3, values=usuarios_gerais)
 nome_usuario_combobox_tab3.grid(row=0, column=1, sticky="ew", padx=(0, 10), pady=(10, 2))
 nome_usuario_combobox_tab3.set("")
 
