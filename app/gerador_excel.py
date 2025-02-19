@@ -12,7 +12,8 @@ def gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, c
 
         # Verificar se o arquivo modelo existe
         if not os.path.exists(caminho_modelo):
-            messagebox.showerror("Erro", "Arquivo modelo não encontrado!")
+            notification_manager = NotificationManager(root)  # passando a instância da janela principal
+            notification_manager.show_notification(f"Arquivo modelo não encontrado!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
             return
 
         # Criar uma cópia do arquivo modelo
