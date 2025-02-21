@@ -469,7 +469,7 @@ def gerar_texto_aquisicao():
 
     # Verificar campos vazios
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
-    print(campos_vazios)
+
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
         notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -689,7 +689,7 @@ def add_campos_tab2():
 def on_return_press(event):
     # Verifica qual aba está selecionada
     aba_atual = tabview.get()  # Retorna o nome da aba selecionada
-    print(aba_atual)
+
     if aba_atual == "PAGAMENTO":
         gerar_button.invoke()
     elif aba_atual == "E-MAIL":

@@ -57,7 +57,7 @@ def gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, c
             workbook.active = sheet_principal
             dv = DataValidation(
                 type="list", 
-                formula1='"ESCRITÓRIO,CONTRATO BA,CONTRATO SC,CONTRATO RS,CONTRATO RJ,CONTRATO NT,CONTRATO MG,CONTRATO PE,CONTRATO VOLTA REDONDA,CONTRATO RONDÔNIA,CONTRATO AM"', 
+                formula1='"SETOR DE COMPRAS,ESCRITÓRIO,CONTRATO BA,CONTRATO SC,CONTRATO RS,CONTRATO RJ,CONTRATO NT,CONTRATO MG,CONTRATO PE,CONTRATO VOLTA REDONDA,CONTRATO RONDÔNIA,CONTRATO AM"', 
                 showDropDown=False,
                 allow_blank=True
             )

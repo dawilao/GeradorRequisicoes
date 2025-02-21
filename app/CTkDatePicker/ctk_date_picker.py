@@ -26,7 +26,7 @@ class CTkDatePicker(ctk.CTkFrame):
         self.date_entry = ctk.CTkEntry(self.frame_externo, border_width=1, corner_radius=1)
         self.date_entry.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
 
-        self.calendar_button = ctk.CTkButton(self.frame_externo, text="📅", width=30, fg_color="#565b5e", 
+        self.calendar_button = ctk.CTkButton(self.frame_externo, text="📅", width=28, fg_color="#565b5e", 
                                             corner_radius=1, hover_color="#7a848d", command=self.open_calendar)
         self.calendar_button.grid(row=0, column=1, sticky="w", padx=0, pady=0)
 
