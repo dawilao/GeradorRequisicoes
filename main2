@@ -1,25 +1,8 @@
 
 
-import locale
 
-locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil')
 
-# Definir o caminho absoluto para o diretório de logs
-log_dir = os.path.join(os.getcwd(), "logs")
 
-# Criar diretório "logs" se não existir
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-
-# Configuração do logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(os.path.join(log_dir, "app.log"), encoding='utf-8'),  # Agora será salvo dentro da pasta logs
-        logging.StreamHandler()
-    ]
-)
 
 
 

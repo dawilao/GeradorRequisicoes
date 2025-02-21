@@ -8,16 +8,9 @@ from .CTkFloatingNotifications import *
 import pyperclip
 import customtkinter as ctk
 from datetime import datetime
-import sqlite3
+import locale
 
-try:
-    # Conectar ao banco de dados
-    conn = sqlite3.connect(r'app\bd\login.db')  # Caminho para o banco de dados
-    cursor = conn.cursor()
-
-except sqlite3.Error as e:
-    print(f"Erro na conexão com o banco de dados: {e}")
-    messagebox.showerror("Erro de conexão", f"Não foi possível conectar ao banco de dados: {e}")
+locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil')
 
 # Criar uma classe personalizada para o ComboBox
 class CustomComboBox(ctk.CTkComboBox):
@@ -850,6 +843,7 @@ def janela_principal():
     root = ctk.CTk()
     root.title("Modelo Solicitação de Pagamento")
     root.geometry("520x600")
+    ctk.set_default_color_theme("green")
 
     ''' CRIAÇÃO DAS ABAS PARA SELEÇAO DOS TIPOS DE MODELOS DE TEXTO '''
     tabview = ctk.CTkTabview(master=root)
@@ -863,9 +857,7 @@ def janela_principal():
     if abas_permitidas:
         tabview.set(abas_permitidas[0])  # Define a primeira aba como a aba ativa (opcional)
 
-    print(abas_permitidas)
     print("Abas permitidas:", abas_permitidas)
-
 
     if "PAGAMENTO" in abas_permitidas:
         # -------------------------------

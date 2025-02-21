@@ -1,10 +1,13 @@
 import sqlite3
 import customtkinter as ctk
 from tkinter import messagebox
+from .CTkFloatingNotifications import *
 
 # Função de validação dos dados de login
 def validacao_login():
     from .ui_tela_principal import janela_principal
+    notification_manager = NotificationManager(root_login)
+
 
     global nome_completo_usuario, abas_permitidas
     usuario = entry_usuario.get().strip().lower()  # Remover espaços e converter para minúsculas
@@ -30,7 +33,7 @@ def validacao_login():
             root_login.destroy()  # Fecha a tela de login
             janela_principal()  # Abre a tela principal
         else:
-            messagebox.showerror("Login incorreto", "Usuário ou senha inválidos!")
+            notification_manager.show_notification("Usuário ou senha inválidos!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
 
     except sqlite3.Error as e:
         print(f"Erro na conexão com o banco de dados: {e}")
@@ -39,15 +42,42 @@ def validacao_login():
 # Função para abrir a tela de alteração de senha
 def janela_alterar_senha():
     from .ui_tela_principal import CustomEntry
+    def valida_nova_senha(nova_senha, senha_atual_banco):
+        notification_manager = NotificationManager(janela_alterar)
+
+        if nova_senha == senha_atual_banco:
+            notification_manager.show_notification("A nova senha não pode ser igual à senha atual!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return False        
+        elif len(nova_senha) < 4:
+            notification_manager.show_notification("A nova senha deve ter no mínimo 4 caracteres!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return False
+        elif len(nova_senha) > 10:
+            notification_manager.show_notification("A nova senha deve ter no máximo 10 caracteres!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return False
+        return True
 
     def alterar_senha():
-        usuario = entry_usuario_alt.get().strip().lower()  # Nome do usuário
-        senha_atual = entry_senha_atual.get()  # Senha atual
-        nova_senha = entry_nova_senha.get()  # Nova senha
+        notification_manager = NotificationManager(janela_alterar)
+        usuario = entry_usuario_alt.get().strip().lower()
+        senha_atual = entry_senha_atual.get()
+        nova_senha = entry_nova_senha.get()
+        
+        dados_obrigatorios = [
+            (usuario, "Usuário"),
+            (senha_atual, "Senha atual"),
+            (nova_senha, "Nova senha")
+        ]
+
+        # Verificar campos vazios
+        campos_vazios = [nome for valor, nome in dados_obrigatorios if not valor]
+
+        if campos_vazios:
+            notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
 
         try:
             # Conectar ao banco de dados
-            conn = sqlite3.connect(r'app\bd\login.db')  # Caminho para o banco de dados
+            conn = sqlite3.connect(r'app\bd\login.db')
             cursor = conn.cursor()
 
             # Verificar se a senha atual está correta
@@ -56,13 +86,17 @@ def janela_alterar_senha():
 
             # Se a senha atual estiver correta, atualize para a nova senha
             if resultado and resultado[0] == senha_atual:
+                if not valida_nova_senha(nova_senha, resultado[0]):
+                    return
+                
                 cursor.execute("UPDATE dados_login SET senha = ? WHERE LOWER(nome_usuario) = ?", (nova_senha, usuario))
                 conn.commit()
+
                 messagebox.showinfo("Senha Alterada", "Sua senha foi alterada com sucesso!")
                 janela_alterar.destroy()  # Fecha a tela de alteração de senha
                 janela_login()
             else:
-                messagebox.showerror("Erro", "Senha atual inválida ou usuário não encontrado!")
+                notification_manager.show_notification("Senha atual inválida ou usuário não encontrado!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
                 return
 
             # Fechar a conexão com o banco de dados
@@ -80,7 +114,8 @@ def janela_alterar_senha():
     # Tela para alteração de senha
     janela_alterar = ctk.CTk()
     janela_alterar.title("Alterar Senha")
-    janela_alterar.geometry("250x300")
+    janela_alterar.geometry("400x370")
+    ctk.set_default_color_theme("green")
 
     frame = ctk.CTkFrame(master=janela_alterar)
     frame.pack(fill="both", expand=True, padx=5, pady=5)
@@ -125,11 +160,12 @@ def janela_login():
     # Configuração da interface gráfica principal, com título e tamanho da janela
     root_login = ctk.CTk()
     root_login.title("Login")
-    root_login.geometry("250x300")
+    root_login.geometry("300x350")
+    ctk.set_default_color_theme("green")
 
     # Cria um rótulo (label) para o campo de entrada do nome de usuário
     label_usuario = ctk.CTkLabel(master=root_login, text="Usuário:", anchor="w")
-    label_usuario.pack(pady=(10,0), padx=57, fill="x")
+    label_usuario.pack(pady=(10,0), padx=80, fill="x")
 
     # Cria um campo de entrada (Entry) para o usuário digitar seu nome de usuário
     entry_usuario = CustomEntry(master=root_login, placeholder_text="Insira o usuário")
@@ -137,19 +173,14 @@ def janela_login():
 
     # Cria um rótulo (label) para o campo de entrada da senha
     label_senha = ctk.CTkLabel(master=root_login, text="Senha:", anchor="w")
-    label_senha.pack(pady=0, padx=57, fill="x")
+    label_senha.pack(pady=0, padx=80, fill="x")
 
     # Cria um campo de entrada (Entry) para o usuário digitar sua senha
     entry_senha = CustomEntry(master=root_login, show='*', placeholder_text="Insira a senha")
     entry_senha.pack(pady=(0,20))
 
     # Botão de login
-    botao_login = ctk.CTkButton(master=root_login,
-                                          text="Login",
-                                          command=validacao_login)
-    botao_login.configure(fg_color="#035397",
-                  text_color=("white"),
-                  corner_radius=52)
+    botao_login = ctk.CTkButton(master=root_login, text="Login", command=validacao_login)
     botao_login.pack(pady=(0,15))
     
     # Botão para sair
@@ -158,7 +189,6 @@ def janela_login():
                                          fg_color="#B31312",
                                          hover_color="Dark red",
                                          text_color=("black", "white"),
-                                         corner_radius=32,
                                          command=root_login.destroy)
     
     botao_sair.pack(pady=(0,15))
@@ -166,9 +196,6 @@ def janela_login():
     # Botão para alterar senha
     botao_alterar_senha = ctk.CTkButton(master=root_login,
                                          text="Alterar Senha",
-                                         fg_color="#035397",
-                                         text_color=("white"),
-                                         corner_radius=32,
                                          command=janela_alterar_senha)  # Chama a janela para alterar a senha
     botao_alterar_senha.pack(pady=(0,15))
 
