@@ -7,8 +7,6 @@ def verificar_se_numero(texto):
     try:
         if not texto:
             return ""  # Valor padrão caso o campo esteja vazio
-        # Tenta converter o valor em número
-        float(texto.replace(",", "."))
         # Se for um número, chama a função arrumar_numero
         resultado = arrumar_numero(texto)
         return resultado
@@ -22,7 +20,8 @@ def arrumar_numero(texto):
     texto = texto.replace(" ", "")  # Remove todos os espaços
 
     try:
-        numero = float(texto.replace(",", "."))
+        # Troca o ponto por um marcador temporário "X", troca a vírgula por ponto e depois troca "X" por vírgula
+        numero = float(texto.replace(".", "").replace(",", "."))
         return f"{numero:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except ValueError:
         return ""  # Retorna um valor padrão caso a conversão falhe

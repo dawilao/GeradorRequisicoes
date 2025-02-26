@@ -63,6 +63,11 @@ def gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, c
             )
             sheet_principal.add_data_validation(dv)
             dv.add("D13")  # Aplicando a validação na célula D13
+            
+            if departamento == "ESCRITÓRIO":
+                sheet_principal["D13"] = departamento
+            else:
+                sheet_principal["D13"] = "SETOR DE COMPRAS"
         elif nome_usuario in usuarios_gerais:
             # Se o nome do usuário estiver na lista de 'usuarios_gerais' (mas não em 'usuarios_varios_departamentos'), atribui o valor diretamente
             sheet_principal["D13"] = departamento

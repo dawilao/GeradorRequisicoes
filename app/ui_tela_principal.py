@@ -61,16 +61,16 @@ def gerar_solicitacao():
     # Dicionário que mapeia contratos para departamentos
     contrato_departamentos = {
         "ESCRITÓRIO": "ESCRITÓRIO",
-        "SALVADOR - BA": "CONTRATO BA",
-        "SANTA CATARINA - SC": "CONTRATO SC",
-        "RIO GRANDE DO SUL - RS": "CONTRATO RS",
-        "RIO DE JANEIRO - RJ": "CONTRATO RJ",
-        "NITERÓI - RJ": "CONTRATO NT",
-        "BELO HORIZONTE - MG": "CONTRATO MG",
-        "RECIFE - PE": "CONTRATO PE",
-        "VOLTA REDONDA - RJ": "CONTRATO VOLTA REDONDA",
-        "RONDÔNIA - RD": "CONTRATO RONDÔNIA",
-        "MANAUS - AM": "CONTRATO AM"
+        "C. O. SALVADOR - BA - 2877": "CONTRATO BA",
+        "C. O. SANTA CATARINA - SC - 5023": "CONTRATO SC",
+        "C. O. RIO GRANDE DO SUL - RS - 5525": "CONTRATO RS",
+        "C. O. RIO DE JANEIRO - RJ - 0494": "CONTRATO RJ",
+        "C. O. NITERÓI - RJ - 1380": "CONTRATO NT",
+        "C. O. BELO HORIZONTE - MG - 2054": "CONTRATO MG",
+        "C. O. RECIFE - PE - 5254": "CONTRATO PE",
+        "C. O. VOLTA REDONDA - RJ - 0215": "CONTRATO VOLTA REDONDA",
+        "C. O. RONDÔNIA - RD - S/N": "CONTRATO RONDÔNIA",
+        "C. O. MANAUS - AM - 7649": "CONTRATO AM"
     } 
     
     departamento = contrato_departamentos.get(contrato, "")
@@ -78,22 +78,22 @@ def gerar_solicitacao():
     dict_sigla_contrato = {
         "ESCRITÓRIO": "ESCRITÓRIO",
         "": "ESCRITÓRIO",        
-        "SALVADOR - BA": "BA",
-        "SANTA CATARINA - SC": "SC",
-        "RIO GRANDE DO SUL - RS": "RS",
-        "RIO DE JANEIRO - RJ": "RJ",
-        "NITERÓI - RJ": "NI",
-        "BELO HORIZONTE - MG": "MG",
-        "RECIFE - PE": "PE",
-        "MANAUS - AM": "AM",
-        "VOLTA REDONDA - RJ": "VR-RJ",
-        "RONDÔNIA - RD": "RD",
-        "ATA BB CURITIBA": "PR",
-        "C. E. MANAUS": "AM",
-        "CAIXA BAHIA": "BA",
-        "CAIXA CURITIBA": "PR",
-        "CAIXA MANAUS": "AM",
-        "INFRA CURITIBA": "PR"
+        "C. O. SALVADOR - BA - 2877": "BA",
+        "C. O. SANTA CATARINA - SC - 5023": "SC",
+        "C. O. RIO GRANDE DO SUL - RS - 5525": "RS",
+        "C. O. RIO DE JANEIRO - RJ - 0494": "RJ",
+        "C. O. NITERÓI - RJ - 1380": "NI",
+        "C. O. BELO HORIZONTE - MG - 2054": "MG",
+        "C. O. RECIFE - PE - 5254": "PE",
+        "C. O. MANAUS - AM - 7649": "AM",
+        "C. O. VOLTA REDONDA - RJ - 0215": "VR-RJ",
+        "C. O. RONDÔNIA - RD - S/N": "RD",
+        "ATA BB CURITIBA - 0232": "PR",
+        "C. E. MANAUS - S/N": "AM",
+        "CAIXA BAHIA - 4922.2024": "BA",
+        "CAIXA CURITIBA - 534.2025": "PR",
+        "CAIXA MANAUS - 4569.2024": "AM",
+        "INFRA CURITIBA - S/N": "PR"
     }
 
     sigla_contrato = dict_sigla_contrato.get(contrato, "Sigla não encontrada")
