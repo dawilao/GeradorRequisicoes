@@ -378,7 +378,7 @@ def gerar_texto_email():
 
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
-        notification_manager.show_notification(f"Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        notification_manager.show_notification(f"Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return    
 
     if tipo_servico_tab2 == "COMPRAS EM GERAL - COM OS":
@@ -490,7 +490,7 @@ def gerar_texto_aquisicao():
 
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
-        notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        notification_manager.show_notification("Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
 
     if os_num_tab3 == "OS_invalida":
@@ -1138,7 +1138,7 @@ def janela_principal():
         tipo_pagamento_combobox_tab2.set("")
         widgets_para_limpar_tab2.append(tipo_pagamento_combobox_tab2)
 
-        num_orcamento_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="NÚMERO ORÇAMENTO/PEDIDO:").grid(row=11, column=0, sticky="w", padx=(10, 10))
+        num_orcamento_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="Nº ORÇAM./PEDIDO (SE APLICÁVEL):").grid(row=11, column=0, sticky="w", padx=(10, 10))
         num_orcamento_entry_tab2 = CustomEntry(master=frame_tab2)
         num_orcamento_entry_tab2.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
         widgets_para_limpar_tab2.append(num_orcamento_entry_tab2)
@@ -1224,7 +1224,7 @@ def janela_principal():
         widgets_para_limpar_tab3.append(servico_entry_tab3)
 
         #row = 6
-        largura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"LARGURA:", anchor="w", justify="left")
+        largura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"LARGURA (SE APLICÁVEL):", anchor="w", justify="left")
         largura_entry_tab3 = CustomEntry(master=frame_tab3)
         widgets_para_limpar_tab3.append(largura_entry_tab3) 
 
@@ -1236,12 +1236,12 @@ def janela_principal():
         widgets_para_limpar_tab3.append(periodo_locacao_combobox_tab3)
 
         #row = 7
-        comprimento_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"COMPRIMENTO:", anchor="w", justify="left")
+        comprimento_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"COMPRIMENTO (SE APLICÁVEL):", anchor="w", justify="left")
         comprimento_entry_tab3 = CustomEntry(master=frame_tab3)
         widgets_para_limpar_tab3.append(comprimento_entry_tab3)
 
         #row = 8
-        espessura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ESPESSURA:")
+        espessura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ESPESSURA (SE APLICÁVEL):")
         espessura_entry_tab3 = CustomEntry(master=frame_tab3)
         widgets_para_limpar_tab3.append(espessura_entry_tab3)
 
