@@ -199,4 +199,6 @@ def janela_login():
                                          command=janela_alterar_senha)  # Chama a janela para alterar a senha
     botao_alterar_senha.pack(pady=(0,15))
 
+    root_login.bind("<Return>", lambda enter: botao_login.invoke())
+
     root_login.mainloop()
