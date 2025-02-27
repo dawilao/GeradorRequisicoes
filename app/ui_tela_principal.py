@@ -28,8 +28,8 @@ class CustomEntry(ctk.CTkEntry):
     def __init__(self, master, **kwargs):
         super().__init__(
             master,
-            border_width=1, 
-            corner_radius=1, 
+            border_width=1,
+            corner_radius=1,
             **kwargs
         )
 
@@ -54,6 +54,7 @@ def gerar_solicitacao():
     if tipo_pagamento == "PIX":
         tipo_chave_pix = arrumar_texto(tipo_chave_pix_combobox.get())
         chave_pix = arrumar_texto(chave_pix_entry.get())
+        nome_benef_pix = arrumar_texto(nome_benef_pix_entry.get().upper())
 
     # Facilitar a identificação do erro pelo nome de usuário
     # logging.info(f"Aplicação iniciada. User: {nome_usuario}")
@@ -77,7 +78,7 @@ def gerar_solicitacao():
 
     dict_sigla_contrato = {
         "ESCRITÓRIO": "ESCRITÓRIO",
-        "": "ESCRITÓRIO",        
+        "": "ESCRITÓRIO",
         "C. O. SALVADOR - BA - 2877": "BA",
         "C. O. SANTA CATARINA - SC - 5023": "SC",
         "C. O. RIO GRANDE DO SUL - RS - 5525": "RS",
@@ -118,7 +119,7 @@ def gerar_solicitacao():
             (competencia, "COMPETÊNCIA"),
             (porcentagem, "% DO ADIANTAMENTO DO PARCEIRO")
         ])
-    elif tipo_servico in {"AQUISIÇÃO COM OS", "COMPRA IN LOCO"} :
+    elif tipo_servico in {"AQUISIÇÃO COM OS", "COMPRA IN LOCO"}:
         campos_obrigatorios.extend([
             (tipo_aquisicao, "TIPO DE AQUISIÇÃO"),
             (prefixo, "PREFIXO"),
@@ -213,11 +214,11 @@ def gerar_solicitacao():
     elif contrato == "ESCRITÓRIO":
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"        
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
         texto = f"Solicito o pagamento para {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"MOTIVO: {motivo}\n\n"     
+        texto += f"MOTIVO: {motivo}\n\n"
     elif tipo_servico == "REEMBOLSO SEM OS":
         texto = f"Solicito o pagamento ao {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
@@ -235,7 +236,7 @@ def gerar_solicitacao():
         texto = f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {saida_destino}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"MOTIVO: {motivo}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"        
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "HOSPEDAGEM":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor} pela hospedagem dos técnicos {tecnicos} referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
@@ -248,7 +249,7 @@ def gerar_solicitacao():
     elif tipo_servico == "ENVIO DE MATERIAL":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"      
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     else:
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
@@ -256,6 +257,7 @@ def gerar_solicitacao():
 
     if tipo_pagamento == "PIX":
         texto += f"Segue pix {tipo_chave_pix} ⬇\n\n{chave_pix}"
+        texto += f"\n\n{nome_benef_pix}" if nome_benef_pix else ""
     else:
         texto += "Pagamento via VEXPENSES"
 
@@ -685,11 +687,15 @@ def adiciona_campo_pix():
         tipo_chave_pix_combobox.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
         chave_pix_label.grid(row=14, column=0, sticky="w", padx=(10, 10))
         chave_pix_entry.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
+        nome_benef_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
+        nome_benef_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
     else:
         tipo_chave_pix_label.grid_forget()
         tipo_chave_pix_combobox.grid_forget()
         chave_pix_label.grid_forget()
         chave_pix_entry.grid_forget()
+        nome_benef_pix_label.grid_forget()
+        nome_benef_pix_entry.grid_forget()
 
 def add_campos_tab2():
     tipo_servico_tab2 = tipo_servico_combobox_tab2.get()
@@ -858,6 +864,7 @@ def janela_principal():
     global chave_pix_entry, texto_solicitacao, switch_autocopia_var, switch_gerar_excel_var
     global tipo_chave_pix_label, chave_pix_label, competencia_label, porcentagem_label, motivo_label
     global saida_destino_label, tecnicos_label, prefixo_label, os_label, agencia_label, contrato_label
+    global nome_benef_pix_label, nome_benef_pix_entry
     global tipo_aquisicao_label, gerar_button
 
     # Widgets da aba E-MAIL
@@ -906,7 +913,7 @@ def janela_principal():
         frame.pack(fill="both", expand=True, padx=2, pady=2)
 
         # Configurando a coluna do frame para expandir
-        frame.grid_rowconfigure(17, weight=1)  # Expande a linha
+        frame.grid_rowconfigure(18, weight=1)  # Expande a linha
         frame.grid_columnconfigure(0, weight=1)  # Expande a coluna 0
         frame.grid_columnconfigure(1, weight=1)  # Expande a coluna 1
 
@@ -971,6 +978,11 @@ def janela_principal():
         ], command=lambda choice: add_campos())
         tipo_servico_combobox.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
         tipo_servico_combobox.set("")
+
+        # Campo para MOTIVO
+        motivo_label = ctk.CTkLabel(master=frame, text="MOTIVO:")
+        motivo_entry = CustomEntry(master=frame)
+        widgets_para_limpar.append(motivo_entry)
 
         tipo_aquisicao_label = ctk.CTkLabel(master=frame, text="TIPO DE AQUISIÇÃO:")
         tipo_aquisicao_combobox = CustomComboBox(master=frame)
@@ -1043,10 +1055,9 @@ def janela_principal():
         chave_pix_entry = CustomEntry(master=frame)
         widgets_para_limpar.append(chave_pix_entry)
 
-        # Campo para MOTIVO
-        motivo_label = ctk.CTkLabel(master=frame, text="MOTIVO:")
-        motivo_entry = CustomEntry(master=frame)
-        widgets_para_limpar.append(motivo_entry)
+        nome_benef_pix_label = ctk.CTkLabel(master=frame, text="NOME DO BENEF. DO PIX:")
+        nome_benef_pix_entry = CustomEntry(master=frame)
+        widgets_para_limpar.append(nome_benef_pix_entry)
 
         # Campo para SAÍDA X DESTINO (UBER)
         saida_destino_label = ctk.CTkLabel(master=frame, text="SAÍDA X DESTINO:")
@@ -1055,26 +1066,26 @@ def janela_principal():
 
         # Botão GERAR
         gerar_button = ctk.CTkButton(master=frame, text="GERAR", command=gerar_solicitacao)
-        gerar_button.grid(row=15, column=0, sticky="ew", padx=(10, 10), pady=10)
+        gerar_button.grid(row=16, column=0, sticky="ew", padx=(10, 10), pady=10)
 
         root.bind("<Return>", on_return_press)
 
         limpar_button = ctk.CTkButton(master=frame, text="LIMPAR", width=150, command=limpar_dados)
-        limpar_button.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=10)
+        limpar_button.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=10)
 
         switch_autocopia_var = tk.BooleanVar(value=True)
         switch_autocopia = ctk.CTkSwitch(master=frame, text="Auto-Cópia",
                                         variable=switch_autocopia_var, onvalue=True, offvalue=False)
-        switch_autocopia.grid(row=16, column=0, sticky="n", padx=(0, 10), pady=10)
+        switch_autocopia.grid(row=17, column=0, sticky="n", padx=(0, 10), pady=10)
 
         switch_gerar_excel_var = tk.BooleanVar(value=True)
         switch_gerar_excel = ctk.CTkSwitch(master=frame, text="Gerar Excel",
                                         variable=switch_gerar_excel_var, onvalue=True, offvalue=False)
-        switch_gerar_excel.grid(row=16, column=1, sticky="n", padx=(0, 10), pady=10)
+        switch_gerar_excel.grid(row=17, column=1, sticky="n", padx=(0, 10), pady=10)
 
         # Caixa de texto para a solicitação
         texto_solicitacao = ctk.CTkTextbox(master=frame)
-        texto_solicitacao.grid(row=17, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
+        texto_solicitacao.grid(row=18, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
         widgets_para_limpar.append(texto_solicitacao)
 
     if "E-MAIL" in abas_permitidas:
@@ -1227,7 +1238,7 @@ def janela_principal():
         #row = 6
         largura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"LARGURA (SE APLICÁVEL):", anchor="w", justify="left")
         largura_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(largura_entry_tab3) 
+        widgets_para_limpar_tab3.append(largura_entry_tab3)
 
         periodo_locacao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PERÍODO DE LOCAÇÃO:")
         periodo_locacao_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
