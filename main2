@@ -5,33 +5,33 @@
 
 
 
+def conecta_banco_pagamentos()
+    # Conectar ao banco de dados (se não existir, ele será criado)
+    conn = sqlite3.connect(r'C:\Users\Taiane Marques\Desktop\meu_banco.db')
+    cursor = conn.cursor()
 
-# Conectar ao banco de dados (se não existir, ele será criado)
-conn = sqlite3.connect(r'C:\Users\Taiane Marques\Desktop\meu_banco.db')
-cursor = conn.cursor()
-
-# Criar uma tabela no banco de dados
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS registros (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome_usuario TEXT,
-    tipo_servico TEXT,
-    nome_fornecedor TEXT,
-    prefixo TEXT,
-    agencia TEXT,
-    os_num TEXT,
-    contrato TEXT,
-    motivo TEXT,
-    valor REAL,
-    tipo_pagamento TEXT,
-    tecnicos TEXT,
-    saida_destino TEXT,
-    competencia TEXT,
-    porcentagem TEXT,
-    data_criacao TEXT, 
-    hora_criacao TEXT
-)
-''')
+    # Criar uma tabela no banco de dados
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS registros (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome_usuario TEXT,
+        tipo_servico TEXT,
+        nome_fornecedor TEXT,
+        prefixo TEXT,
+        agencia TEXT,
+        os_num TEXT,
+        contrato TEXT,
+        motivo TEXT,
+        valor REAL,
+        tipo_pagamento TEXT,
+        tecnicos TEXT,
+        saida_destino TEXT,
+        competencia TEXT,
+        porcentagem TEXT,
+        data_criacao TEXT, 
+        hora_criacao TEXT
+    )
+    ''')
 
 def fechar_conexao():
     conn.close()

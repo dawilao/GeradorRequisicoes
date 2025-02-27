@@ -263,10 +263,11 @@ def gerar_solicitacao():
     texto_solicitacao.delete(1.0, tk.END)
     texto_solicitacao.insert(tk.END, texto)
 
-    '''#Insere os dados no BD
-    inserir_dados(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
-                  contrato, motivo, valor_tab1, tipo_pagamento, tecnicos, saida_destino, 
-                  competencia, porcentagem)'''
+    # Insere os dados no BD
+    from .bd import conecta_banco_pagamentos
+    conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
+        contrato, motivo, valor_tab1, tipo_pagamento, tecnicos, saida_destino, competencia,
+        porcentagem, tipo_aquisicao)
 
     # Copiar automaticamente o texto gerado caso o switch esteja ativo
     if switch_autocopia_var.get():
