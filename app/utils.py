@@ -4,27 +4,18 @@ def arrumar_texto(texto):
     return ' '.join(texto.strip().split()) if texto else ''
 
 def verificar_se_numero(texto):
-    try:
-        if not texto:
-            return ""  # Valor padrão caso o campo esteja vazio
-        # Se for um número, chama a função arrumar_numero
-        resultado = arrumar_numero(texto)
-        return resultado
-    except ValueError:
-        return ValueError
-
-def arrumar_numero(texto):
     if not texto:
         return ""  # Valor padrão caso o campo esteja vazio
 
     texto = texto.replace(" ", "")  # Remove todos os espaços
 
     try:
-        # Troca o ponto por um marcador temporário "X", troca a vírgula por ponto e depois troca "X" por vírgula
+        # Substitui ponto por nada (caso seja separador de milhar) e vírgula por ponto (separador decimal)
         numero = float(texto.replace(".", "").replace(",", "."))
+        # Retorna número formatado no padrão brasileiro
         return f"{numero:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except ValueError:
-        return ""  # Retorna um valor padrão caso a conversão falhe
+        return ValueError  # Retorna um valor padrão caso a conversão falhe
 
 def valida_porcentagem(valor):
     if not valor:
