@@ -14,8 +14,11 @@ def validacao_login():
     senha = entry_senha.get()  # Recebe a senha do entrybox
 
     try:
-        # Conectar ao banco de dados
-        conn = sqlite3.connect(r'app\bd\login.db')  # Caminho para o banco de dados
+        try:
+            conn = sqlite3.connect(r'app\bd\login.db')
+        except Exception:
+            conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Solicitação de Pagamento\app\bd\login.db')
+        
         cursor = conn.cursor()
 
         # Consultar se o usuário existe no banco de dados (sem diferenciar maiúsculas e minúsculas)
@@ -76,8 +79,11 @@ def janela_alterar_senha():
             return
 
         try:
-            # Conectar ao banco de dados
-            conn = sqlite3.connect(r'app\bd\login.db')
+            try:
+                conn = sqlite3.connect(r'app\bd\login.db')
+            except Exception:
+                conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Solicitação de Pagamento\app\bd\login.db')
+            
             cursor = conn.cursor()
 
             # Verificar se a senha atual está correta

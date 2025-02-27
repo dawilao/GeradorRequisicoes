@@ -26,8 +26,11 @@ def conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefix
     def fechar_conexao():
         conn.close()
 
-    # Conectar ao banco de dados (se não existir, ele será criado)
-    conn = sqlite3.connect(r'app\bd\dados.db')
+    try:
+        conn = sqlite3.connect(r'app\bd\dados.db')
+    except Exception:
+        conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Solicitação de Pagamento\app\bd\dados.db')
+    
     cursor = conn.cursor()
 
     # Criar uma tabela no banco de dados
