@@ -8,7 +8,7 @@ from app.CTkFloatingNotifications import NotificationManager, NotifyType
 def gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais):
     try:
         # Caminho do arquivo modelo
-        caminho_modelo = r"G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Solicitação de Pagamento\dist\MODELO NOVO 2024 - ORDEM DE COMPRA.xlsx"
+        caminho_modelo = r"G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Texto de Compras\dist\MODELO NOVO 2024 - ORDEM DE COMPRA.xlsx"
 
         # Verificar se o arquivo modelo existe
         if not os.path.exists(caminho_modelo):

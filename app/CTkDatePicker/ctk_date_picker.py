@@ -18,6 +18,7 @@ class CTkDatePicker(ctk.CTkFrame):
 
         self.frame_externo = ctk.CTkFrame(self)
         self.frame_externo.grid(row=0, column=0, padx=0, pady=0, sticky="ew")
+        self._set_appearance_mode("system")
 
         # Configuração para expansão horizontal do frame
         self.grid_columnconfigure(0, weight=1)
@@ -32,7 +33,7 @@ class CTkDatePicker(ctk.CTkFrame):
 
         self.popup = None
         self.selected_date = None
-        self.date_format = "%m/%d/%Y"
+        self.date_format = "%d/%m/%Y"
         self.allow_manual_input = True  
         
     def set_date_format(self, date_format):
@@ -59,6 +60,7 @@ class CTkDatePicker(ctk.CTkFrame):
         self.popup = ctk.CTkToplevel(self)
         self.popup.title("Select Date")
         self.popup.geometry("+%d+%d" % (self.winfo_rootx(), self.winfo_rooty() + self.winfo_height()))
+        self._set_appearance_mode("system")
         self.popup.resizable(False, False)
         
         self.popup.after(500, lambda: self.popup.focus())
@@ -67,7 +69,6 @@ class CTkDatePicker(ctk.CTkFrame):
         self.current_month = datetime.now().month
         self.build_calendar()
         
-
     def build_calendar(self):
         """
         Build and display the calendar in the popup.
@@ -81,6 +82,7 @@ class CTkDatePicker(ctk.CTkFrame):
 
         self.calendar_frame = ctk.CTkFrame(self.popup)
         self.calendar_frame.grid(row=0, column=0)
+        self._set_appearance_mode("system")
 
         meses_pt = {
             1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril",
@@ -111,13 +113,13 @@ class CTkDatePicker(ctk.CTkFrame):
         for week in range(2, 8):
             for day_col in range(7):
                 if week == 2 and day_col < start_day:
-                    lbl = ctk.CTkLabel(self.calendar_frame, text="")
+                    lbl = ctk.CTkLabel(self.calendar_frame, text="", text_color=("black", "white"))
                     lbl.grid(row=week, column=day_col)
                 elif day > month_days:
-                    lbl = ctk.CTkLabel(self.calendar_frame, text="")
+                    lbl = ctk.CTkLabel(self.calendar_frame, text="", text_color=("black", "white"))
                     lbl.grid(row=week, column=day_col)
                 else:
-                    btn = ctk.CTkButton(self.calendar_frame, text=str(day), width=3, command=lambda day=day: self.select_date(day), fg_color="transparent")
+                    btn = ctk.CTkButton(self.calendar_frame, text=str(day), width=3, command=lambda day=day: self.select_date(day), fg_color="transparent", text_color=("black", "white"))
                     btn.grid(row=week, column=day_col)
                     day += 1
 

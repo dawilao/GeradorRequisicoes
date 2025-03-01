@@ -8,7 +8,6 @@ def validacao_login():
     from .ui_tela_principal import janela_principal
     notification_manager = NotificationManager(root_login)
 
-
     global nome_completo_usuario, abas_permitidas
     usuario = entry_usuario.get().strip().lower()  # Remover espaços e converter para minúsculas
     senha = entry_senha.get()  # Recebe a senha do entrybox
@@ -17,7 +16,7 @@ def validacao_login():
         try:
             conn = sqlite3.connect(r'app\bd\login.db')
         except Exception:
-            conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Solicitação de Pagamento\app\bd\login.db')
+            conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Texto de Compras\app\bd\login.db')
         
         cursor = conn.cursor()
 
@@ -82,7 +81,7 @@ def janela_alterar_senha():
             try:
                 conn = sqlite3.connect(r'app\bd\login.db')
             except Exception:
-                conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Solicitação de Pagamento\app\bd\login.db')
+                conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Texto de Compras\app\bd\login.db')
             
             cursor = conn.cursor()
 
@@ -190,12 +189,8 @@ def janela_login():
     botao_login.pack(pady=(0,15))
     
     # Botão para sair
-    botao_sair = ctk.CTkButton(master=root_login,
-                                         text="Sair",
-                                         fg_color="#B31312",
-                                         hover_color="Dark red",
-                                         text_color=("black", "white"),
-                                         command=root_login.destroy)
+    botao_sair = ctk.CTkButton(master=root_login, text="Sair", fg_color="#B31312",
+                               hover_color="Dark red", command=root_login.destroy)
     
     botao_sair.pack(pady=(0,15))
 
