@@ -16,7 +16,7 @@ def validacao_login():
         try:
             conn = sqlite3.connect(r'app\bd\login.db')
         except Exception:
-            conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Texto de Compras\app\bd\login.db')
+            conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\login.db')
         
         cursor = conn.cursor()
 
@@ -81,7 +81,7 @@ def janela_alterar_senha():
             try:
                 conn = sqlite3.connect(r'app\bd\login.db')
             except Exception:
-                conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Texto de Compras\app\bd\login.db')
+                conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\login.db')
             
             cursor = conn.cursor()
 

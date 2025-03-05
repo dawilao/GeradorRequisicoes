@@ -29,7 +29,7 @@ def conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefix
     try:
         conn = sqlite3.connect(r'app\bd\dados.db')
     except Exception:
-        conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Texto de Compras\app\bd\dados.db')
+        conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\dados.db')
     
     cursor = conn.cursor()
 
