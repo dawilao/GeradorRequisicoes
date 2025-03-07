@@ -1,6 +1,6 @@
 __author__ = "Dawison Nascimento"
 __status__ = "Stable"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __license__ = "MIT license"
 __copyright__ = "Copyright (c) 2025 Dawison Nascimento and other contributors"
 __maintainer__ = "Dawison Nascimento"

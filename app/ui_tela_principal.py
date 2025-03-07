@@ -79,22 +79,22 @@ def gerar_solicitacao():
     dict_sigla_contrato = {
         "ESCRITÓRIO": "ESCRITÓRIO",
         "": "ESCRITÓRIO",
-        "C. O. SALVADOR - BA - 2877": "BA",
+        "C. O. SALVADOR - BA - 2877": "SSA",
         "C. O. SANTA CATARINA - SC - 5023": "SC",
         "C. O. RIO GRANDE DO SUL - RS - 5525": "RS",
         "C. O. RIO DE JANEIRO - RJ - 0494": "RJ",
-        "C. O. NITERÓI - RJ - 1380": "NI",
-        "C. O. BELO HORIZONTE - MG - 2054": "MG",
+        "C. O. NITERÓI - RJ - 1380": "NIT",
+        "C. O. BELO HORIZONTE - MG - 2054": "BH",
         "C. O. RECIFE - PE - 5254": "PE",
         "C. O. MANAUS - AM - 7649": "AM",
-        "C. O. VOLTA REDONDA - RJ - 0215": "VR-RJ",
-        "C. O. RONDÔNIA - RD - S/N": "RD",
-        "ATA BB CURITIBA - 0232": "PR",
-        "C. E. MANAUS - S/N": "AM",
-        "CAIXA BAHIA - 4922.2024": "BA",
-        "CAIXA CURITIBA - 534.2025": "PR",
-        "CAIXA MANAUS - 4569.2024": "AM",
-        "INFRA CURITIBA - S/N": "PR"
+        "C. O. VOLTA REDONDA - RJ - 0215": "VR",
+        "C. O. RONDÔNIA - RD - S/N": "RO",
+        "ATA BB CURITIBA - 0232": "ATA PR",
+        "C. E. MANAUS - S/N": "BB AM",
+        "CAIXA BAHIA - 4922.2024": "CAIXA BA",
+        "CAIXA CURITIBA - 534.2025": "CAIXA PR",
+        "CAIXA MANAUS - 4569.2024": "CAIXA AM",
+        "INFRA CURITIBA - S/N": "INFRA PR"
     }
 
     sigla_contrato = dict_sigla_contrato.get(contrato, "Sigla não encontrada")
@@ -300,9 +300,9 @@ def gerar_solicitacao():
         data_atual = datetime.now().strftime("%d.%m.%Y")
         
         if os_num == "":
-            nome_arquivo = f"{valor_tab1.replace(".", "")} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
+            nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
         else:
-            nome_arquivo = f"{valor_tab1.replace(".", "")} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
+            nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
 
         gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais)
 
