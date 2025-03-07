@@ -230,7 +230,7 @@ def gerar_solicitacao():
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ESTACIONAMENTO":
-        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao estacionamento dos técnicos {tecnicos}, para {contrato}.\n\n"
+        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, pelo estacionamento dos técnicos {tecnicos}, referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO UBER":
