@@ -6,7 +6,7 @@ from .gerador_excel import gerar_excel
 from .CTkDatePicker import *
 from .CTkFloatingNotifications import *
 import pyperclip
-import customtkinter as ctk
+import re
 from datetime import datetime
 import locale
 
@@ -306,6 +306,8 @@ def gerar_solicitacao():
             nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
         else:
             nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
+        
+        nome_arquivo = re.sub(r'[<>:"/\\|?*\x00]', ".", nome_arquivo)
 
         gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais)
 
@@ -1021,7 +1023,7 @@ def janela_principal():
         tipo_aquisicao_combobox.bind("<FocusOut>", restaurar_valores_tipo_aquisicao)  # Quando o campo perde o foco
         tipo_aquisicao_combobox.bind("<KeyRelease>", restaurar_valores_tipo_aquisicao)  # Quando o usuário digita algo
 
-        tecnicos_label = ctk.CTkLabel(master=frame)
+        tecnicos_label = ctk.CTkLabel(master=frame, text="TÉCNICOS:")
         tecnicos_entry = CustomEntry(master=frame)
         widgets_para_limpar.append(tecnicos_entry)
 
