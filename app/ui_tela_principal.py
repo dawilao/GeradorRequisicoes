@@ -149,10 +149,7 @@ def gerar_solicitacao():
     elif tipo_servico == "REEMBOLSO UBER":
         campos_obrigatorios.extend([
             (saida_destino, "SAÍDA X DESTINO"),
-            (motivo, "MOTIVO"),
-            (prefixo, "PREFIXO"),
-            (agencia, "AGÊNCIA"),
-            (os_num, "OS")
+            (motivo, "MOTIVO")
         ])
     elif tipo_servico in {"CARRETO", "ORÇAMENTO APROVADO", "PREST. SERVIÇO/MÃO DE OBRA", "TRANSPORTADORA"}:
         campos_obrigatorios.extend([
@@ -211,10 +208,6 @@ def gerar_solicitacao():
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
-    elif contrato == "ESCRITÓRIO":
-        texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
-        texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
         texto = f"Solicito o pagamento para {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
@@ -234,7 +227,13 @@ def gerar_solicitacao():
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO UBER":
-        texto = f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {saida_destino}, para {contrato}.\n\n"
+        texto = (
+            f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {saida_destino}, "
+            f"referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+            if prefixo
+            else f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {saida_destino}, "
+            f"para {contrato}.\n\n"
+        )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"MOTIVO: {motivo}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
@@ -250,6 +249,10 @@ def gerar_solicitacao():
     elif tipo_servico == "ENVIO DE MATERIAL":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
+    elif contrato == "ESCRITÓRIO":
+        texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
+        texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     else:
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
@@ -538,7 +541,10 @@ def gerar_texto_aquisicao():
     
 def add_campos():
     tipo_servico = tipo_servico_combobox.get()
-    contrato_tab1 = contrato_combobox.get()
+
+    prefixo_label.configure(text="PREFIXO:")
+    agencia_label.configure(text="AGÊNCIA:")
+    os_label.configure(text="OS ou Nº DO CONTRATO (CAIXA):")
 
     contrato_combobox.configure(values=[
         "ESCRITÓRIO", "C. O. BELO HORIZONTE - MG - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380", 
@@ -554,6 +560,8 @@ def add_campos():
     tipo_chave_pix_combobox.grid_forget()
     chave_pix_label.grid_forget()
     chave_pix_entry.grid_forget()
+    nome_benef_pix_label.grid_forget()
+    nome_benef_pix_entry.grid_forget()
 
     # Mostra o campo "COMPETÊNCIA" e "PORCENTAGEM"
     if tipo_servico == "ADIANTAMENTO PARCEIRO":
@@ -638,6 +646,18 @@ def add_campos():
         os_entry.grid_forget()
         agencia_label.grid_forget()
         agencia_entry.grid_forget()
+    elif tipo_servico == "REEMBOLSO UBER":
+        prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        prefixo_label.configure(text="PREFIXO (SE APLICÁVEL):")
+        prefixo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        agencia_label.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        agencia_label.configure(text="AGÊNCIA (SE APLICÁVEL):")
+        agencia_entry.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        os_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        os_label.configure(text="OS ou Nº DO CONTRATO (CAIXA)\n(SE APLICÁVEL):")
+        os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
     else:
         prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
         prefixo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
@@ -980,6 +1000,14 @@ def janela_principal():
         tipo_servico_combobox.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
         tipo_servico_combobox.set("")
 
+        contrato_label = ctk.CTkLabel(master=frame, text="CONTRATO:")#.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        '''Label e Combobox de Contrato apenas aparecem após a seleção do tipo_serviço.
+        Iniciado combobox sem valor, já que, ao selecionar determinado tipo_serviço, o Contrato mostra valores específicos
+        '''
+        contrato_combobox = CustomComboBox(master=frame, values=[])
+        #contrato_combobox.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+        #contrato_combobox.set("")
+
         # Campo para MOTIVO
         motivo_label = ctk.CTkLabel(master=frame, text="MOTIVO:")
         motivo_entry = CustomEntry(master=frame)
@@ -993,29 +1021,21 @@ def janela_principal():
         tipo_aquisicao_combobox.bind("<FocusOut>", restaurar_valores_tipo_aquisicao)  # Quando o campo perde o foco
         tipo_aquisicao_combobox.bind("<KeyRelease>", restaurar_valores_tipo_aquisicao)  # Quando o usuário digita algo
 
-        tecnicos_label = ctk.CTkLabel(master=frame, text="TÉCNICOS:")
+        tecnicos_label = ctk.CTkLabel(master=frame)
         tecnicos_entry = CustomEntry(master=frame)
         widgets_para_limpar.append(tecnicos_entry)
 
-        prefixo_label = ctk.CTkLabel(master=frame, text="PREFIXO:")
+        prefixo_label = ctk.CTkLabel(master=frame)
         prefixo_entry = CustomEntry(master=frame)
         widgets_para_limpar.append(prefixo_entry)
 
-        os_label = ctk.CTkLabel(master=frame, text="OS ou Nº DO CONTRATO (CAIXA):")
-        os_entry = CustomEntry(master=frame)
-        widgets_para_limpar.append(os_entry)
-
-        agencia_label = ctk.CTkLabel(master=frame, text="AGÊNCIA:")
+        agencia_label = ctk.CTkLabel(master=frame)
         agencia_entry = CustomEntry(master=frame)
         widgets_para_limpar.append(agencia_entry)
 
-        contrato_label = ctk.CTkLabel(master=frame, text="CONTRATO:")#.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        '''Label e Combobox de Contrato apenas aparecem após a seleção do tipo_serviço.
-        Iniciado combobox sem valor, já que, ao selecionar determinado tipo_serviço, o Contrato mostra valores específicos
-        '''
-        contrato_combobox = CustomComboBox(master=frame, values=[])
-        #contrato_combobox.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
-        #contrato_combobox.set("")
+        os_label = ctk.CTkLabel(master=frame)
+        os_entry = CustomEntry(master=frame)
+        widgets_para_limpar.append(os_entry)
 
         ctk.CTkLabel(master=frame, text="NOME FORNEC./BENEF.:").grid(row=8, column=0, sticky="w", padx=(10, 10))
         nome_fornecedor_entry = CustomEntry(master=frame)
@@ -1056,7 +1076,7 @@ def janela_principal():
         chave_pix_entry = CustomEntry(master=frame)
         widgets_para_limpar.append(chave_pix_entry)
 
-        nome_benef_pix_label = ctk.CTkLabel(master=frame, text="NOME DO BENEF. DO PIX:")
+        nome_benef_pix_label = ctk.CTkLabel(master=frame, text="NOME DO BENEF. DO PIX\n(SE APLICÁVEL):")
         nome_benef_pix_entry = CustomEntry(master=frame)
         widgets_para_limpar.append(nome_benef_pix_entry)
 
