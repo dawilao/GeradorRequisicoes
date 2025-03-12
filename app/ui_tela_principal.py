@@ -285,7 +285,13 @@ def gerar_solicitacao():
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
 
-    if tipo_pagamento == "PIX":
+    if tipo_pagamento == "FATURAMENTO":
+        texto = "Prezado(a),\n\n"
+        texto += (
+            "Solicito autorização para compra referente aos materiais descritos na "
+            "ordem de compra e orçamento em anexo."
+        )
+    elif tipo_pagamento == "PIX":
         if tipo_chave_pix == "QR CODE":
             texto += f"Pagamento PIX via {tipo_chave_pix}"
         else:
@@ -673,11 +679,15 @@ def add_campos():
         os_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
         os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    if tipo_servico == "ADIANTAMENTO PARCEIRO" or tipo_servico == "ABASTECIMENTO":
-        tipo_pagamento_combobox.set("")
-        tipo_pagamento_combobox.configure(values=["PIX"])
+    tipo_pagamento_combobox.set("") # limpar a seleção antes de configurar os valores
+    if tipo_servico in {"ADIANTAMENTO PARCEIRO", "ABASTECIMENTO"}:
+        opcoes_pagamento = ["PIX"]
+    elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS"}:
+        opcoes_pagamento = ["PIX", "VEXPENSES", "FATURAMENTO"]
     else:
-        tipo_pagamento_combobox.configure(values=["PIX", "VEXPENSES"])
+        opcoes_pagamento = ["PIX", "VEXPENSES"]
+
+    tipo_pagamento_combobox.configure(values=opcoes_pagamento)
 
     if tipo_servico == "ENVIO DE MATERIAL":
         contrato_label.grid_forget()
