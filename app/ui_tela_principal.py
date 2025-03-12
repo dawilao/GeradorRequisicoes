@@ -278,7 +278,10 @@ def gerar_solicitacao():
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     else:
-        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+        texto = (
+            f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente à obra: "
+            f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+        )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
 
