@@ -39,7 +39,12 @@ def gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, c
         sheet_principal["D5"] = nome_fornecedor
         sheet_principal["D11"] = nome_usuario
         sheet_principal["D16"] = contrato if contrato else "ESCRITÓRIO"
-        sheet_principal["D41"] = tipo_pagamento
+
+        if tipo_pagamento == "FATURAMENTO":
+            sheet_principal["D41"] = "FATURADO"
+        else:
+            sheet_principal["D41"] = tipo_pagamento
+
         sheet_principal["B47"] = f"Assinatura: {nome_usuario}"
         sheet_principal["B48"] = f"Data: {data_atual}"
 
