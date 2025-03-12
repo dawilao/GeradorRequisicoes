@@ -195,13 +195,22 @@ def gerar_solicitacao():
 
     # Gerar texto da solicitação
     if tipo_servico == "ADIANTAMENTO PARCEIRO":
-        texto = f"Solicito o pagamento para {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n" if prefixo else f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
+        texto = (
+            f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
+            f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+            if prefixo
+            else
+            f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
+        )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"COMPETÊNCIA: {competencia}\n\n"
         texto += f"PORCENTAGEM DO ADIANTAMENTO: {porcentagem}%\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "AQUISIÇÃO COM OS" or tipo_servico == "COMPRA IN LOCO":
-        texto = f"Solicito o pagamento para {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+        texto = (
+            f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
+            f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+        )
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "AQUISIÇÃO SEM OS":
@@ -209,7 +218,10 @@ def gerar_solicitacao():
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
-        texto = f"Solicito o pagamento para {nome_fornecedor}, referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+        texto = (
+            f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
+            f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+        )   
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"MOTIVO: {motivo}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
@@ -219,11 +231,18 @@ def gerar_solicitacao():
         texto += f"MOTIVO: {motivo}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ABASTECIMENTO":
-        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao abastecimento dos técnicos {tecnicos}, para {contrato}.\n\n"
+        texto = (
+            f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao "
+            f"abastecimento dos técnicos {tecnicos}, para {contrato}.\n\n"
+        )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ESTACIONAMENTO":
-        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, pelo estacionamento dos técnicos {tecnicos}, referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+        texto = (
+            f"Solicito o pagamento ao fornecedor {nome_fornecedor}, pelo estacionamento "
+            f"dos técnicos {tecnicos}, referente à obra: {prefixo} - {agencia} - {os_num}, "
+            f"para {contrato}.\n\n"
+        )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO UBER":
@@ -238,7 +257,11 @@ def gerar_solicitacao():
         texto += f"MOTIVO: {motivo}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "HOSPEDAGEM":
-        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor} pela hospedagem dos técnicos {tecnicos} referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+        texto = (
+            f"Solicito o pagamento ao fornecedor {nome_fornecedor} pela hospedagem dos "
+            f"técnicos {tecnicos} referente à obra: {prefixo} - {agencia} - {os_num}, "
+            f"para {contrato}.\n\n"
+        )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "SOLICITAÇÃO SEM OS":
@@ -383,12 +406,11 @@ def gerar_texto_email():
     # Verificar campos vazios
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
 
+    notification_manager = NotificationManager(root) # passando a instância da janela principal
     if valor_tab2 == ValueError:
-        notification_manager = NotificationManager(root)  # passando a instância da janela principal
         notification_manager.show_notification(f"Por favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
 
-    notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
         notification_manager.show_notification(f"Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return    
@@ -607,18 +629,18 @@ def add_campos():
 
     # Mostrar ou esconder PREFIXO, OS e AGÊNCIA
     esconde_pref_age_os = {
-        "REEMBOLSO SEM OS", 
-        "SOLICITAÇÃO SEM OS", 
-        "ABASTECIMENTO", 
+        "REEMBOLSO SEM OS",
+        "SOLICITAÇÃO SEM OS",
+        "ABASTECIMENTO",
         "ENVIO DE MATERIAL",
         "AQUISIÇÃO SEM OS",
     }
 
     if tipo_servico in esconde_pref_age_os:
         contrato_combobox.configure(values=[
-            "ESCRITÓRIO", "C. O. BELO HORIZONTE - MG - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380", 
-            "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
-            "C. O. RONDÔNIA - RD - S/N", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
+            "ESCRITÓRIO", "C. O. BELO HORIZONTE - MG - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380",
+            "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525",
+            "C. O. RONDÔNIA - RD - S/N", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023",
             "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
             "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - S/N"
         ])
