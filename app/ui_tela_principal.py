@@ -682,7 +682,7 @@ def add_campos():
     tipo_pagamento_combobox.set("") # limpar a seleção antes de configurar os valores
     if tipo_servico in {"ADIANTAMENTO PARCEIRO", "ABASTECIMENTO"}:
         opcoes_pagamento = ["PIX"]
-    elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS"}:
+    elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS", "AQUISIÇÃO COM OS"}:
         opcoes_pagamento = ["PIX", "VEXPENSES", "FATURAMENTO"]
     else:
         opcoes_pagamento = ["PIX", "VEXPENSES"]
