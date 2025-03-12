@@ -158,7 +158,7 @@ def gerar_solicitacao():
             (os_num, "OS")
         ])
 
-    if tipo_pagamento == "PIX":
+    if tipo_pagamento == "PIX" and tipo_chave_pix != "QR CODE":
         campos_obrigatorios.extend([
             (tipo_chave_pix, "TIPO DA CHAVE PIX"),
             (chave_pix, "CHAVE PIX")
@@ -260,8 +260,11 @@ def gerar_solicitacao():
         texto += f"VALOR: R$ {valor_tab1}\n\n"
 
     if tipo_pagamento == "PIX":
-        texto += f"Segue pix {tipo_chave_pix} ⬇\n\n{chave_pix}"
-        texto += f"\n\n{nome_benef_pix}" if nome_benef_pix else ""
+        if tipo_chave_pix == "QR CODE":
+            texto += f"Pagamento PIX via {tipo_chave_pix}"
+        else:
+            texto += f"Segue PIX {tipo_chave_pix} ⬇\n\n{chave_pix}"
+            texto += f"\n\n{nome_benef_pix}" if nome_benef_pix else ""
     else:
         texto += "Pagamento via VEXPENSES"
 
@@ -565,65 +568,42 @@ def add_campos():
     nome_benef_pix_label.grid_forget()
     nome_benef_pix_entry.grid_forget()
 
-    # Mostra o campo "COMPETÊNCIA" e "PORCENTAGEM"
+    # Oculta todos os campos por padrão
+    for widget in [
+        competencia_label, competencia_combobox,
+        porcentagem_label, porcentagem_entry,
+        motivo_label, motivo_entry,
+        saida_destino_label, saida_destino_entry,
+        tecnicos_label, tecnicos_entry
+    ]:
+        widget.grid_forget()
+
+    # Limpa os campos de entrada por padrão
+    competencia_combobox.set("")
+    porcentagem_entry.delete(0, tk.END)
+    motivo_entry.delete(0, tk.END)
+    saida_destino_entry.delete(0, tk.END)
+    tecnicos_entry.delete(0, tk.END)
+
     if tipo_servico == "ADIANTAMENTO PARCEIRO":
         competencia_label.grid(row=9, column=0, sticky="w", padx=(10, 10))
         competencia_combobox.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
         porcentagem_label.grid(row=10, column=0, sticky="w", padx=(10, 10))
         porcentagem_entry.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-        motivo_label.grid_forget()
-        motivo_entry.grid_forget()
-        saida_destino_label.grid_forget()
-        saida_destino_entry.grid_forget()
-        tecnicos_label.grid_forget()
-        tecnicos_entry.grid_forget()
-    # Mostra o campo "MOTIVO"
-    elif tipo_servico == "REEMBOLSO SEM OS" or tipo_servico == "SOLICITAÇÃO SEM OS" or tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
-        competencia_label.grid_forget()
-        competencia_combobox.grid_forget()
-        porcentagem_label.grid_forget()
-        porcentagem_entry.grid_forget()
-        tecnicos_label.grid_forget()
-        tecnicos_entry.grid_forget()
-        saida_destino_label.grid_forget()
-        saida_destino_entry.grid_forget()        
+
+    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS", "REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
         motivo_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         motivo_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
-    # Mostra o campo "SAÍDA X DESTINO" e "MOTIVO"
+
     elif tipo_servico == "REEMBOLSO UBER":
-        competencia_label.grid_forget()
-        competencia_combobox.grid_forget()
-        porcentagem_label.grid_forget()
-        porcentagem_entry.grid_forget()
-        tecnicos_label.grid_forget()
-        tecnicos_entry.grid_forget()
         saida_destino_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        saida_destino_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)     
+        saida_destino_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
         motivo_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
         motivo_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-    # Mostra o campo "TÉCNICOS"
-    elif tipo_servico == "ABASTECIMENTO" or tipo_servico == "ESTACIONAMENTO" or tipo_servico == "HOSPEDAGEM":
-        competencia_label.grid_forget()
-        competencia_combobox.grid_forget()
-        porcentagem_label.grid_forget()
-        porcentagem_entry.grid_forget()
-        motivo_label.grid_forget()
-        motivo_entry.grid_forget()
-        saida_destino_label.grid_forget()
-        saida_destino_entry.grid_forget()        
+
+    elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM"}:
         tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
-    else:
-        competencia_label.grid_forget()
-        competencia_combobox.grid_forget()
-        porcentagem_label.grid_forget()
-        porcentagem_entry.grid_forget()
-        motivo_label.grid_forget()
-        motivo_entry.grid_forget()
-        tecnicos_label.grid_forget()
-        tecnicos_entry.grid_forget()
-        saida_destino_label.grid_forget()
-        saida_destino_entry.grid_forget()        
+        tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)  
 
     # Mostrar ou esconder PREFIXO, OS e AGÊNCIA
     esconde_pref_age_os = {
@@ -687,8 +667,7 @@ def add_campos():
         tipo_aquisicao_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         tipo_aquisicao_combobox.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
     elif tipo_servico == "AQUISIÇÃO SEM OS":
-        tipo_aquisicao_combobox.set("")
-        tipo_aquisicao_combobox.configure(values=["EPI", "CRACHÁ", "FERRAMENTAS", "FARDAMENTO", "ESTOQUE"])
+        tipo_aquisicao_combobox.configure(values=["EPI", "CRACHÁ", "FERRAMENTAS", "FARDAMENTO", "ESTOQUE", "UTILIDADES"])
         tipo_aquisicao_combobox.set("")
         tipo_aquisicao_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         tipo_aquisicao_combobox.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
@@ -715,10 +694,30 @@ def adiciona_campo_pix():
     else:
         tipo_chave_pix_label.grid_forget()
         tipo_chave_pix_combobox.grid_forget()
+        tipo_chave_pix_combobox.set("")
+        chave_pix_label.grid_forget()
+        chave_pix_entry.grid_forget()
+        chave_pix_entry.delete(0, tk.END)
+        nome_benef_pix_label.grid_forget()
+        nome_benef_pix_entry.grid_forget()
+        nome_benef_pix_entry.delete(0, tk.END)
+
+def esconde_campos_pagamento_qrcode():
+    tipo_chave = tipo_chave_pix_combobox.get()
+
+    if tipo_chave == "QR CODE":
         chave_pix_label.grid_forget()
         chave_pix_entry.grid_forget()
         nome_benef_pix_label.grid_forget()
         nome_benef_pix_entry.grid_forget()
+
+        chave_pix_entry.delete(0, tk.END)
+        nome_benef_pix_entry.delete(0, tk.END)
+    else:
+        chave_pix_label.grid(row=14, column=0, sticky="w", padx=(10, 10))
+        chave_pix_entry.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
+        nome_benef_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
+        nome_benef_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)        
 
 def add_campos_tab2():
     tipo_servico_tab2 = tipo_servico_combobox_tab2.get()
@@ -853,7 +852,7 @@ def restaurar_valores_tipo_aquisicao(event):
     if tipo_atual == "AQUISIÇÃO COM OS":
         valores_corretos = ["CORRETIVA DIÁRIA", "LOCAÇÃO"]
     elif tipo_atual == "AQUISIÇÃO SEM OS":
-        valores_corretos = ["EPI", "CRACHÁ", "FERRAMENTAS", "FARDAMENTO", "ESTOQUE"]
+        valores_corretos = ["EPI", "CRACHÁ", "FERRAMENTAS", "FARDAMENTO", "ESTOQUE", "UTILIDADES"]
     elif tipo_atual == "COMPRA IN LOCO":
         valores_corretos = ["CORRETIVA DIÁRIA", "ORÇAMENTO APROVADO"]
     else:
@@ -1070,7 +1069,8 @@ def janela_principal():
         tipo_pagamento_combobox.set("")
 
         tipo_chave_pix_label = ctk.CTkLabel(master=frame, text="TIPO DA CHAVE PIX:")
-        tipo_chave_pix_combobox = CustomComboBox(master=frame, values=["CHAVE ALEATÓRIA", "CNPJ", "COPIA E COLA", "CPF", "E-MAIL", "TELEFONE"])
+        tipo_chave_pix_combobox = CustomComboBox(master=frame, values=["CHAVE ALEATÓRIA", "CNPJ", "COPIA E COLA", "CPF", "E-MAIL", "QR CODE", "TELEFONE"],
+            command=lambda choice: esconde_campos_pagamento_qrcode())
         tipo_chave_pix_combobox.set("")
         widgets_para_limpar.append(tipo_chave_pix_combobox)
 
