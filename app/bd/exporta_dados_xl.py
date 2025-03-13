@@ -1,5 +1,7 @@
 import sqlite3
 import openpyxl
+import os
+from tkinter import filedialog
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, PatternFill
 
@@ -67,8 +69,19 @@ def exportar_para_excel():
     for col_num, column_title in enumerate(colunas, 1):
         ws.column_dimensions[get_column_letter(col_num)].width = 20
     
-    # Salvando o arquivo Excel
-    wb.save("pagamentos.xlsx")
+    ## Salvaondo o arquivo Excel
+    caminho_destino = filedialog.askdirectory()
+
+    if not caminho_destino:
+        # Usar as duas linhas abaixo após criação da respectiva aba no gerador de Requisições
+        #notification_manager = NotificationManager(root)  # passando a instância da janela principal
+        #notification_manager.show_notification(f"Nenhum diretório selecionado!", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+        return
+
+    nome_arquivo_destino = os.path.join(caminho_destino, "pagamentos.xlsx")
+
+    wb.save(nome_arquivo_destino)
+    #notification_manager.show_notification(f"Exportação concluída! Arquivo 'pagamentos.xlsx' gerado com sucesso.", NotifyType.SUCCESS, bg_color="#404040", text_color="#FFFFFF")
     print("Exportação concluída! Arquivo 'pagamentos.xlsx' gerado com sucesso.")
 
 # Executar a função de exportação
