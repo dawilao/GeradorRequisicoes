@@ -193,6 +193,16 @@ def gerar_solicitacao():
         notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
 
+    # Definindo o nome do arquivo
+    data_atual = datetime.now().strftime("%d.%m.%Y")
+    
+    if os_num == "":
+        nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
+    else:
+        nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
+    
+    nome_arquivo = re.sub(r'[<>:"/\\|?*\x00]', ".", nome_arquivo)
+
     # Gerar texto da solicitação
     if tipo_servico == "ADIANTAMENTO PARCEIRO":
         texto = (
@@ -286,8 +296,9 @@ def gerar_solicitacao():
         texto += f"VALOR: R$ {valor_tab1}\n\n"
 
     if tipo_pagamento == "FATURAMENTO":
-        texto = "Prezado(a),\n\n"
-        texto += (
+        texto = (
+            f"Assunto: {nome_arquivo}\n\n"
+            "Prezado(a),\n\n"
             "Solicito autorização para compra referente aos materiais descritos na "
             "ordem de compra e orçamento em anexo."
         )
@@ -314,36 +325,7 @@ def gerar_solicitacao():
     if switch_autocopia_var.get():
         pyperclip.copy(texto)
 
-    '''# A mensagem abaixo é mostrada apenas uma vez quando usado o programa
-    global mensagem_mostrada
-    if not mensagem_mostrada:
-        messagebox.showinfo(title="Cópia automática", message="O programa copia o texto automaticamente!")
-        mensagem_mostrada = True
-    '''
-
-    '''# Perguntar ao usuário se deseja gerar o Excel
-    gerar_excel_resposta = messagebox.askyesno("Gerar Excel", "Deseja gerar o arquivo Excel?")
-    if gerar_excel_resposta:
-        data_atual = datetime.now().strftime("%d.%m.%Y")
-        
-        if os_num == "":
-            nome_arquivo = f"{valor} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {tipo_servico} - {contrato}.xlsx"
-        else:
-            nome_arquivo = f"{valor} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {contrato}.xlsx"    
-
-        gerar_excel(nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, departamento, tipo_pagamento)
-    '''
-
     if switch_gerar_excel_var.get():
-        data_atual = datetime.now().strftime("%d.%m.%Y")
-        
-        if os_num == "":
-            nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
-        else:
-            nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
-        
-        nome_arquivo = re.sub(r'[<>:"/\\|?*\x00]', ".", nome_arquivo)
-
         gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais)
 
 def limpar_dados():
@@ -903,9 +885,6 @@ def restaurar_valores_tipo_aquisicao(event):
     # Se o campo estiver vazio, restaura a seleção vazia
     if tipo_aquisicao_combobox.get() == "":
         tipo_aquisicao_combobox.set("")  # Mantém o campo vazio
-
-# Variável para rastrear se a mensagem já foi mostrada
-mensagem_mostrada = False
 
 def janela_principal():
     from .ui_tela_login import nome_completo_usuario, abas_permitidas
