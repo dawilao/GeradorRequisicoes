@@ -183,10 +183,10 @@ def gerar_solicitacao():
         return
     
     if porcentagem == ValueError:
-        notification_manager.show_notification("Campo COMPETÊNCIA\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        notification_manager.show_notification("Campo PORCENTAGEM\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
     elif porcentagem == "RangeError":
-        notification_manager.show_notification("Campo COMPETÊNCIA\nPor favor, insira um número entre 1 e 100.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        notification_manager.show_notification("Campo PORCENTAGEM\nPor favor, insira um número entre 1 e 100.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
 
     if campos_vazios:
@@ -799,10 +799,10 @@ def add_campos_tab3():
         link_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
         prefixo_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
         prefixo_entry_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab3.grid(row=13, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab3.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_label_tab3.grid(row=13, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab3.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
         opcao_entrega_label_tab3.grid(row=14, column=0, sticky="w", padx=(10, 10))
         opcao_entrega_combobox_tab3.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
         nome_responsavel_label_tab3.grid(row=16, column=0, sticky="w", padx=(10, 10))
@@ -825,17 +825,17 @@ def add_campos_tab3():
         espessura_label_tab3.grid_forget()
         espessura_entry_tab3.grid_forget()
         periodo_locacao_label_tab3.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        periodo_locacao_combobox_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)        
+        periodo_locacao_combobox_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
         quantidade_label_tab3.grid_forget()
         quantidade_entry_tab3.grid_forget()
         link_label_tab3.grid_forget()
         link_entry_tab3.grid_forget()
         prefixo_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
         prefixo_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
         opcao_entrega_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
         opcao_entrega_combobox_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
         nome_responsavel_label_tab3.grid(row=16, column=0, sticky="w", padx=(10, 10))
@@ -1310,14 +1310,14 @@ def janela_principal():
         widgets_para_limpar_tab3.append(prefixo_entry_tab3)
 
         #row = 12
-        os_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="OS:")
-        os_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(os_entry_tab3)
-
-        #row = 13
         agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="AGÊNCIA:")
         agencia_entry_tab3 = CustomEntry(master=frame_tab3)
         widgets_para_limpar_tab3.append(agencia_entry_tab3)
+
+        #row = 13
+        os_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="OS:")
+        os_entry_tab3 = CustomEntry(master=frame_tab3)
+        widgets_para_limpar_tab3.append(os_entry_tab3)
 
         endereco_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ENDEREÇO DE ENTREGA:")
         endereco_agencia_entry_tab3 = CustomEntry(master=frame_tab3)
