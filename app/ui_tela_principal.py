@@ -183,10 +183,10 @@ def gerar_solicitacao():
         return
     
     if porcentagem == ValueError:
-        notification_manager.show_notification("Campo COMPETÊNCIA\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        notification_manager.show_notification("Campo PORCENTAGEM\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
     elif porcentagem == "RangeError":
-        notification_manager.show_notification("Campo COMPETÊNCIA\nPor favor, insira um número entre 1 e 100.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        notification_manager.show_notification("Campo PORCENTAGEM\nPor favor, insira um número entre 1 e 100.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
 
     if campos_vazios:
