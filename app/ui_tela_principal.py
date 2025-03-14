@@ -67,7 +67,7 @@ def gerar_solicitacao():
         "C. O. RIO GRANDE DO SUL - RS - 5525": "CONTRATO RS",
         "C. O. RIO DE JANEIRO - RJ - 0494": "CONTRATO RJ",
         "C. O. NITERÓI - RJ - 1380": "CONTRATO NT",
-        "C. O. BELO HORIZONTE - MG - 2054": "CONTRATO MG",
+        "C. O. BELO HORIZONTE - BH - 2054": "CONTRATO BH",
         "C. O. RECIFE - PE - 5254": "CONTRATO PE",
         "C. O. VOLTA REDONDA - RJ - 0215": "CONTRATO VOLTA REDONDA",
         "C. O. RONDÔNIA - RD - S/N": "CONTRATO RONDÔNIA",
@@ -565,7 +565,7 @@ def add_campos():
     os_label.configure(text="OS ou Nº DO CONTRATO (CAIXA):")
 
     contrato_combobox.configure(values=[
-        "ESCRITÓRIO", "C. O. BELO HORIZONTE - MG - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380", 
+        "ESCRITÓRIO", "C. O. BELO HORIZONTE - BH - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380", 
         "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
         "C. O. RONDÔNIA - RD - S/N", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
         "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
@@ -629,7 +629,7 @@ def add_campos():
 
     if tipo_servico in esconde_pref_age_os:
         contrato_combobox.configure(values=[
-            "ESCRITÓRIO", "C. O. BELO HORIZONTE - MG - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380",
+            "ESCRITÓRIO", "C. O. BELO HORIZONTE - BH - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380",
             "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525",
             "C. O. RONDÔNIA - RD - S/N", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023",
             "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
@@ -1238,7 +1238,7 @@ def janela_principal():
 
         ctk.CTkLabel(master=frame_tab3, text="CONTRATO:").grid(row=2, column=0, sticky="w", padx=(10, 10))
         contrato_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
-            "ESCRITÓRIO", "C. O. BELO HORIZONTE - MG - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380", 
+            "ESCRITÓRIO", "C. O. BELO HORIZONTE - BH - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380", 
             "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
             "C. O. RONDÔNIA - RD - S/N", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
             "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
