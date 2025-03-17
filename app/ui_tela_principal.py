@@ -66,7 +66,7 @@ def gerar_solicitacao():
         "C. O. SANTA CATARINA - SC - 5023": "CONTRATO SC",
         "C. O. RIO GRANDE DO SUL - RS - 5525": "CONTRATO RS",
         "C. O. RIO DE JANEIRO - RJ - 0494": "CONTRATO RJ",
-        "C. O. NITERÓI - RJ - 1380": "CONTRATO NT",
+        "C. O. NITERÓI - RJ - 1380": "CONTRATO NIT",
         "C. O. BELO HORIZONTE - BH - 2054": "CONTRATO BH",
         "C. O. RECIFE - PE - 5254": "CONTRATO PE",
         "C. O. VOLTA REDONDA - RJ - 0215": "CONTRATO VOLTA REDONDA",
@@ -564,13 +564,7 @@ def add_campos():
     agencia_label.configure(text="AGÊNCIA:")
     os_label.configure(text="OS ou Nº DO CONTRATO (CAIXA):")
 
-    contrato_combobox.configure(values=[
-        "ESCRITÓRIO", "C. O. BELO HORIZONTE - BH - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380", 
-        "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
-        "C. O. RONDÔNIA - RD - 0710", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
-        "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
-        "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - S/N"
-    ])
+    contrato_combobox.configure(values=contratos)
     contrato_combobox.set("")
 
     tipo_pagamento_combobox.set("")
@@ -628,13 +622,6 @@ def add_campos():
     }
 
     if tipo_servico in esconde_pref_age_os:
-        contrato_combobox.configure(values=[
-            "ESCRITÓRIO", "C. O. BELO HORIZONTE - BH - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380",
-            "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525",
-            "C. O. RONDÔNIA - RD - 0710", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023",
-            "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
-            "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - S/N"
-        ])
         prefixo_label.grid_forget()
         prefixo_entry.grid_forget()
         os_label.grid_forget()
@@ -896,10 +883,12 @@ def janela_principal():
     # Widgets da aba PAGAMENTO
     global nome_usuario_entry, tipo_servico_combobox, nome_fornecedor_entry, prefixo_entry, agencia_entry
     global os_entry, contrato_combobox, motivo_entry, valor_entry, tipo_pagamento_combobox, tecnicos_entry
-    global saida_destino_entry, competencia_combobox, porcentagem_entry, tipo_aquisicao_combobox, tipo_chave_pix_combobox
-    global chave_pix_entry, texto_solicitacao, switch_autocopia_var, switch_gerar_excel_var
-    global tipo_chave_pix_label, chave_pix_label, competencia_label, porcentagem_label, motivo_label
-    global saida_destino_label, tecnicos_label, prefixo_label, os_label, agencia_label, contrato_label
+    global saida_destino_entry, competencia_combobox, porcentagem_entry
+    global tipo_aquisicao_combobox, tipo_chave_pix_combobox
+    global chave_pix_entry, texto_solicitacao, switch_autocopia_var, contratos
+    global switch_gerar_excel_var, tipo_chave_pix_label, chave_pix_label
+    global competencia_label, porcentagem_label, motivo_label, saida_destino_label
+    global tecnicos_label, prefixo_label, os_label, agencia_label, contrato_label
     global nome_benef_pix_label, nome_benef_pix_entry
     global tipo_aquisicao_label, gerar_button
 
@@ -940,6 +929,15 @@ def janela_principal():
         tabview.set(abas_permitidas[0])  # Define a primeira aba como a aba ativa (opcional)
 
     print("Abas permitidas:", abas_permitidas)
+
+    # Lista única de contratos
+    contratos = [
+        "ESCRITÓRIO", "C. O. BELO HORIZONTE - BH - 2054", "C. O. MANAUS - AM - 7649", "C. O. NITERÓI - RJ - 1380", 
+        "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
+        "C. O. RONDÔNIA - RD - 0710", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
+        "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
+        "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - S/N"
+    ]
 
     if "PAGAMENTO" in abas_permitidas:
         # -------------------------------
@@ -1237,13 +1235,8 @@ def janela_principal():
         tipo_aquisicao_combobox_tab3.set("")
 
         ctk.CTkLabel(master=frame_tab3, text="CONTRATO:").grid(row=2, column=0, sticky="w", padx=(10, 10))
-        contrato_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
-            "ESCRITÓRIO", "C. O. BELO HORIZONTE - BH - 2054", "C. O. MANAUS - AM - 7649",  "C. O. NITERÓI - RJ - 1380", 
-            "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
-            "C. O. RONDÔNIA - RD - 0710", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
-            "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
-            "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - S/N"
-        ], command=lambda choice: add_campos_tab3())
+        contrato_combobox_tab3 = CustomComboBox(master=frame_tab3, values=contratos,
+                command=lambda choice: add_campos_tab3())
         contrato_combobox_tab3.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
         contrato_combobox_tab3.set("")
 
