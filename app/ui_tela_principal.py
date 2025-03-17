@@ -786,6 +786,12 @@ def add_campos_tab3():
         quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", pady=2)
         btn_adicionar_servico.grid(row=5, column=1, sticky="ew", pady=5)
         frame_lista_itens.grid(row=6, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
+        descricao_compra_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
+        descricao_compra_entry_tab3.grid(row=3, column=1, sticky="ew", pady=2)
+        quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", pady=2)
+        btn_adicionar_servico.grid(row=5, column=1, sticky="ew", pady=5)
+        frame_lista_itens.grid(row=6, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
         prazo_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
         prazo_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
         servico_label_tab3.grid_forget()
@@ -851,6 +857,14 @@ def add_campos_tab3():
         btn_adicionar_servico.grid_forget()
         link_label_tab3.grid_forget()
         link_entry_tab3.grid_forget()
+        prefixo_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        prefixo_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
+        opcao_entrega_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
+        opcao_entrega_combobox_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
         prefixo_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
         prefixo_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
         agencia_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
@@ -942,6 +956,7 @@ def janela_principal():
     global espessura_label_tab3, quantidade_label_tab3, link_label_tab3, prefixo_label_tab3, os_label_tab3
     global agencia_label_tab3, opcao_entrega_label_tab3, nome_responsavel_label_tab3, contato_responsavel_agencia_label_tab3
     global altura_label_tab3, altura_entry_tab3, largura_label_tab3, largura_entry_tab3, comprimento_label_tab3, comprimento_entry_tab3
+    global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
 
     # Configuração da interface gráfica
