@@ -780,22 +780,43 @@ def add_campos_tab3():
         data_entry_tab3.grid_forget()
         #quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
         #quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+        descricao_compra_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
+        descricao_compra_entry_tab3.grid(row=3, column=1, sticky="ew", pady=2)
+        quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", pady=2)
+        btn_adicionar_servico.grid(row=5, column=1, sticky="ew", pady=5)
+        frame_lista_itens.grid(row=6, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
         prazo_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
         prazo_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
         servico_label_tab3.grid_forget()
         servico_entry_tab3.grid_forget()
-        altura_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
-        altura_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
-        largura_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
-        largura_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        comprimento_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
-        comprimento_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        if len(servicos_tab3) <= 1:
+            altura_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
+            altura_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
+            largura_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
+            largura_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
+            comprimento_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
+            comprimento_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
+            espessura_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
+            espessura_entry_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
+            link_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
+            link_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
+            print(len(servicos_tab3))
+        else:
+            altura_label_tab3.grid_forget()
+            altura_entry_tab3.grid_forget()
+            largura_label_tab3.grid_forget()
+            largura_entry_tab3.grid_forget()
+            comprimento_label_tab3.grid_forget()
+            comprimento_entry_tab3.grid_forget()
+            espessura_label_tab3.grid_forget()
+            espessura_entry_tab3.grid_forget()
+            link_label_tab3.grid_forget()
+            link_entry_tab3.grid_forget()           
+
         periodo_locacao_label_tab3.grid_forget()
         periodo_locacao_combobox_tab3.grid_forget()
-        espessura_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
-        espessura_entry_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
-        link_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
-        link_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
         prefixo_label_tab3.grid(row=13, column=0, sticky="w", padx=(10, 10))
         prefixo_entry_tab3.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
         agencia_label_tab3.grid(row=14, column=0, sticky="w", padx=(10, 10))
@@ -809,12 +830,25 @@ def add_campos_tab3():
         contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
         contato_responsavel_entry_tab3.grid(row=19, column=1, sticky="ew", padx=(0, 10), pady=2)
     elif tipo_aquisicao_tab3 == "LOCAÇÃO":
+        if descricao_compra_label_tab3 is not None:
+            descricao_compra_label_tab3.grid_forget()
+
+        if descricao_compra_entry_tab3 is not None:
+            descricao_compra_entry_tab3.grid_forget()
+        
+        if quantidade_label_tab3 is not None:
+            quantidade_label_tab3.grid_forget()
+        
+        if quantidade_entry_tab3 is not None:
+            quantidade_entry_tab3.grid_forget()
+        
+        if frame_lista_itens is not None:
+            frame_lista_itens.grid_forget()
+            
         prazo_label_tab3.grid_forget()
-        prazo_entry_tab3.grid_forget()
-        descricao_compra_label_tab3.grid_forget()
-        descricao_compra_entry_tab3.grid_forget()
+        prazo_entry_tab3.grid_forget()    
         descricao_locacao_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
-        descricao_locacao_entry_tab3.grid(row=3, column=1, sticky="ew", pady=2)
+        descricao_locacao_entry_tab3.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
         data_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
         data_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
         altura_label_tab3.grid_forget()
@@ -829,19 +863,17 @@ def add_campos_tab3():
         espessura_entry_tab3.grid_forget()
         periodo_locacao_label_tab3.grid(row=6, column=0, sticky="w", padx=(10, 10))
         periodo_locacao_combobox_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)        
-        quantidade_label_tab3.grid_forget()
-        quantidade_entry_tab3.grid_forget()
         btn_adicionar_servico.grid_forget()
         link_label_tab3.grid_forget()
         link_entry_tab3.grid_forget()
-        prefixo_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
-        prefixo_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
-        opcao_entrega_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
-        opcao_entrega_combobox_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
+        prefixo_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        prefixo_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
+        opcao_entrega_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
+        opcao_entrega_combobox_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
         nome_responsavel_label_tab3.grid(row=18, column=0, sticky="w", padx=(10, 10))
         nome_responsavel_entry_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=2)
         contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
@@ -925,7 +957,7 @@ def janela_principal():
     global espessura_label_tab3, quantidade_label_tab3, link_label_tab3, prefixo_label_tab3, os_label_tab3
     global agencia_label_tab3, opcao_entrega_label_tab3, nome_responsavel_label_tab3, contato_responsavel_agencia_label_tab3
     global altura_label_tab3, altura_entry_tab3, largura_label_tab3, largura_entry_tab3, comprimento_label_tab3, comprimento_entry_tab3
-    global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3
+    global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
 
     # Configuração da interface gráfica
     root = ctk.CTk()
@@ -1262,10 +1294,9 @@ def janela_principal():
 
         # Inicializando o frame antes de manipulá-lo
         frame_lista_itens = ctk.CTkFrame(master=frame_tab3)
-        frame_lista_itens.grid(row=6, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
 
         # Função para adicionar serviços à lista
-        def adicionar_servico_tab3():
+        def adicionar_item_tab3():
             servico = descricao_compra_entry_tab3.get().strip()
             quantidade = quantidade_entry_tab3.get().strip()
 
@@ -1273,10 +1304,10 @@ def janela_principal():
                 servicos_tab3.append([servico, int(quantidade)])  # Armazena como lista para permitir edição
                 descricao_compra_entry_tab3.delete(0, "end")
                 quantidade_entry_tab3.delete(0, "end")
-                atualizar_lista_servicos_tab3()
+                atualizar_lista_itens_tab3()
 
         # Função para atualizar a exibição dos serviços
-        def atualizar_lista_servicos_tab3():
+        def atualizar_lista_itens_tab3():
             # Remove apenas os widgets dentro do frame onde os itens são listados
             for widget in frame_lista_itens.winfo_children():
                 widget.destroy()
@@ -1293,19 +1324,21 @@ def janela_principal():
 
                 btn_editar = ctk.CTkButton(
                     row_frame, text="Editar", width=30, 
-                    command=lambda i=index: editar_servico_tab3(i)
+                    command=lambda i=index: editar_item_tab3(i)
                 )
                 btn_editar.grid(row=0, column=2, padx=2)
 
                 btn_excluir = ctk.CTkButton(
                     row_frame, text="❌", width=30, 
                     fg_color="red", hover_color="darkred", 
-                    command=lambda i=index: remover_servico_tab3(i)
+                    command=lambda i=index: remover_item_tab3(i)
                 )
                 btn_excluir.grid(row=0, column=3, padx=2)
 
+                add_campos_tab3()
+
         # Função para editar um serviço
-        def editar_servico_tab3(index):
+        def editar_item_tab3(index):
             servico_atual, quantidade_atual = servicos_tab3[index]
             
             descricao_compra_entry_tab3.delete(0, "end")
@@ -1325,27 +1358,23 @@ def janela_principal():
                 servicos_tab3[index] = (novo_servico, int(nova_quantidade))
                 descricao_compra_entry_tab3.delete(0, "end")
                 quantidade_entry_tab3.delete(0, "end")
-                btn_adicionar_servico.configure(text="Adicionar Serviço", command=adicionar_servico_tab3)
-                atualizar_lista_servicos_tab3()
+                btn_adicionar_servico.configure(text="Adicionar Serviço", command=adicionar_item_tab3)
+                atualizar_lista_itens_tab3()
 
         # Função para remover um serviço da lista
-        def remover_servico_tab3(index):
+        def remover_item_tab3(index):
             del servicos_tab3[index]
-            atualizar_lista_servicos_tab3()
+            atualizar_lista_itens_tab3()
 
         # Criando os campos de entrada
-        descricao_compra_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DESCRIÇÃO:").grid(row=3, column=0, sticky="w", padx=(10, 10))
+        descricao_compra_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DESCRIÇÃO:")
         descricao_compra_entry_tab3 = CustomEntry(master=frame_tab3)
-        descricao_compra_entry_tab3.grid(row=3, column=1, sticky="ew", pady=2)
 
-        quantidade_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="QUANTIDADE:").grid(row=4, column=0, sticky="w", padx=(10, 10))
+        quantidade_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="QUANTIDADE:")
         quantidade_entry_tab3 = CustomEntry(master=frame_tab3)
-        quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", pady=2)
 
         # Botão para adicionar serviço
-        btn_adicionar_servico = ctk.CTkButton(master=frame_tab3, text="Adicionar Serviço", command=adicionar_servico_tab3)
-        btn_adicionar_servico.grid(row=5, column=1, sticky="ew", pady=5)
-
+        btn_adicionar_servico = ctk.CTkButton(master=frame_tab3, text="Adicionar item", command=adicionar_item_tab3)
 
 ######################
 
