@@ -7,6 +7,7 @@ from .CTkDatePicker import *
 from .CTkFloatingNotifications import *
 import pyperclip
 import re
+from os.path import splitext
 from datetime import datetime
 import locale
 
@@ -203,6 +204,8 @@ def gerar_solicitacao():
     
     nome_arquivo = re.sub(r'[<>:"/\\|?*\x00]', ".", nome_arquivo)
 
+    nome_arquivo_sem_ext, ext = splitext(nome_arquivo)
+
     # Gerar texto da solicitação
     if tipo_servico == "ADIANTAMENTO PARCEIRO":
         texto = (
@@ -297,7 +300,7 @@ def gerar_solicitacao():
 
     if tipo_pagamento == "FATURAMENTO":
         texto = (
-            f"Assunto: {nome_arquivo}\n\n"
+            f"Assunto: {nome_arquivo_sem_ext}\n\n"
             "Prezado(a),\n\n"
             "Solicito autorização para compra referente aos materiais descritos na "
             "ordem de compra e orçamento em anexo."
@@ -651,7 +654,7 @@ def add_campos():
     tipo_pagamento_combobox.set("") # limpar a seleção antes de configurar os valores
     if tipo_servico in {"ADIANTAMENTO PARCEIRO", "ABASTECIMENTO"}:
         opcoes_pagamento = ["PIX"]
-    elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS", "AQUISIÇÃO COM OS"}:
+    elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS", "AQUISIÇÃO COM OS", "ENVIO DE MATERIAL", "TRANSPORTADORA"}:
         opcoes_pagamento = ["PIX", "VEXPENSES", "FATURAMENTO"]
     else:
         opcoes_pagamento = ["PIX", "VEXPENSES"]
