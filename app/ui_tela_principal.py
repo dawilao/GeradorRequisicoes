@@ -34,6 +34,37 @@ class CustomEntry(ctk.CTkEntry):
             **kwargs
         )
 
+def identifica_preenchimento_pref_os_age(prefixo, agencia, os_num):
+    notification_manager = NotificationManager(root)  # passando a instância da janela principal
+
+    campos_preenchidos = {
+        "PREFIXO": bool(prefixo),
+        "AGÊNCIA": bool(agencia),
+        "OS": bool(os_num),
+    }
+
+    faltantes = [campo for campo, preenchido in campos_preenchidos.items() if not preenchido]
+    preenchidos = [campo for campo, preenchido in campos_preenchidos.items() if preenchido]
+
+    def formatar_lista(lista):
+        """Formata uma lista para usar 'e' antes do último item."""
+        if len(lista) > 1:
+            return f"{', '.join(lista[:-1])} e {lista[-1]}"
+        return lista[0]
+
+    if len(preenchidos) == 1:
+        notification_manager.show_notification(
+            f"Campo {preenchidos[0]} está preenchido\nPor favor, insira {formatar_lista(faltantes)}.",
+            NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return True
+    elif len(preenchidos) == 2:
+        notification_manager.show_notification(
+            f"Os campos {formatar_lista(preenchidos)} estão preenchidos\nPor favor, insira {faltantes[0]}.",
+            NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return True
+
 def gerar_solicitacao():
     # Coletar dados dos campos
     nome_usuario = arrumar_texto(nome_usuario_entry.get().upper())
@@ -112,11 +143,8 @@ def gerar_solicitacao():
 
     if tipo_servico == "ABASTECIMENTO":
         campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
-    elif tipo_servico == "ADIANTAMENTO PARCEIRO":
+    elif tipo_servico == "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA":
         campos_obrigatorios.extend([
-            (prefixo, "PREFIXO"),
-            (agencia, "AGÊNCIA"),
-            (os_num, "OS"),
             (competencia, "COMPETÊNCIA"),
             (porcentagem, "% DO ADIANTAMENTO DO PARCEIRO")
         ])
@@ -152,7 +180,7 @@ def gerar_solicitacao():
             (saida_destino, "SAÍDA X DESTINO"),
             (motivo, "MOTIVO")
         ])
-    elif tipo_servico in {"CARRETO", "ORÇAMENTO APROVADO", "PREST. SERVIÇO/MÃO DE OBRA", "TRANSPORTADORA"}:
+    elif tipo_servico in {"CARRETO", "ORÇAMENTO APROVADO", "TRANSPORTADORA"}:
         campos_obrigatorios.extend([
             (prefixo, "PREFIXO"),
             (agencia, "AGÊNCIA"),
@@ -175,6 +203,11 @@ def gerar_solicitacao():
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
 
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
+
+    if campos_vazios:
+        notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return
+
     if os_num == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
@@ -189,9 +222,8 @@ def gerar_solicitacao():
     elif porcentagem == "RangeError":
         notification_manager.show_notification("Campo PORCENTAGEM\nPor favor, insira um número entre 1 e 100.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
-
-    if campos_vazios:
-        notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        
+    if identifica_preenchimento_pref_os_age(prefixo, agencia, os_num):
         return
 
     # Definindo o nome do arquivo
@@ -207,7 +239,7 @@ def gerar_solicitacao():
     nome_arquivo_sem_ext, ext = splitext(nome_arquivo)
 
     # Gerar texto da solicitação
-    if tipo_servico == "ADIANTAMENTO PARCEIRO":
+    if tipo_servico == "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA":
         texto = (
             f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
             f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
@@ -402,12 +434,12 @@ def gerar_texto_email():
 
     notification_manager = NotificationManager(root) # passando a instância da janela principal
     if valor_tab2 == ValueError:
-        notification_manager.show_notification(f"Por favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        notification_manager.show_notification(f"Campo VALOR\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
 
     if campos_vazios:
         notification_manager.show_notification(f"Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return    
+        return
 
     if tipo_servico_tab2 == "COMPRAS EM GERAL - COM OS":
         texto = f"Prezado Fornecedor {nome_fornecedor_tab2},\n\n"
@@ -595,7 +627,7 @@ def add_campos():
     saida_destino_entry.delete(0, tk.END)
     tecnicos_entry.delete(0, tk.END)
 
-    if tipo_servico == "ADIANTAMENTO PARCEIRO":
+    if tipo_servico == "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA":
         competencia_label.grid(row=9, column=0, sticky="w", padx=(10, 10))
         competencia_combobox.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
         porcentagem_label.grid(row=10, column=0, sticky="w", padx=(10, 10))
@@ -631,28 +663,32 @@ def add_campos():
         os_entry.grid_forget()
         agencia_label.grid_forget()
         agencia_entry.grid_forget()
-    elif tipo_servico == "REEMBOLSO UBER":
+    elif tipo_servico in {"REEMBOLSO UBER", "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA"}:
         prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
-        prefixo_label.configure(text="PREFIXO (SE APLICÁVEL):")
+        prefixo_entry.configure(placeholder_text="Opcional")
         prefixo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
 
         agencia_label.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        agencia_label.configure(text="AGÊNCIA (SE APLICÁVEL):")
+        agencia_entry.configure(placeholder_text="Opcional")
         agencia_entry.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
 
         os_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
-        os_label.configure(text="OS ou Nº DO CONTRATO (CAIXA)\n(SE APLICÁVEL):")
+        os_entry.configure(placeholder_text="Opcional")
         os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+    
     else:
         prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        prefixo_entry.configure(placeholder_text="")
         prefixo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
         agencia_label.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        agencia_entry.configure(placeholder_text="")
         agencia_entry.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
         os_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        os_entry.configure(placeholder_text="")
         os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
 
     tipo_pagamento_combobox.set("") # limpar a seleção antes de configurar os valores
-    if tipo_servico in {"ADIANTAMENTO PARCEIRO", "ABASTECIMENTO"}:
+    if tipo_servico in {"PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA", "ABASTECIMENTO"}:
         opcoes_pagamento = ["PIX"]
     elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS", "AQUISIÇÃO COM OS", "ENVIO DE MATERIAL", "TRANSPORTADORA"}:
         opcoes_pagamento = ["PIX", "VEXPENSES", "FATURAMENTO"]
@@ -996,7 +1032,6 @@ def janela_principal():
         ctk.CTkLabel(master=frame, text="TIPO DE SERVIÇO:").grid(row=1, column=0, sticky="w", padx=(10, 10))
         tipo_servico_combobox = CustomComboBox(master=frame, values=[
             "ABASTECIMENTO",  
-            "ADIANTAMENTO PARCEIRO",  
             "AQUISIÇÃO COM OS",  
             "AQUISIÇÃO SEM OS",  
             "CARRETO",  
@@ -1004,8 +1039,8 @@ def janela_principal():
             "ENVIO DE MATERIAL",
             "ESTACIONAMENTO",
             "HOSPEDAGEM",
-            "ORÇAMENTO APROVADO",  
-            "PREST. SERVIÇO/MÃO DE OBRA",  
+            "ORÇAMENTO APROVADO",
+            "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA",  
             "REEMBOLSO COM OS",  
             "REEMBOLSO SEM OS",  
             "REEMBOLSO UBER",  
@@ -1064,7 +1099,7 @@ def janela_principal():
         widgets_para_limpar.append(valor_entry)
 
         ano_atual = datetime.now().strftime("%Y")
-        # Campos para ADIANTAMENTO PARCEIRO
+        # Campos para PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA
         competencia_label = ctk.CTkLabel(master=frame, text="COMPETÊNCIA:")
         competencia_combobox = CustomComboBox(master=frame, values=[f"JAN/{ano_atual}", f"FEV/{ano_atual}", f"MAR/{ano_atual}", 
                                                                 f"ABR/{ano_atual}", f"MAI/{ano_atual}", f"JUN/{ano_atual}", 
