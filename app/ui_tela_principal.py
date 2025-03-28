@@ -806,32 +806,13 @@ def add_campos_tab3():
         data_entry_tab3.grid_forget()
         #quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
         #quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-        descricao_compra_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
-        descricao_compra_entry_tab3.grid(row=3, column=1, sticky="ew", pady=2)
-        quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", pady=2)
-        btn_adicionar_servico.grid(row=5, column=1, sticky="ew", pady=5)
-        frame_lista_itens.grid(row=6, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
-        descricao_compra_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
-        descricao_compra_entry_tab3.grid(row=3, column=1, sticky="ew", pady=2)
-        quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", pady=2)
-        btn_adicionar_servico.grid(row=5, column=1, sticky="ew", pady=5)
-        frame_lista_itens.grid(row=6, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
-        prazo_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
-        prazo_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+        frame_caixa_itens.grid(row=3, column=0, columnspan=2, sticky="nsew", pady=5)       
+        btn_adicionar_servico.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=5)
+        frame_lista_itens.grid(row=11, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
+        prazo_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
+        prazo_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
         servico_label_tab3.grid_forget()
         servico_entry_tab3.grid_forget()
-        altura_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
-        altura_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
-        largura_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
-        largura_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        comprimento_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
-        comprimento_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-        espessura_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
-        espessura_entry_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
-        link_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
-        link_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
         periodo_locacao_label_tab3.grid_forget()
         periodo_locacao_combobox_tab3.grid_forget()
         prefixo_label_tab3.grid(row=13, column=0, sticky="w", padx=(10, 10))
@@ -855,7 +836,7 @@ def add_campos_tab3():
             largura_label_tab3, largura_entry_tab3,
             comprimento_label_tab3, comprimento_entry_tab3,
             espessura_label_tab3, espessura_entry_tab3,
-            link_label_tab3, link_entry_tab3
+            link_label_tab3, link_entry_tab3, frame_caixa_itens
         ]
 
         for widget in widgets:
@@ -986,6 +967,7 @@ def janela_principal():
     global altura_label_tab3, altura_entry_tab3, largura_label_tab3, largura_entry_tab3, comprimento_label_tab3, comprimento_entry_tab3
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
+    global frame_caixa_itens
 
     # Configuração da interface gráfica
     root = ctk.CTk()
@@ -1293,6 +1275,7 @@ def janela_principal():
 
         # Configurando a coluna do frame para expandir
         frame_tab3.grid_rowconfigure(20, weight=1)  # Expande a linha
+        frame_tab3.grid_rowconfigure(3, weight=1)  # Expande a linha
         frame_tab3.grid_columnconfigure(0, weight=1)  # Expande a coluna 0
         frame_tab3.grid_columnconfigure(1, weight=1)  # Expande a coluna 1
 
@@ -1326,91 +1309,209 @@ def janela_principal():
         descricao_locacao_entry_tab3 = CustomEntry(master=frame_tab3)
 
         # Lista para armazenar serviços e quantidades
-        servicos_tab3 = []  # Exemplo: [("Abertura de porta", 1), ("Fechamento de vão", 5)]
+        servicos_tab3 = []  # Exemplo: [("Abertura de porta", 1, "2m", "1m", "3m", "2cm", "http://exemplo.com")]
 
+        frame_caixa_itens = ctk.CTkFrame(master=frame_tab3, border_width=1)
+
+        frame_caixa_itens.grid_columnconfigure(0, weight=1)
+        frame_caixa_itens.grid_columnconfigure(1, weight=1)
+        
         # Inicializando o frame antes de manipulá-lo
-        frame_lista_itens = ctk.CTkFrame(master=frame_tab3)
+        frame_lista_itens = ctk.CTkFrame(master=frame_caixa_itens)
+
+        # Variável para controlar se um item está sendo editado
+        editando_item = None  # Inicializa como None (nenhum item está sendo editado)
 
         # Função para adicionar serviços à lista
         def adicionar_item_tab3():
             servico = descricao_compra_entry_tab3.get().strip()
             quantidade = quantidade_entry_tab3.get().strip()
+            altura = altura_entry_tab3.get().strip()
+            largura = largura_entry_tab3.get().strip()
+            comprimento = comprimento_entry_tab3.get().strip()
+            espessura = espessura_entry_tab3.get().strip()
+            link = link_entry_tab3.get().strip()
 
-            if servico and quantidade.isdigit():  # Garante que a quantidade é um número válido
-                servicos_tab3.append([servico, int(quantidade)])  # Armazena como lista para permitir edição
-                descricao_compra_entry_tab3.delete(0, "end")
-                quantidade_entry_tab3.delete(0, "end")
+            if servico and quantidade.isdigit():
+                servicos_tab3.append([
+                    servico, int(quantidade), altura, largura, comprimento, espessura, link
+                ])
+                altura_entry_tab3.delete(0, "end")
+                altura_entry_tab3.focus()  # Foca em outro elemento para atualizar o placeholder
+
+                largura_entry_tab3.delete(0, "end")
+                largura_entry_tab3.focus()
+
+                comprimento_entry_tab3.delete(0, "end")
+                comprimento_entry_tab3.focus()
+
+                espessura_entry_tab3.delete(0, "end")
+                espessura_entry_tab3.focus()
+
+                link_entry_tab3.delete(0, "end")
+                link_entry_tab3.focus()
                 atualizar_lista_itens_tab3()
 
         # Função para atualizar a exibição dos serviços
         def atualizar_lista_itens_tab3():
-            # Remove apenas os widgets dentro do frame onde os itens são listados
             for widget in frame_lista_itens.winfo_children():
                 widget.destroy()
 
-            for index, (nome_item, quantidade) in enumerate(servicos_tab3):
-                row_frame = ctk.CTkFrame(frame_lista_itens)
+            for index, (nome_item, quantidade, altura, largura, comprimento, espessura, link) in enumerate(servicos_tab3):
+                row_frame = ctk.CTkFrame(frame_lista_itens, width=400)
                 row_frame.grid(row=index, column=0, columnspan=2, sticky="ew", padx=10, pady=2)
 
+                detalhes = f"Descrição: {nome_item}, Quantidade: {quantidade}"
+                if altura:
+                    detalhes += f", Altura: {altura}"
+                if largura:
+                    detalhes += f", Largura: {largura}"
+                if comprimento:
+                    detalhes += f", Comprimento: {comprimento}"
+                if espessura:
+                    detalhes += f", Espessura: {espessura}"
+                if link:
+                    detalhes += f", Link: {link}"
+
                 label_servico_gerado = ctk.CTkLabel(
-                    row_frame, text=f"Descrição: {nome_item}, Quantidade: {quantidade}", width=30,
-                    anchor="w", justify="left"
+                    row_frame, 
+                    text=detalhes,
+                    anchor="w", justify="left", wraplength=340
                 )
                 label_servico_gerado.grid(row=0, column=0, padx=2)
 
-                btn_editar = ctk.CTkButton(
-                    row_frame, text="Editar", width=30, 
-                    command=lambda i=index: editar_item_tab3(i)
-                )
-                btn_editar.grid(row=0, column=2, padx=2)
+                # Só exibe o botão de editar e excluir se o item não está sendo editado
+                if editando_item is None:
+                    btn_editar = ctk.CTkButton(
+                        row_frame, text="Editar", width=30, 
+                        command=lambda i=index: editar_item_tab3(i)
+                    )
+                    btn_editar.grid(row=0, column=1, padx=2)
 
-                btn_excluir = ctk.CTkButton(
-                    row_frame, text="❌", width=30, 
-                    fg_color="red", hover_color="darkred", 
-                    command=lambda i=index: remover_item_tab3(i)
-                )
-                btn_excluir.grid(row=0, column=3, padx=2)
-
-                add_campos_tab3()
+                    btn_excluir = ctk.CTkButton(
+                        row_frame, text="❌", width=30, 
+                        fg_color="red", hover_color="darkred", 
+                        command=lambda i=index: remover_item_tab3(i)
+                    )
+                    btn_excluir.grid(row=0, column=2, padx=2)
+                else:
+                    # Desabilita o botão de excluir enquanto um item está sendo editado
+                    pass
 
         # Função para editar um serviço
         def editar_item_tab3(index):
-            servico_atual, quantidade_atual = servicos_tab3[index]
-            
+            global editando_item
+            editando_item = index  # Marca que o item está sendo editado
+
+            servico_atual, quantidade_atual, altura_atual, largura_atual, \
+            comprimento_atual, espessura_atual, link_atual = servicos_tab3[index]
+
+            # Preenche os campos de entrada com os valores do item selecionado
             descricao_compra_entry_tab3.delete(0, "end")
-            descricao_compra_entry_tab3.insert(0, servico_atual)  # Coloca o serviço antigo no campo
-            
+            descricao_compra_entry_tab3.insert(0, servico_atual)
+
             quantidade_entry_tab3.delete(0, "end")
-            quantidade_entry_tab3.insert(0, str(quantidade_atual))  # Coloca a quantidade antiga no campo
-            
+            quantidade_entry_tab3.insert(0, str(quantidade_atual))
+
+            altura_entry_tab3.delete(0, "end")
+            altura_entry_tab3.insert(0, altura_atual)
+
+            largura_entry_tab3.delete(0, "end")
+            largura_entry_tab3.insert(0, largura_atual)
+
+            comprimento_entry_tab3.delete(0, "end")
+            comprimento_entry_tab3.insert(0, comprimento_atual)
+
+            espessura_entry_tab3.delete(0, "end")
+            espessura_entry_tab3.insert(0, espessura_atual)
+
+            link_entry_tab3.delete(0, "end")
+            link_entry_tab3.insert(0, link_atual)
+
             btn_adicionar_servico.configure(text="Salvar", command=lambda: salvar_edicao(index))
+
+            # Desabilita o botão de excluir
+            atualizar_lista_itens_tab3()
 
         # Função para salvar a edição
         def salvar_edicao(index):
+            global editando_item
             novo_servico = descricao_compra_entry_tab3.get().strip()
             nova_quantidade = quantidade_entry_tab3.get().strip()
+            nova_altura = altura_entry_tab3.get().strip()
+            nova_largura = largura_entry_tab3.get().strip()
+            novo_comprimento = comprimento_entry_tab3.get().strip()
+            nova_espessura = espessura_entry_tab3.get().strip()
+            novo_link = link_entry_tab3.get().strip()
 
             if novo_servico and nova_quantidade.isdigit():
-                servicos_tab3[index] = (novo_servico, int(nova_quantidade))
+                servicos_tab3[index] = (novo_servico, int(nova_quantidade), nova_altura, nova_largura, novo_comprimento, nova_espessura, novo_link)
+                
+                # Limpa os campos após a edição
                 descricao_compra_entry_tab3.delete(0, "end")
                 quantidade_entry_tab3.delete(0, "end")
-                btn_adicionar_servico.configure(text="Adicionar Serviço", command=adicionar_item_tab3)
+                altura_entry_tab3.delete(0, "end")
+                largura_entry_tab3.delete(0, "end")
+                comprimento_entry_tab3.delete(0, "end")
+                espessura_entry_tab3.delete(0, "end")
+                link_entry_tab3.delete(0, "end")
+
+                # Restaura o texto do botão para "Adicionar item"
+                btn_adicionar_servico.configure(text="Adicionar item", command=adicionar_item_tab3)
+                
+                # Reabilita o botão de excluir
+                editando_item = None  # Desmarca a edição
                 atualizar_lista_itens_tab3()
 
         # Função para remover um serviço da lista
         def remover_item_tab3(index):
-            del servicos_tab3[index]
-            atualizar_lista_itens_tab3()
+            global editando_item
+            if editando_item is None:  # Só permite excluir se não estiver editando
+                del servicos_tab3[index]
+                atualizar_lista_itens_tab3()
+            else:
+                notification_manager = NotificationManager(root)  # passando a instância da janela principal
+                notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a exclusão.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+                pass
 
         # Criando os campos de entrada
-        descricao_compra_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DESCRIÇÃO:")
-        descricao_compra_entry_tab3 = CustomEntry(master=frame_tab3)
+        descricao_compra_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="DESCRIÇÃO:")
+        descricao_compra_entry_tab3 = CustomEntry(master=frame_caixa_itens)
+        descricao_compra_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
+        descricao_compra_entry_tab3.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-        quantidade_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="QUANTIDADE:")
-        quantidade_entry_tab3 = CustomEntry(master=frame_tab3)
+        quantidade_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="QUANTIDADE:")
+        quantidade_entry_tab3 = CustomEntry(master=frame_caixa_itens)
+        quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        altura_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text=f"ALTURA:", anchor="w", justify="left")
+        altura_entry_tab3 = CustomEntry(master=frame_caixa_itens, placeholder_text="Opcional")
+        altura_label_tab3.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        altura_entry_tab3.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        largura_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text=f"LARGURA:", anchor="w", justify="left")
+        largura_entry_tab3 = CustomEntry(master=frame_caixa_itens, placeholder_text="Opcional")
+        largura_label_tab3.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        largura_entry_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        comprimento_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text=f"COMPRIMENTO:                ", anchor="w", justify="left")
+        comprimento_entry_tab3 = CustomEntry(master=frame_caixa_itens, placeholder_text="Opcional")
+        comprimento_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        comprimento_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        espessura_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="ESPESSURA:")
+        espessura_entry_tab3 = CustomEntry(master=frame_caixa_itens, placeholder_text="Opcional")
+        espessura_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
+        espessura_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        link_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="LINK:")
+        link_entry_tab3 = CustomEntry(master=frame_caixa_itens, placeholder_text="Opcional")
+        link_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
+        link_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2) 
 
         # Botão para adicionar serviço
-        btn_adicionar_servico = ctk.CTkButton(master=frame_tab3, text="Adicionar item", command=adicionar_item_tab3)
+        btn_adicionar_servico = ctk.CTkButton(master=frame_caixa_itens, text="Adicionar item", command=adicionar_item_tab3)
 
 ######################
 
@@ -1430,9 +1531,6 @@ def janela_principal():
         widgets_para_limpar_tab3.append(servico_entry_tab3)
 
         #row = 6
-        altura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"ALTURA (SE APLICÁVEL):", anchor="w", justify="left")
-        altura_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(altura_entry_tab3)
 
         periodo_locacao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PERÍODO DE LOCAÇÃO:")
         periodo_locacao_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
@@ -1442,24 +1540,12 @@ def janela_principal():
         widgets_para_limpar_tab3.append(periodo_locacao_combobox_tab3)
 
         #row = 7
-        largura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"LARGURA (SE APLICÁVEL):", anchor="w", justify="left")
-        largura_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(largura_entry_tab3)
 
         #row = 8
-        comprimento_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"COMPRIMENTO (SE APLICÁVEL):", anchor="w", justify="left")
-        comprimento_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(comprimento_entry_tab3)
 
         #row = 9
-        espessura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ESPESSURA (SE APLICÁVEL):")
-        espessura_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(espessura_entry_tab3)
 
         #row = 10
-        link_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="LINK (SE APLICÁVEL):")
-        link_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(link_entry_tab3)
 
         #row = 11
         prefixo_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PREFIXO:")
