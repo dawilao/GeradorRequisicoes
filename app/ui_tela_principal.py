@@ -363,38 +363,6 @@ def gerar_solicitacao():
     if switch_gerar_excel_var.get():
         gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais)
 
-def limpar_dados():
-    aba_ativa  = tabview.get()
-    
-    # Limpar widgets da aba ativa
-    if aba_ativa == "PAGAMENTO":
-        # Limpar os widgets da Tab 1
-        for widget in widgets_para_limpar:
-            if isinstance(widget, ctk.CTkEntry):
-                widget.delete(0, tk.END)  # Limpa o campo de entrada
-            elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete("0.0", tk.END)  # Limpa o campo de texto
-            elif isinstance(widget, ctk.CTkComboBox):
-                widget.set("")  # Reseta o ComboBox
-    elif aba_ativa == "E-MAIL":
-        # Limpar os widgets da Tab 2
-        for widget in widgets_para_limpar_tab2:
-            if isinstance(widget, ctk.CTkEntry):
-                widget.delete(0, tk.END)  # Limpa o campo de entrada
-            elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete("0.0", tk.END)  # Limpa o campo de texto
-            elif isinstance(widget, ctk.CTkComboBox):
-                widget.set("")  # Reseta o ComboBox
-    elif aba_ativa == "AQUISIÇÃO":
-        # Limpar os widgets da Tab 3
-        for widget in widgets_para_limpar_tab3:
-            if isinstance(widget, ctk.CTkEntry):
-                widget.delete(0, tk.END)  # Limpa o campo de entrada
-            elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete("0.0", tk.END)  # Limpa o campo de texto
-            elif isinstance(widget, ctk.CTkComboBox):
-                widget.set("")  # Reseta o ComboBox
-
 def gerar_texto_email():
     # Coletar dados dos campos
     nome_usuario_tab2 = arrumar_texto(nome_usuario_entry_tab2.get().upper())
@@ -477,6 +445,167 @@ def gerar_texto_email():
     if switch_autocopia_frame_tab2_var.get():
         pyperclip.copy(texto)
 
+# -------------------------------
+# Funções da aba "Aquisições"
+# -------------------------------
+
+# Lista para armazenar serviços e quantidades
+servicos_tab3 = []  # Exemplo: [("Abertura de porta", 1, "2m", "1m", "3m", "2cm", "http://exemplo.com")]
+
+# Função para adicionar serviços à lista
+def adicionar_item_tab3():
+    servico = descricao_compra_entry_tab3.get().strip().upper()
+    quantidade = quantidade_entry_tab3.get().strip().upper()
+    altura = altura_entry_tab3.get().strip().upper()
+    largura = largura_entry_tab3.get().strip().upper()
+    comprimento = comprimento_entry_tab3.get().strip().upper()
+    espessura = espessura_entry_tab3.get().strip().upper()
+    link = link_entry_tab3.get().strip().upper()
+
+    if servico and quantidade.isdigit():
+        servicos_tab3.append([
+            servico, int(quantidade), altura, largura, comprimento, espessura, link
+        ])
+
+        descricao_compra_entry_tab3.delete(0, "end")
+
+        quantidade_entry_tab3.delete(0, "end")
+
+        altura_entry_tab3.delete(0, "end")
+        altura_entry_tab3.focus()  # Foca em outro elemento para atualizar o placeholder
+
+        largura_entry_tab3.delete(0, "end")
+        largura_entry_tab3.focus()
+
+        comprimento_entry_tab3.delete(0, "end")
+        comprimento_entry_tab3.focus()
+
+        espessura_entry_tab3.delete(0, "end")
+        espessura_entry_tab3.focus()
+
+        link_entry_tab3.delete(0, "end")
+        link_entry_tab3.focus()
+        atualizar_lista_itens_tab3()
+
+def atualizar_lista_itens_tab3():
+    for widget in frame_lista_itens.winfo_children():
+        widget.destroy()
+
+    for index, (nome_item, quantidade, altura, largura, comprimento, espessura, link) in enumerate(servicos_tab3):
+        row_frame = ctk.CTkFrame(frame_lista_itens, width=400)
+        row_frame.grid(row=index, column=0, columnspan=2, sticky="ew", padx=10, pady=2)
+
+        detalhes = f"Descrição: {nome_item}, Quantidade: {quantidade}"
+        if altura:
+            detalhes += f", Altura: {altura}"
+        if largura:
+            detalhes += f", Largura: {largura}"
+        if comprimento:
+            detalhes += f", Comprimento: {comprimento}"
+        if espessura:
+            detalhes += f", Espessura: {espessura}"
+        if link:
+            detalhes += f", Link: {link}"
+
+        label_servico_gerado = ctk.CTkLabel(
+            row_frame, 
+            text=detalhes,
+            anchor="w", justify="left", wraplength=340
+        )
+        label_servico_gerado.grid(row=0, column=0, padx=2)
+
+        btn_editar = ctk.CTkButton(
+            row_frame, text="Editar", width=30, 
+            command=lambda i=index: editar_item_tab3(i)
+        )
+        btn_editar.grid(row=0, column=1, padx=2)
+
+        btn_excluir = ctk.CTkButton(
+            row_frame, text="❌", width=30, 
+            fg_color="red", hover_color="darkred", 
+            command=lambda i=index: remover_item_tab3(i)
+        )
+        btn_excluir.grid(row=0, column=2, padx=2)
+
+# Função para editar um serviço
+def editar_item_tab3(index):
+    global editando_item
+    editando_item = index  # Marca que o item está sendo editado
+
+    servico_atual, quantidade_atual, altura_atual, largura_atual, \
+    comprimento_atual, espessura_atual, link_atual = servicos_tab3[index]
+
+    # Preenche os campos de entrada com os valores do item selecionado
+    descricao_compra_entry_tab3.delete(0, "end")
+    descricao_compra_entry_tab3.insert(0, servico_atual)
+
+    quantidade_entry_tab3.delete(0, "end")
+    quantidade_entry_tab3.insert(0, str(quantidade_atual))
+
+    altura_entry_tab3.delete(0, "end")
+    altura_entry_tab3.insert(0, altura_atual)
+
+    largura_entry_tab3.delete(0, "end")
+    largura_entry_tab3.insert(0, largura_atual)
+
+    comprimento_entry_tab3.delete(0, "end")
+    comprimento_entry_tab3.insert(0, comprimento_atual)
+
+    espessura_entry_tab3.delete(0, "end")
+    espessura_entry_tab3.insert(0, espessura_atual)
+
+    link_entry_tab3.delete(0, "end")
+    link_entry_tab3.insert(0, link_atual)
+
+    btn_adicionar_servico.configure(text="Salvar", command=lambda: salvar_edicao(index))
+
+    # Desabilita o botão de excluir
+    atualizar_lista_itens_tab3()
+
+# Função para salvar a edição
+def salvar_edicao(index):
+    global editando_item
+    novo_servico = descricao_compra_entry_tab3.get().strip()
+    nova_quantidade = quantidade_entry_tab3.get().strip()
+    nova_altura = altura_entry_tab3.get().strip()
+    nova_largura = largura_entry_tab3.get().strip()
+    novo_comprimento = comprimento_entry_tab3.get().strip()
+    nova_espessura = espessura_entry_tab3.get().strip()
+    novo_link = link_entry_tab3.get().strip()
+
+    if novo_servico and nova_quantidade.isdigit():
+        servicos_tab3[index] = (novo_servico, int(nova_quantidade), nova_altura, nova_largura, novo_comprimento, nova_espessura, novo_link)
+        
+        # Limpa os campos após a edição
+        descricao_compra_entry_tab3.delete(0, "end")
+        quantidade_entry_tab3.delete(0, "end")
+        altura_entry_tab3.delete(0, "end")
+        largura_entry_tab3.delete(0, "end")
+        comprimento_entry_tab3.delete(0, "end")
+        espessura_entry_tab3.delete(0, "end")
+        link_entry_tab3.delete(0, "end")
+
+        # Restaura o texto do botão para "Adicionar item"
+        btn_adicionar_servico.configure(text="Adicionar item", command=adicionar_item_tab3)
+        
+        # Reabilita o botão de excluir
+        editando_item = None  # Desmarca a edição
+        atualizar_lista_itens_tab3()
+
+# Função para remover um serviço da lista
+def remover_item_tab3(index):
+    global editando_item
+    if editando_item is None:  # Só permite excluir se não estiver editando
+        del servicos_tab3[index]
+        atualizar_lista_itens_tab3()
+    else:
+        notification_manager = NotificationManager(root)  # passando a instância da janela principal
+        notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a exclusão.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+        pass
+# -------------------------------
+# Fim das funções da aba "Aquisições"
+# -------------------------------
+
 def gerar_texto_aquisicao():
     # Coletar dados dos campos
     nome_usuario_tab3 = arrumar_texto(nome_usuario_entry_tab3.get().upper())
@@ -485,14 +614,8 @@ def gerar_texto_aquisicao():
     descricao_tab3 = servicos_tab3
     prazo_tab3 = arrumar_texto(prazo_entry_tab3.get_date().upper())
     data_tab3 = arrumar_texto(data_entry_tab3.get_date().upper())
-    altura_tab3 = arrumar_texto(altura_entry_tab3.get().upper())
-    largura_tab3 = arrumar_texto(largura_entry_tab3.get().upper())
-    comprimento_tab3 = arrumar_texto(comprimento_entry_tab3.get().upper())
     servico_tab3 = arrumar_texto(servico_entry_tab3.get().upper())
-    espessura_tab3 = arrumar_texto(espessura_entry_tab3.get().upper())
     periodo_locacao_tab3 = arrumar_texto(periodo_locacao_combobox_tab3.get().upper())
-    quantidade_tab3 = arrumar_texto(quantidade_entry_tab3.get().upper())
-    link_tab3 = arrumar_texto(link_entry_tab3.get())
     prefixo_tab3 = arrumar_texto(prefixo_entry_tab3.get())
     agencia_tab3 = arrumar_texto(agencia_entry_tab3.get().upper())
     os_num_tab3 = valida_os(os_entry_tab3.get())
@@ -541,7 +664,7 @@ def gerar_texto_aquisicao():
     if contrato_tab3 == "ESCRITÓRIO":
         campos_obrigatorios = [
             item for item in campos_obrigatorios
-            if item not in {(prefixo_tab3, "PREFIXO"), (agencia_tab3, "AGÊNCIA"), (os_num_tab3, "OS")}
+            if item not in [(prefixo_tab3, "PREFIXO"), (agencia_tab3, "AGÊNCIA"), (os_num_tab3, "OS")]
         ]
 
     # Verificar campos vazios
@@ -557,20 +680,39 @@ def gerar_texto_aquisicao():
         return
 
     if tipo_aquisicao_tab3 == "COMPRA":
-            texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
-            texto += f"▪ *Contrato:* {contrato_tab3}\n"
-            texto += f"▪ *Descrição da aquisição:* {descricao_tab3}\n"
-            texto += f"▪ *Prazo para aquisição:* {prazo_tab3}\n"
-            texto += f"▪ *Altura:* {altura_tab3}\n" if altura_tab3 else ""
-            texto += f"▪ *Largura:* {largura_tab3}\n" if largura_tab3 else ""
-            texto += f"▪ *Comprimento:* {comprimento_tab3}\n" if comprimento_tab3 else ""
-            texto += f"▪ *Espessura:* {espessura_tab3}\n" if espessura_tab3 else ""
-            texto += f"▪ *Quantidade:* {quantidade_tab3}\n"
-            texto += f"▪ *Link:* {link_tab3}\n" if link_tab3 else ""
-            texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else f""
-            texto += f"▪ *Entrega ou Retirada:* ENTREGA\n▪ *Endereço da Agência:* {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ *Entrega ou Retirada:* RETIRADA\n"            
-            texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
-            texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
+        texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
+        texto += f"▪ *Contrato:* {contrato_tab3}\n"
+        texto += f"▪ *Prazo para aquisição:* {prazo_tab3}\n"
+
+        if servicos_tab3:  # Verifica se a lista não está vazia
+            if len(servicos_tab3) == 1:  # Apenas um item, mantém o formato original
+                servico, quantidade, altura, largura, comprimento, espessura, link = servicos_tab3[0]
+                texto += f"▪ *Descrição da aquisição:* {servico}\n"
+                texto += f"▪ *Altura:* {altura}\n" if altura else ""
+                texto += f"▪ *Largura:* {largura}\n" if largura else ""
+                texto += f"▪ *Comprimento:* {comprimento}\n" if comprimento else ""
+                texto += f"▪ *Espessura:* {espessura}\n" if espessura else ""
+                texto += f"▪ *Quantidade:* {quantidade}\n"
+                texto += f"▪ *Link:* {link}\n" if link else ""
+            else:  # Mais de um item, gera uma lista formatada
+                texto += "▪ *Itens da solicitação:*\n"
+                for idx, (servico, quantidade, altura, largura, comprimento, espessura, link) in enumerate(servicos_tab3, start=1):
+                    texto += f"   {idx}. {servico} - {quantidade} unidade(s)\n"
+                    if altura:
+                        texto += f"      - *Altura:* {altura}\n"
+                    if largura:
+                        texto += f"      - *Largura:* {largura}\n"
+                    if comprimento:
+                        texto += f"      - *Comprimento:* {comprimento}\n"
+                    if espessura:
+                        texto += f"      - *Espessura:* {espessura}\n"
+                    if link:
+                        texto += f"      - *Link:* {link}\n"
+
+        texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else ""
+        texto += f"▪ *Entrega ou Retirada:* ENTREGA\n▪ *Endereço da Agência:* {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ *Entrega ou Retirada:* RETIRADA\n"
+        texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
+        texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
     else:        
             texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
             texto += f"▪ *Contrato:* {contrato_tab3}\n"
@@ -928,6 +1070,47 @@ def restaurar_valores_tipo_aquisicao(event):
     if tipo_aquisicao_combobox.get() == "":
         tipo_aquisicao_combobox.set("")  # Mantém o campo vazio
 
+def limpar_dados():
+    aba_ativa  = tabview.get()
+    
+    # Limpar widgets da aba ativa
+    if aba_ativa == "PAGAMENTO":
+        # Limpar os widgets da Tab 1
+        for widget in widgets_para_limpar:
+            if isinstance(widget, ctk.CTkEntry):
+                widget.delete(0, tk.END)  # Limpa o campo de entrada
+            elif isinstance(widget, ctk.CTkTextbox):
+                widget.delete("0.0", tk.END)  # Limpa o campo de texto
+            elif isinstance(widget, ctk.CTkComboBox):
+                widget.set("")  # Reseta o ComboBox
+    elif aba_ativa == "E-MAIL":
+        # Limpar os widgets da Tab 2
+        for widget in widgets_para_limpar_tab2:
+            if isinstance(widget, ctk.CTkEntry):
+                widget.delete(0, tk.END)  # Limpa o campo de entrada
+            elif isinstance(widget, ctk.CTkTextbox):
+                widget.delete("0.0", tk.END)  # Limpa o campo de texto
+            elif isinstance(widget, ctk.CTkComboBox):
+                widget.set("")  # Reseta o ComboBox
+    elif aba_ativa == "AQUISIÇÃO":
+        if editando_item is None:
+            # Limpar os widgets da Tab 3
+            for widget in widgets_para_limpar_tab3:
+                if isinstance(widget, ctk.CTkEntry):
+                    widget.delete(0, tk.END)  # Limpa o campo de entrada
+                elif isinstance(widget, ctk.CTkTextbox):
+                    widget.delete("0.0", tk.END)  # Limpa o campo de texto
+                elif isinstance(widget, ctk.CTkComboBox):
+                    widget.set("")  # Reseta o ComboBox
+
+            # Limpar todos os itens adicionados na lista de serviços
+                servicos_tab3.clear()
+                atualizar_lista_itens_tab3()
+        else:
+            notification_manager = NotificationManager(root)  # passando a instância da janela principal
+            notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a limpeza dos campos.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+            pass
+
 def janela_principal():
     from .ui_tela_login import nome_completo_usuario, abas_permitidas
 
@@ -967,7 +1150,7 @@ def janela_principal():
     global altura_label_tab3, altura_entry_tab3, largura_label_tab3, largura_entry_tab3, comprimento_label_tab3, comprimento_entry_tab3
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
-    global frame_caixa_itens
+    global frame_caixa_itens, editando_item
 
     # Configuração da interface gráfica
     root = ctk.CTk()
@@ -1308,9 +1491,9 @@ def janela_principal():
         descricao_locacao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DESCRIÇÃO:")
         descricao_locacao_entry_tab3 = CustomEntry(master=frame_tab3)
 
-        # Lista para armazenar serviços e quantidades
-        servicos_tab3 = []  # Exemplo: [("Abertura de porta", 1, "2m", "1m", "3m", "2cm", "http://exemplo.com")]
-
+        # -------------------------------
+        # Frame para os itens
+        # -------------------------------
         frame_caixa_itens = ctk.CTkFrame(master=frame_tab3, border_width=1)
 
         frame_caixa_itens.grid_columnconfigure(0, weight=1)
@@ -1321,158 +1504,6 @@ def janela_principal():
 
         # Variável para controlar se um item está sendo editado
         editando_item = None  # Inicializa como None (nenhum item está sendo editado)
-
-        # Função para adicionar serviços à lista
-        def adicionar_item_tab3():
-            servico = descricao_compra_entry_tab3.get().strip()
-            quantidade = quantidade_entry_tab3.get().strip()
-            altura = altura_entry_tab3.get().strip()
-            largura = largura_entry_tab3.get().strip()
-            comprimento = comprimento_entry_tab3.get().strip()
-            espessura = espessura_entry_tab3.get().strip()
-            link = link_entry_tab3.get().strip()
-
-            if servico and quantidade.isdigit():
-                servicos_tab3.append([
-                    servico, int(quantidade), altura, largura, comprimento, espessura, link
-                ])
-                altura_entry_tab3.delete(0, "end")
-                altura_entry_tab3.focus()  # Foca em outro elemento para atualizar o placeholder
-
-                largura_entry_tab3.delete(0, "end")
-                largura_entry_tab3.focus()
-
-                comprimento_entry_tab3.delete(0, "end")
-                comprimento_entry_tab3.focus()
-
-                espessura_entry_tab3.delete(0, "end")
-                espessura_entry_tab3.focus()
-
-                link_entry_tab3.delete(0, "end")
-                link_entry_tab3.focus()
-                atualizar_lista_itens_tab3()
-
-        # Função para atualizar a exibição dos serviços
-        def atualizar_lista_itens_tab3():
-            for widget in frame_lista_itens.winfo_children():
-                widget.destroy()
-
-            for index, (nome_item, quantidade, altura, largura, comprimento, espessura, link) in enumerate(servicos_tab3):
-                row_frame = ctk.CTkFrame(frame_lista_itens, width=400)
-                row_frame.grid(row=index, column=0, columnspan=2, sticky="ew", padx=10, pady=2)
-
-                detalhes = f"Descrição: {nome_item}, Quantidade: {quantidade}"
-                if altura:
-                    detalhes += f", Altura: {altura}"
-                if largura:
-                    detalhes += f", Largura: {largura}"
-                if comprimento:
-                    detalhes += f", Comprimento: {comprimento}"
-                if espessura:
-                    detalhes += f", Espessura: {espessura}"
-                if link:
-                    detalhes += f", Link: {link}"
-
-                label_servico_gerado = ctk.CTkLabel(
-                    row_frame, 
-                    text=detalhes,
-                    anchor="w", justify="left", wraplength=340
-                )
-                label_servico_gerado.grid(row=0, column=0, padx=2)
-
-                # Só exibe o botão de editar e excluir se o item não está sendo editado
-                if editando_item is None:
-                    btn_editar = ctk.CTkButton(
-                        row_frame, text="Editar", width=30, 
-                        command=lambda i=index: editar_item_tab3(i)
-                    )
-                    btn_editar.grid(row=0, column=1, padx=2)
-
-                    btn_excluir = ctk.CTkButton(
-                        row_frame, text="❌", width=30, 
-                        fg_color="red", hover_color="darkred", 
-                        command=lambda i=index: remover_item_tab3(i)
-                    )
-                    btn_excluir.grid(row=0, column=2, padx=2)
-                else:
-                    # Desabilita o botão de excluir enquanto um item está sendo editado
-                    pass
-
-        # Função para editar um serviço
-        def editar_item_tab3(index):
-            global editando_item
-            editando_item = index  # Marca que o item está sendo editado
-
-            servico_atual, quantidade_atual, altura_atual, largura_atual, \
-            comprimento_atual, espessura_atual, link_atual = servicos_tab3[index]
-
-            # Preenche os campos de entrada com os valores do item selecionado
-            descricao_compra_entry_tab3.delete(0, "end")
-            descricao_compra_entry_tab3.insert(0, servico_atual)
-
-            quantidade_entry_tab3.delete(0, "end")
-            quantidade_entry_tab3.insert(0, str(quantidade_atual))
-
-            altura_entry_tab3.delete(0, "end")
-            altura_entry_tab3.insert(0, altura_atual)
-
-            largura_entry_tab3.delete(0, "end")
-            largura_entry_tab3.insert(0, largura_atual)
-
-            comprimento_entry_tab3.delete(0, "end")
-            comprimento_entry_tab3.insert(0, comprimento_atual)
-
-            espessura_entry_tab3.delete(0, "end")
-            espessura_entry_tab3.insert(0, espessura_atual)
-
-            link_entry_tab3.delete(0, "end")
-            link_entry_tab3.insert(0, link_atual)
-
-            btn_adicionar_servico.configure(text="Salvar", command=lambda: salvar_edicao(index))
-
-            # Desabilita o botão de excluir
-            atualizar_lista_itens_tab3()
-
-        # Função para salvar a edição
-        def salvar_edicao(index):
-            global editando_item
-            novo_servico = descricao_compra_entry_tab3.get().strip()
-            nova_quantidade = quantidade_entry_tab3.get().strip()
-            nova_altura = altura_entry_tab3.get().strip()
-            nova_largura = largura_entry_tab3.get().strip()
-            novo_comprimento = comprimento_entry_tab3.get().strip()
-            nova_espessura = espessura_entry_tab3.get().strip()
-            novo_link = link_entry_tab3.get().strip()
-
-            if novo_servico and nova_quantidade.isdigit():
-                servicos_tab3[index] = (novo_servico, int(nova_quantidade), nova_altura, nova_largura, novo_comprimento, nova_espessura, novo_link)
-                
-                # Limpa os campos após a edição
-                descricao_compra_entry_tab3.delete(0, "end")
-                quantidade_entry_tab3.delete(0, "end")
-                altura_entry_tab3.delete(0, "end")
-                largura_entry_tab3.delete(0, "end")
-                comprimento_entry_tab3.delete(0, "end")
-                espessura_entry_tab3.delete(0, "end")
-                link_entry_tab3.delete(0, "end")
-
-                # Restaura o texto do botão para "Adicionar item"
-                btn_adicionar_servico.configure(text="Adicionar item", command=adicionar_item_tab3)
-                
-                # Reabilita o botão de excluir
-                editando_item = None  # Desmarca a edição
-                atualizar_lista_itens_tab3()
-
-        # Função para remover um serviço da lista
-        def remover_item_tab3(index):
-            global editando_item
-            if editando_item is None:  # Só permite excluir se não estiver editando
-                del servicos_tab3[index]
-                atualizar_lista_itens_tab3()
-            else:
-                notification_manager = NotificationManager(root)  # passando a instância da janela principal
-                notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a exclusão.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-                pass
 
         # Criando os campos de entrada
         descricao_compra_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="DESCRIÇÃO:")
@@ -1512,19 +1543,22 @@ def janela_principal():
 
         # Botão para adicionar serviço
         btn_adicionar_servico = ctk.CTkButton(master=frame_caixa_itens, text="Adicionar item", command=adicionar_item_tab3)
-
-######################
+        # -------------------------------
+        # Fim do frame para os itens
+        # -------------------------------
 
         data_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DATA DA LOCAÇÃO:")
         data_entry_tab3 = CTkDatePicker(master=frame_tab3)
         data_entry_tab3.set_date_format("%d/%m/%Y")
         data_entry_tab3.set_allow_manual_input(False)
+        widgets_para_limpar_tab3.append(data_entry_tab3)
 
         #row = 5
         prazo_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PRAZO:")
         prazo_entry_tab3 = CTkDatePicker(master=frame_tab3)
         prazo_entry_tab3.set_date_format("%d/%m/%Y")
         prazo_entry_tab3.set_allow_manual_input(False)
+        widgets_para_limpar_tab3.append(prazo_entry_tab3)
 
         servico_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="SERVIÇO:")
         servico_entry_tab3 = CustomEntry(master=frame_tab3)
@@ -1553,14 +1587,14 @@ def janela_principal():
         widgets_para_limpar_tab3.append(prefixo_entry_tab3)
 
         #row = 12
-        os_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="OS:")
-        os_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(os_entry_tab3)
-
-        #row = 13
         agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="AGÊNCIA:")
         agencia_entry_tab3 = CustomEntry(master=frame_tab3)
         widgets_para_limpar_tab3.append(agencia_entry_tab3)
+
+        #row = 13
+        os_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="OS:")
+        os_entry_tab3 = CustomEntry(master=frame_tab3)
+        widgets_para_limpar_tab3.append(os_entry_tab3)
 
         endereco_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ENDEREÇO DE ENTREGA:")
         endereco_agencia_entry_tab3 = CustomEntry(master=frame_tab3)
