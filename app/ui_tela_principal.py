@@ -462,11 +462,25 @@ def adicionar_item_tab3():
     espessura = espessura_entry_tab3.get().strip().upper()
     link = link_entry_tab3.get().strip().upper()
 
-    if servico and quantidade.isdigit():
+    if servico and not quantidade:
+        notification_manager.show_notification(
+            "Campo QUANTIDADE\nPreencha o campo!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    elif not servico and quantidade:
+        notification_manager.show_notification(
+            "Campo DESCRIÇÃO\nPreencha o campo!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    elif not servico and not quantidade:
+        notification_manager.show_notification(
+            "Campos DESCRIÇÃO e QUANTIDADE\nPreencha os campos!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    else:
         servicos_tab3.append([
-            servico, int(quantidade), altura, largura, comprimento, espessura, link
+            servico, quantidade, altura, largura, comprimento, espessura, link
         ])
-
         descricao_compra_entry_tab3.delete(0, "end")
 
         quantidade_entry_tab3.delete(0, "end")
@@ -485,11 +499,19 @@ def adicionar_item_tab3():
 
         link_entry_tab3.delete(0, "end")
         link_entry_tab3.focus()
+
+        descricao_compra_entry_tab3.focus()
+
         atualizar_lista_itens_tab3()
 
 def atualizar_lista_itens_tab3():
     for widget in frame_lista_itens.winfo_children():
         widget.destroy()
+
+    if len(servicos_tab3) > 0:
+        frame_lista_itens.grid(row=11, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
+    else:
+        frame_lista_itens.grid_forget()
 
     for index, (nome_item, quantidade, altura, largura, comprimento, espessura, link) in enumerate(servicos_tab3):
         row_frame = ctk.CTkFrame(frame_lista_itens, width=400)
@@ -544,18 +566,25 @@ def editar_item_tab3(index):
 
     altura_entry_tab3.delete(0, "end")
     altura_entry_tab3.insert(0, altura_atual)
+    altura_entry_tab3.focus()
 
     largura_entry_tab3.delete(0, "end")
     largura_entry_tab3.insert(0, largura_atual)
+    largura_entry_tab3.focus()
 
     comprimento_entry_tab3.delete(0, "end")
     comprimento_entry_tab3.insert(0, comprimento_atual)
+    comprimento_entry_tab3.focus()
 
     espessura_entry_tab3.delete(0, "end")
     espessura_entry_tab3.insert(0, espessura_atual)
+    espessura_entry_tab3.focus()
 
     link_entry_tab3.delete(0, "end")
     link_entry_tab3.insert(0, link_atual)
+    link_entry_tab3.focus()
+
+    descricao_compra_entry_tab3.focus()
 
     btn_adicionar_servico.configure(text="Salvar", command=lambda: salvar_edicao(index))
 
@@ -573,8 +602,23 @@ def salvar_edicao(index):
     nova_espessura = espessura_entry_tab3.get().strip()
     novo_link = link_entry_tab3.get().strip()
 
-    if novo_servico and nova_quantidade.isdigit():
-        servicos_tab3[index] = (novo_servico, int(nova_quantidade), nova_altura, nova_largura, novo_comprimento, nova_espessura, novo_link)
+    if novo_servico and not nova_quantidade:
+        notification_manager.show_notification(
+            "Campo QUANTIDADE\nA quantidade não pode ser nula!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    elif not novo_servico and nova_quantidade:
+        notification_manager.show_notification(
+            "Campo DESCRIÇÃO\nO campo deve ser preenchido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    elif not novo_servico and not nova_quantidade:
+        notification_manager.show_notification(
+            "Campos DESCRIÇÃO e QUANTIDADE\nOs campos devem ser preenchidos!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    else:
+        servicos_tab3[index] = (novo_servico, nova_quantidade, nova_altura, nova_largura, novo_comprimento, nova_espessura, novo_link)
         
         # Limpa os campos após a edição
         descricao_compra_entry_tab3.delete(0, "end")
@@ -590,6 +634,9 @@ def salvar_edicao(index):
         
         # Reabilita o botão de excluir
         editando_item = None  # Desmarca a edição
+
+        descricao_compra_entry_tab3.focus()
+
         atualizar_lista_itens_tab3()
 
 # Função para remover um serviço da lista
@@ -648,7 +695,6 @@ def gerar_texto_aquisicao():
         # Adiciona os campos comuns para os dois tipos
         campos_obrigatorios.extend([
             (data_tab3, "DATA DA LOCAÇÃO"),
-            (servico_tab3, "SERVIÇO"),
             (periodo_locacao_tab3, "PERÍODO DE LOCAÇÃO"),
             (prefixo_tab3, "PREFIXO"),
             (agencia_tab3, "AGÊNCIA"),
@@ -672,8 +718,12 @@ def gerar_texto_aquisicao():
 
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
-        notification_manager.show_notification("Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
+        if campos_vazios == ["DESCRIÇÃO E QUANTIDADE"]:
+            notification_manager.show_notification("Item(ns) não adicionado(s)", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
+        else:
+            notification_manager.show_notification("Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
 
     if os_num_tab3 == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -950,7 +1000,6 @@ def add_campos_tab3():
         #quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
         frame_caixa_itens.grid(row=3, column=0, columnspan=2, sticky="nsew", pady=5)       
         btn_adicionar_servico.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=5)
-        frame_lista_itens.grid(row=11, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
         prazo_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
         prazo_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
         servico_label_tab3.grid_forget()
@@ -1116,7 +1165,7 @@ def janela_principal():
 
     # Variáveis globais principais
     global root, tabview, frame, widgets_para_limpar, widgets_para_limpar_tab2, widgets_para_limpar_tab3
-    global usuarios_varios_departamentos, usuarios_gerais
+    global usuarios_varios_departamentos, usuarios_gerais, notification_manager
 
     # Widgets da aba PAGAMENTO
     global nome_usuario_entry, tipo_servico_combobox, nome_fornecedor_entry, prefixo_entry, agencia_entry
@@ -1157,6 +1206,7 @@ def janela_principal():
     root.title("Modelo Solicitação de Pagamento")
     root.geometry("520x600")
     ctk.set_default_color_theme("green")
+    notification_manager = NotificationManager(root)  # passando a instância da janela principal
 
     ''' CRIAÇÃO DAS ABAS PARA SELEÇAO DOS TIPOS DE MODELOS DE TEXTO '''
     tabview = ctk.CTkTabview(master=root)
