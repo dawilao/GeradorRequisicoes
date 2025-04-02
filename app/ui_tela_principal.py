@@ -658,11 +658,12 @@ def gerar_texto_aquisicao():
     nome_usuario_tab3 = arrumar_texto(nome_usuario_entry_tab3.get().upper())
     tipo_aquisicao_tab3 = arrumar_texto(tipo_aquisicao_combobox_tab3.get().upper())
     contrato_tab3 = arrumar_texto(contrato_combobox_tab3.get().upper())
-    descricao_tab3 = servicos_tab3
+    descricao_tab3 = arrumar_texto(descricao_locacao_entry_tab3.get().upper())
     prazo_tab3 = arrumar_texto(prazo_entry_tab3.get_date().upper())
     data_tab3 = arrumar_texto(data_entry_tab3.get_date().upper())
     servico_tab3 = arrumar_texto(servico_entry_tab3.get().upper())
     periodo_locacao_tab3 = arrumar_texto(periodo_locacao_combobox_tab3.get().upper())
+    quantidade_periodo_locacao_tab3 = arrumar_texto(quantidade_locacao_entry_tab3.get().upper())
     prefixo_tab3 = arrumar_texto(prefixo_entry_tab3.get())
     agencia_tab3 = arrumar_texto(agencia_entry_tab3.get().upper())
     os_num_tab3 = valida_os(os_entry_tab3.get())
@@ -675,13 +676,13 @@ def gerar_texto_aquisicao():
     campos_obrigatorios = [
         (nome_usuario_tab3, "USUÁRIO"),
         (tipo_aquisicao_tab3, "TIPO DE SERVIÇO"),
-        (contrato_tab3, "CONTRATO"),
-        (servicos_tab3 if servicos_tab3 else None, "DESCRIÇÃO E QUANTIDADE")
+        (contrato_tab3, "CONTRATO")
     ]
 
     if tipo_aquisicao_tab3 == "COMPRA":
         # Adiciona os campos comuns para os dois tipos
         campos_obrigatorios.extend([
+            (servicos_tab3 if servicos_tab3 else None, "DESCRIÇÃO E QUANTIDADE"),
             (prazo_tab3, "PRAZO"),
             (opcao_entrega_tab3, "OPÇÃO DE ENTREGA"),
             (nome_responsavel_tab3, "NOME DO RESPONSÁVEL"),
@@ -696,6 +697,7 @@ def gerar_texto_aquisicao():
         campos_obrigatorios.extend([
             (data_tab3, "DATA DA LOCAÇÃO"),
             (periodo_locacao_tab3, "PERÍODO DE LOCAÇÃO"),
+            (quantidade_periodo_locacao_tab3, "QUANTIDADE DE PERÍODOS"),
             (prefixo_tab3, "PREFIXO"),
             (agencia_tab3, "AGÊNCIA"),
             (os_num_tab3, "OS"),
@@ -728,6 +730,14 @@ def gerar_texto_aquisicao():
     if os_num_tab3 == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
+    
+    if quantidade_periodo_locacao_tab3:
+        if quantidade_periodo_locacao_tab3.isdigit():
+            quantidade_periodo_locacao_tab3 = int(quantidade_periodo_locacao_tab3)
+
+        if not isinstance(quantidade_periodo_locacao_tab3, int) or quantidade_periodo_locacao_tab3 < 1:
+            notification_manager.show_notification("Campo QUANTIDADE DE PERÍODOS\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
 
     if tipo_aquisicao_tab3 == "COMPRA":
         texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
@@ -769,11 +779,32 @@ def gerar_texto_aquisicao():
             texto += f"▪ *Descrição da locação:* {descricao_tab3}\n"
             texto += f"▪ *Data da locação:* {data_tab3}\n"
             texto += f"▪ *Serviço:* {servico_tab3}\n"
-            texto += f"▪ *Período da locação:* {periodo_locacao_tab3}\n"
+            
+            if periodo_locacao_tab3 == "DIÁRIA":
+                if quantidade_periodo_locacao_tab3 == 1:
+                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} {periodo_locacao_tab3}\n"
+                else:
+                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} {periodo_locacao_tab3}S\n"
+            elif periodo_locacao_tab3 == "SEMANAL":
+                if quantidade_periodo_locacao_tab3 == 1:
+                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} SEMANA\n"
+                else:
+                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} SEMANAS\n"
+            elif periodo_locacao_tab3 == "QUINZENAL":
+                if quantidade_periodo_locacao_tab3 == 1:
+                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} QUINZENA\n"
+                else:
+                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} QUINZENAS\n"
+            else:
+                if quantidade_periodo_locacao_tab3 == 1:
+                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} MÊS\n"
+                else:
+                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} MESES\n"
+            
             texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else f""
             texto += f"▪ *Entrega ou Retirada:* ENTREGA\n▪ *Endereço da Agência:* {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ *Entrega ou Retirada:* RETIRADA\n"            
             texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
-            texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"            
+            texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
 
     # Exibir texto na caixa de texto
     texto_aquisicao.delete(1.0, tk.END)
@@ -1019,58 +1050,27 @@ def add_campos_tab3():
         contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
         contato_responsavel_entry_tab3.grid(row=19, column=1, sticky="ew", padx=(0, 10), pady=2)
     elif tipo_aquisicao_tab3 == "LOCAÇÃO":
-        widgets = [
-            descricao_compra_label_tab3, descricao_compra_entry_tab3,
-            quantidade_label_tab3, quantidade_entry_tab3,
-            frame_lista_itens,
-            altura_label_tab3, altura_entry_tab3,
-            largura_label_tab3, largura_entry_tab3,
-            comprimento_label_tab3, comprimento_entry_tab3,
-            espessura_label_tab3, espessura_entry_tab3,
-            link_label_tab3, link_entry_tab3, frame_caixa_itens
-        ]
-
-        for widget in widgets:
-            if widget is not None:
-                widget.grid_forget()
-            
+        frame_caixa_itens.grid_forget()
         prazo_label_tab3.grid_forget()
-        prazo_entry_tab3.grid_forget()    
+        prazo_entry_tab3.grid_forget()
         descricao_locacao_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
         descricao_locacao_entry_tab3.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
         data_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
         data_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-        altura_label_tab3.grid_forget()
-        altura_entry_tab3.grid_forget()
-        largura_label_tab3.grid_forget()
-        largura_entry_tab3.grid_forget()
-        comprimento_label_tab3.grid_forget()
-        comprimento_entry_tab3.grid_forget()
         servico_label_tab3.grid(row=5, column=0, sticky="w", padx=(10, 10))
         servico_entry_tab3.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
-        espessura_label_tab3.grid_forget()
-        espessura_entry_tab3.grid_forget()
         periodo_locacao_label_tab3.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        periodo_locacao_combobox_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)        
-        btn_adicionar_servico.grid_forget()
-        link_label_tab3.grid_forget()
-        link_entry_tab3.grid_forget()
-        prefixo_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
-        prefixo_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        opcao_entrega_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
-        opcao_entrega_combobox_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-        prefixo_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
-        prefixo_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        opcao_entrega_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
-        opcao_entrega_combobox_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
+        periodo_locacao_combobox_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+        quantidade_locacao_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        quantidade_locacao_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+        prefixo_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
+        prefixo_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
+        opcao_entrega_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
+        opcao_entrega_combobox_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
         nome_responsavel_label_tab3.grid(row=18, column=0, sticky="w", padx=(10, 10))
         nome_responsavel_entry_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=2)
         contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
@@ -1199,7 +1199,7 @@ def janela_principal():
     global altura_label_tab3, altura_entry_tab3, largura_label_tab3, largura_entry_tab3, comprimento_label_tab3, comprimento_entry_tab3
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
-    global frame_caixa_itens, editando_item
+    global frame_caixa_itens, editando_item, quantidade_locacao_label_tab3, quantidade_locacao_entry_tab3
 
     # Configuração da interface gráfica
     root = ctk.CTk()
@@ -1615,7 +1615,6 @@ def janela_principal():
         widgets_para_limpar_tab3.append(servico_entry_tab3)
 
         #row = 6
-
         periodo_locacao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PERÍODO DE LOCAÇÃO:")
         periodo_locacao_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
             "DIÁRIA", "SEMANAL", "QUINZENAL", "MENSAL"
@@ -1624,6 +1623,9 @@ def janela_principal():
         widgets_para_limpar_tab3.append(periodo_locacao_combobox_tab3)
 
         #row = 7
+        quantidade_locacao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="QUANTIDADE DE PERÍODOS:")
+        quantidade_locacao_entry_tab3 = CustomEntry(master=frame_tab3, placeholder_text="Apenas números")
+        widgets_para_limpar_tab3.append(quantidade_locacao_label_tab3)
 
         #row = 8
 
