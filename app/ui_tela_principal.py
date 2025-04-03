@@ -449,6 +449,86 @@ def gerar_texto_email():
 # Funções da aba "Aquisições"
 # -------------------------------
 
+def add_campos_tab3():
+    tipo_aquisicao_tab3 = tipo_aquisicao_combobox_tab3.get()
+    contrato_tab3 = contrato_combobox_tab3.get()
+ 
+    if tipo_aquisicao_tab3 == "COMPRA":
+        data_label_tab3.grid_forget()
+        data_entry_tab3.grid_forget()
+        #quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        #quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+        frame_caixa_itens.grid(row=3, column=0, columnspan=2, sticky="nsew", pady=5)       
+        btn_adicionar_servico.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=5)
+        prazo_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
+        prazo_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
+        servico_label_tab3.grid_forget()
+        servico_entry_tab3.grid_forget()
+        periodo_locacao_label_tab3.grid_forget()
+        periodo_locacao_combobox_tab3.grid_forget()
+        quantidade_locacao_label_tab3.grid_forget()
+        quantidade_locacao_entry_tab3.grid_forget()
+        prefixo_label_tab3.grid(row=13, column=0, sticky="w", padx=(10, 10))
+        prefixo_entry_tab3.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_label_tab3.grid(row=14, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab3.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_label_tab3.grid(row=15, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab3.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
+        opcao_entrega_label_tab3.grid(row=16, column=0, sticky="w", padx=(10, 10))
+        opcao_entrega_combobox_tab3.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
+        nome_responsavel_label_tab3.grid(row=18, column=0, sticky="w", padx=(10, 10))
+        nome_responsavel_entry_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=2)
+        contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
+        contato_responsavel_entry_tab3.grid(row=19, column=1, sticky="ew", padx=(0, 10), pady=2)
+    elif tipo_aquisicao_tab3 == "LOCAÇÃO":
+        frame_caixa_itens.grid_forget()
+        prazo_label_tab3.grid_forget()
+        prazo_entry_tab3.grid_forget()
+        descricao_locacao_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
+        descricao_locacao_entry_tab3.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+        data_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        data_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+        servico_label_tab3.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        servico_entry_tab3.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+        periodo_locacao_label_tab3.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        periodo_locacao_combobox_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+        quantidade_locacao_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        quantidade_locacao_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+        prefixo_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
+        prefixo_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
+        opcao_entrega_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
+        opcao_entrega_combobox_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
+        nome_responsavel_label_tab3.grid(row=18, column=0, sticky="w", padx=(10, 10))
+        nome_responsavel_entry_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=2)
+        contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
+        contato_responsavel_entry_tab3.grid(row=19, column=1, sticky="ew", padx=(0, 10), pady=2)
+    
+    if contrato_tab3 == "ESCRITÓRIO":
+        prefixo_label_tab3.grid_forget()
+        prefixo_entry_tab3.grid_forget()
+        prefixo_entry_tab3.delete(0, tk.END)
+        os_label_tab3.grid_forget()
+        os_entry_tab3.grid_forget()
+        os_entry_tab3.delete(0, tk.END)
+        agencia_label_tab3.grid_forget()
+        agencia_entry_tab3.grid_forget()
+        agencia_entry_tab3.delete(0, tk.END)
+
+    if opcao_entrega_combobox_tab3.get() == "ENTREGA":
+        local_retirada_label_tab3.grid_forget()
+        local_retirada_entry_tab3.grid_forget()
+        endereco_agencia_label_tab3.grid(row=17, column=0, sticky="w", padx=(10, 10))
+        endereco_agencia_entry_tab3.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=2)
+    elif opcao_entrega_combobox_tab3.get() == "RETIRADA":
+        endereco_agencia_label_tab3.grid_forget()
+        endereco_agencia_entry_tab3.grid_forget()
+        local_retirada_label_tab3.grid(row=17, column=0, sticky="w", padx=(10, 10))
+        local_retirada_entry_tab3.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=2)
+
 # Lista para armazenar serviços e quantidades
 servicos_tab3 = []  # Exemplo: [("Abertura de porta", 1, "2m", "1m", "3m", "2cm", "http://exemplo.com")]
 
@@ -669,6 +749,7 @@ def gerar_texto_aquisicao():
     os_num_tab3 = valida_os(os_entry_tab3.get())
     opcao_entrega_tab3 = arrumar_texto(opcao_entrega_combobox_tab3.get().upper())
     endereco_agencia_tab3 = arrumar_texto(endereco_agencia_entry_tab3.get().upper())
+    local_retirada_tab3 = arrumar_texto(local_retirada_entry_tab3.get().upper())
     nome_responsavel_tab3 = arrumar_texto(nome_responsavel_entry_tab3.get().upper())
     contato_responsavel_tab3 = arrumar_texto(contato_responsavel_entry_tab3.get().upper())
 
@@ -770,41 +851,59 @@ def gerar_texto_aquisicao():
                         texto += f"      - *Link:* {link}\n"
 
         texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else ""
-        texto += f"▪ *Entrega ou Retirada:* ENTREGA\n▪ *Endereço da Agência:* {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ *Entrega ou Retirada:* RETIRADA\n"
+        
+        if opcao_entrega_tab3 == "ENTREGA":
+            texto += f"▪ *Entrega ou Retirada:* ENTREGA\n"
+            texto += f"▪ *Endereço da Entrega:* {endereco_agencia_tab3}\n"
+        else: 
+            texto += "▪ *Entrega ou Retirada:* RETIRADA\n"
+
+            if local_retirada_tab3:
+                texto += f"▪ *Local de Retirada:* {local_retirada_tab3}\n"
+                
         texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
         texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
     else:        
-            texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
-            texto += f"▪ *Contrato:* {contrato_tab3}\n"
-            texto += f"▪ *Descrição da locação:* {descricao_tab3}\n"
-            texto += f"▪ *Data da locação:* {data_tab3}\n"
-            texto += f"▪ *Serviço:* {servico_tab3}\n"
-            
-            if periodo_locacao_tab3 == "DIÁRIA":
-                if quantidade_periodo_locacao_tab3 == 1:
-                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} {periodo_locacao_tab3}\n"
-                else:
-                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} {periodo_locacao_tab3}S\n"
-            elif periodo_locacao_tab3 == "SEMANAL":
-                if quantidade_periodo_locacao_tab3 == 1:
-                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} SEMANA\n"
-                else:
-                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} SEMANAS\n"
-            elif periodo_locacao_tab3 == "QUINZENAL":
-                if quantidade_periodo_locacao_tab3 == 1:
-                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} QUINZENA\n"
-                else:
-                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} QUINZENAS\n"
+        texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
+        texto += f"▪ *Contrato:* {contrato_tab3}\n"
+        texto += f"▪ *Descrição da locação:* {descricao_tab3}\n"
+        texto += f"▪ *Data da locação:* {data_tab3}\n"
+        texto += f"▪ *Serviço:* {servico_tab3}\n"
+        
+        if periodo_locacao_tab3 == "DIÁRIA":
+            if quantidade_periodo_locacao_tab3 == 1:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} {periodo_locacao_tab3}\n"
             else:
-                if quantidade_periodo_locacao_tab3 == 1:
-                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} MÊS\n"
-                else:
-                    texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} MESES\n"
-            
-            texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else f""
-            texto += f"▪ *Entrega ou Retirada:* ENTREGA\n▪ *Endereço da Agência:* {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ *Entrega ou Retirada:* RETIRADA\n"            
-            texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
-            texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} {periodo_locacao_tab3}S\n"
+        elif periodo_locacao_tab3 == "SEMANAL":
+            if quantidade_periodo_locacao_tab3 == 1:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} SEMANA\n"
+            else:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} SEMANAS\n"
+        elif periodo_locacao_tab3 == "QUINZENAL":
+            if quantidade_periodo_locacao_tab3 == 1:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} QUINZENA\n"
+            else:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} QUINZENAS\n"
+        else:
+            if quantidade_periodo_locacao_tab3 == 1:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} MÊS\n"
+            else:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} MESES\n"
+        
+        texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else f""
+        
+        if opcao_entrega_tab3 == "ENTREGA":
+            texto += f"▪ *Entrega ou Retirada:* ENTREGA\n"
+            texto += f"▪ *Endereço da Entrega:* {endereco_agencia_tab3}\n"
+        else: 
+            texto += "▪ *Entrega ou Retirada:* RETIRADA\n"
+
+            if local_retirada_tab3:
+                texto += f"▪ *Local de Retirada:* {local_retirada_tab3}\n"
+
+        texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
+        texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
 
     # Exibir texto na caixa de texto
     texto_aquisicao.delete(1.0, tk.END)
@@ -1020,82 +1119,6 @@ def on_return_press(event):
     elif aba_atual == "AQUISIÇÃO":
         gerar_button_tab3.invoke()
 
-def add_campos_tab3():
-    tipo_aquisicao_tab3 = tipo_aquisicao_combobox_tab3.get()
-    contrato_tab3 = contrato_combobox_tab3.get()
- 
-    if tipo_aquisicao_tab3 == "COMPRA":
-        data_label_tab3.grid_forget()
-        data_entry_tab3.grid_forget()
-        #quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        #quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-        frame_caixa_itens.grid(row=3, column=0, columnspan=2, sticky="nsew", pady=5)       
-        btn_adicionar_servico.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=5)
-        prazo_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
-        prazo_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
-        servico_label_tab3.grid_forget()
-        servico_entry_tab3.grid_forget()
-        periodo_locacao_label_tab3.grid_forget()
-        periodo_locacao_combobox_tab3.grid_forget()
-        quantidade_locacao_label_tab3.grid_forget()
-        quantidade_locacao_entry_tab3.grid_forget()
-        prefixo_label_tab3.grid(row=13, column=0, sticky="w", padx=(10, 10))
-        prefixo_entry_tab3.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab3.grid(row=14, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab3.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab3.grid(row=15, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab3.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
-        opcao_entrega_label_tab3.grid(row=16, column=0, sticky="w", padx=(10, 10))
-        opcao_entrega_combobox_tab3.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
-        nome_responsavel_label_tab3.grid(row=18, column=0, sticky="w", padx=(10, 10))
-        nome_responsavel_entry_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=2)
-        contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
-        contato_responsavel_entry_tab3.grid(row=19, column=1, sticky="ew", padx=(0, 10), pady=2)
-    elif tipo_aquisicao_tab3 == "LOCAÇÃO":
-        frame_caixa_itens.grid_forget()
-        prazo_label_tab3.grid_forget()
-        prazo_entry_tab3.grid_forget()
-        descricao_locacao_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
-        descricao_locacao_entry_tab3.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
-        data_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        data_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-        servico_label_tab3.grid(row=5, column=0, sticky="w", padx=(10, 10))
-        servico_entry_tab3.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
-        periodo_locacao_label_tab3.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        periodo_locacao_combobox_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
-        quantidade_locacao_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
-        quantidade_locacao_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
-        prefixo_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
-        prefixo_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-        opcao_entrega_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
-        opcao_entrega_combobox_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
-        nome_responsavel_label_tab3.grid(row=18, column=0, sticky="w", padx=(10, 10))
-        nome_responsavel_entry_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=2)
-        contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
-        contato_responsavel_entry_tab3.grid(row=19, column=1, sticky="ew", padx=(0, 10), pady=2)
-    
-    if contrato_tab3 == "ESCRITÓRIO":
-        prefixo_label_tab3.grid_forget()
-        prefixo_entry_tab3.grid_forget()
-        prefixo_entry_tab3.delete(0, tk.END)
-        os_label_tab3.grid_forget()
-        os_entry_tab3.grid_forget()
-        os_entry_tab3.delete(0, tk.END)
-        agencia_label_tab3.grid_forget()
-        agencia_entry_tab3.grid_forget()
-        agencia_entry_tab3.delete(0, tk.END)
-
-    if opcao_entrega_combobox_tab3.get() == "ENTREGA":
-        endereco_agencia_label_tab3.grid(row=17, column=0, sticky="w", padx=(10, 10))
-        endereco_agencia_entry_tab3.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=2)
-    else:
-        endereco_agencia_label_tab3.grid_forget()
-        endereco_agencia_entry_tab3.grid_forget()
-
 def restaurar_valores_tipo_aquisicao(event):
     """Se o usuário apagar manualmente, restaura os valores corretos"""
     tipo_atual = tipo_servico_combobox.get()
@@ -1122,41 +1145,43 @@ def restaurar_valores_tipo_aquisicao(event):
         tipo_aquisicao_combobox.set("")  # Mantém o campo vazio
 
 def limpar_dados():
+    """
+    Limpar widgets da aba ativa
+    """
+    
     aba_ativa  = tabview.get()
     
-    # Limpar widgets da aba ativa
     if aba_ativa == "PAGAMENTO":
         # Limpar os widgets da Tab 1
         for widget in widgets_para_limpar:
             if isinstance(widget, ctk.CTkEntry):
-                widget.delete(0, tk.END)  # Limpa o campo de entrada
+                widget.delete(0, tk.END)
             elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete("0.0", tk.END)  # Limpa o campo de texto
+                widget.delete("0.0", tk.END)
             elif isinstance(widget, ctk.CTkComboBox):
-                widget.set("")  # Reseta o ComboBox
+                widget.set("")
     elif aba_ativa == "E-MAIL":
         # Limpar os widgets da Tab 2
         for widget in widgets_para_limpar_tab2:
             if isinstance(widget, ctk.CTkEntry):
-                widget.delete(0, tk.END)  # Limpa o campo de entrada
+                widget.delete(0, tk.END)
             elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete("0.0", tk.END)  # Limpa o campo de texto
+                widget.delete("0.0", tk.END)
             elif isinstance(widget, ctk.CTkComboBox):
-                widget.set("")  # Reseta o ComboBox
+                widget.set("")
     elif aba_ativa == "AQUISIÇÃO":
         if editando_item is None:
             # Limpar os widgets da Tab 3
             for widget in widgets_para_limpar_tab3:
                 if isinstance(widget, ctk.CTkEntry):
-                    widget.delete(0, tk.END)  # Limpa o campo de entrada
+                    widget.delete(0, tk.END)
                 elif isinstance(widget, ctk.CTkTextbox):
-                    widget.delete("0.0", tk.END)  # Limpa o campo de texto
+                    widget.delete("0.0", tk.END)
                 elif isinstance(widget, ctk.CTkComboBox):
-                    widget.set("")  # Reseta o ComboBox
+                    widget.set("")
                 elif isinstance(widget, CTkDatePicker):
                     widget.set("")
 
-            # Limpar todos os itens adicionados na lista de serviços
                 servicos_tab3.clear()
                 atualizar_lista_itens_tab3()
         else:
@@ -1203,6 +1228,7 @@ def janela_principal():
     global altura_label_tab3, altura_entry_tab3, largura_label_tab3, largura_entry_tab3, comprimento_label_tab3, comprimento_entry_tab3
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
+    global local_retirada_label_tab3, local_retirada_entry_tab3
     global frame_caixa_itens, editando_item, quantidade_locacao_label_tab3, quantidade_locacao_entry_tab3
 
     # Configuração da interface gráfica
@@ -1652,11 +1678,6 @@ def janela_principal():
         os_entry_tab3 = CustomEntry(master=frame_tab3)
         widgets_para_limpar_tab3.append(os_entry_tab3)
 
-        endereco_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ENDEREÇO DE ENTREGA:")
-        endereco_agencia_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(endereco_agencia_entry_tab3)
-
-        #row = 14
         opcao_entrega_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="OPÇÃO DE ENTREGA:")
         opcao_entrega_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
             "ENTREGA",
@@ -1664,6 +1685,15 @@ def janela_principal():
         ], command=lambda choice: add_campos_tab3())
         opcao_entrega_combobox_tab3.set("")
         widgets_para_limpar_tab3.append(opcao_entrega_combobox_tab3)
+
+        #row = 14
+        endereco_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ENDEREÇO DE ENTREGA:")
+        endereco_agencia_entry_tab3 = CustomEntry(master=frame_tab3)
+        widgets_para_limpar_tab3.append(endereco_agencia_entry_tab3)
+
+        local_retirada_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="LOCAL DE RETIRADA:")
+        local_retirada_entry_tab3 = CustomEntry(master=frame_tab3, placeholder_text="Opcional")
+        widgets_para_limpar_tab3.append(local_retirada_entry_tab3)
 
         #row = 15
         nome_responsavel_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="NOME DO RESPONSÁVEL:")
