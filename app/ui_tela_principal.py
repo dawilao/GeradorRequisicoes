@@ -480,6 +480,8 @@ def add_campos_tab3():
         nome_responsavel_entry_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=2)
         contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
         contato_responsavel_entry_tab3.grid(row=19, column=1, sticky="ew", padx=(0, 10), pady=2)
+        observacoes_label_tab3.grid(row=20, column=0, sticky="w", padx=(10, 10))
+        observacoes_entry_tab3.grid(row=20, column=1, sticky="ew", padx=(0, 10), pady=2)
     elif tipo_aquisicao_tab3 == "LOCAÇÃO":
         frame_caixa_itens.grid_forget()
         prazo_label_tab3.grid_forget()
@@ -506,6 +508,8 @@ def add_campos_tab3():
         nome_responsavel_entry_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=2)
         contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
         contato_responsavel_entry_tab3.grid(row=19, column=1, sticky="ew", padx=(0, 10), pady=2)
+        observacoes_label_tab3.grid(row=20, column=0, sticky="w", padx=(10, 10))
+        observacoes_entry_tab3.grid(row=20, column=1, sticky="ew", padx=(0, 10), pady=2)
     
     if contrato_tab3 == "ESCRITÓRIO":
         prefixo_label_tab3.grid_forget()
@@ -518,7 +522,12 @@ def add_campos_tab3():
         agencia_entry_tab3.grid_forget()
         agencia_entry_tab3.delete(0, tk.END)
 
-    if opcao_entrega_combobox_tab3.get() == "ENTREGA":
+    if opcao_entrega_combobox_tab3.get() == "":
+        local_retirada_label_tab3.grid_forget()
+        local_retirada_entry_tab3.grid_forget()
+        endereco_agencia_label_tab3.grid_forget()
+        endereco_agencia_entry_tab3.grid_forget()
+    elif opcao_entrega_combobox_tab3.get() == "ENTREGA":
         local_retirada_label_tab3.grid_forget()
         local_retirada_entry_tab3.grid_forget()
         endereco_agencia_label_tab3.grid(row=17, column=0, sticky="w", padx=(10, 10))
@@ -729,9 +738,6 @@ def remover_item_tab3(index):
         notification_manager = NotificationManager(root)  # passando a instância da janela principal
         notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a exclusão.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
         pass
-# -------------------------------
-# Fim das funções da aba "Aquisições"
-# -------------------------------
 
 def gerar_texto_aquisicao():
     # Coletar dados dos campos
@@ -752,6 +758,7 @@ def gerar_texto_aquisicao():
     local_retirada_tab3 = arrumar_texto(local_retirada_entry_tab3.get().upper())
     nome_responsavel_tab3 = arrumar_texto(nome_responsavel_entry_tab3.get().upper())
     contato_responsavel_tab3 = arrumar_texto(contato_responsavel_entry_tab3.get().upper())
+    observacoes_tab3 = arrumar_texto(observacoes_entry_tab3.get().upper())
 
     # Verificar se algum campo obrigatório está vazio
     campos_obrigatorios = [
@@ -863,6 +870,7 @@ def gerar_texto_aquisicao():
                 
         texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
         texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
+        texto += f"▪ *Observações:* {observacoes_tab3}\n" if observacoes_tab3 else ""
     else:        
         texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
         texto += f"▪ *Contrato:* {contrato_tab3}\n"
@@ -904,6 +912,7 @@ def gerar_texto_aquisicao():
 
         texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
         texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
+        texto += f"▪ *Observações:* {observacoes_tab3}\n" if observacoes_tab3 else ""
 
     # Exibir texto na caixa de texto
     texto_aquisicao.delete(1.0, tk.END)
@@ -912,7 +921,11 @@ def gerar_texto_aquisicao():
     # Copiar automaticamente o texto gerado caso o switch esteja ativo
     if switch_autocopia_frame_tab3_var.get():
         pyperclip.copy(texto)
-    
+
+# -------------------------------
+# Fim das funções da aba "Aquisições"
+# -------------------------------
+
 def add_campos():
     tipo_servico = tipo_servico_combobox.get()
 
@@ -1184,6 +1197,8 @@ def limpar_dados():
 
                 servicos_tab3.clear()
                 atualizar_lista_itens_tab3()
+
+                add_campos_tab3()
         else:
             notification_manager = NotificationManager(root)  # passando a instância da janela principal
             notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a limpeza dos campos.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
@@ -1228,7 +1243,7 @@ def janela_principal():
     global altura_label_tab3, altura_entry_tab3, largura_label_tab3, largura_entry_tab3, comprimento_label_tab3, comprimento_entry_tab3
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
-    global local_retirada_label_tab3, local_retirada_entry_tab3
+    global local_retirada_label_tab3, local_retirada_entry_tab3, observacoes_label_tab3, observacoes_entry_tab3
     global frame_caixa_itens, editando_item, quantidade_locacao_label_tab3, quantidade_locacao_entry_tab3
 
     # Configuração da interface gráfica
@@ -1704,25 +1719,29 @@ def janela_principal():
         contato_responsavel_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="CONTATO DO RESPONSÁVEL:")
         contato_responsavel_entry_tab3 = CustomEntry(master=frame_tab3)
         widgets_para_limpar_tab3.append(contato_responsavel_entry_tab3)
+
+        observacoes_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="OBSERVAÇÕES:")
+        observacoes_entry_tab3 = CustomEntry(master=frame_tab3, placeholder_text="Opcional")
+        widgets_para_limpar_tab3.append(observacoes_entry_tab3)
         
         #row = 17
         gerar_button_tab3 = ctk.CTkButton(master=frame_tab3, text="GERAR", command=gerar_texto_aquisicao)
-        gerar_button_tab3.grid(row=20, column=0, sticky="ew", padx=(10, 10), pady=10)
+        gerar_button_tab3.grid(row=21, column=0, sticky="ew", padx=(10, 10), pady=10)
 
         root.bind("<Return>", on_return_press)
 
         limpar_button_tab3 = ctk.CTkButton(master=frame_tab3, text="LIMPAR", width=150, command=limpar_dados)
-        limpar_button_tab3.grid(row=20, column=1, sticky="ew", padx=(0, 10), pady=10)
+        limpar_button_tab3.grid(row=21, column=1, sticky="ew", padx=(0, 10), pady=10)
 
         #row = 18
         switch_autocopia_frame_tab3_var = tk.BooleanVar(value=True)
         switch_autocopia_frame_tab3 = ctk.CTkSwitch(master=frame_tab3, text="Auto-Cópia",
                                         variable=switch_autocopia_frame_tab3_var, onvalue=True, offvalue=False)
-        switch_autocopia_frame_tab3.grid(row=21, column=0, columnspan=2, sticky="n", padx=10, pady=10)
+        switch_autocopia_frame_tab3.grid(row=22, column=0, columnspan=2, sticky="n", padx=10, pady=10)
 
         #row = 19
         texto_aquisicao = ctk.CTkTextbox(master=frame_tab3)
-        texto_aquisicao.grid(row=22, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
+        texto_aquisicao.grid(row=23, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
         widgets_para_limpar_tab3.append(texto_aquisicao)
 
     root.mainloop()
