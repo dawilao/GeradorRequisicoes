@@ -120,7 +120,7 @@ def gerar_solicitacao():
         "C. O. RECIFE - PE - 5254": "PE",
         "C. O. MANAUS - AM - 7649": "AM",
         "C. O. VOLTA REDONDA - RJ - 0215": "VR",
-        "C. O. RONDÔNIA - RD - 0710": "RO",
+        "C. O. RONDÔNIA - RD - 0710": "RD",
         "ATA BB CURITIBA - 0232": "ATA PR",
         "C. E. MANAUS - S/N": "BB AM",
         "CAIXA BAHIA - 4922.2024": "CAIXA BA",
