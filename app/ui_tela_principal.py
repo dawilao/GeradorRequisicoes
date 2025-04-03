@@ -1153,6 +1153,8 @@ def limpar_dados():
                     widget.delete("0.0", tk.END)  # Limpa o campo de texto
                 elif isinstance(widget, ctk.CTkComboBox):
                     widget.set("")  # Reseta o ComboBox
+                elif isinstance(widget, CTkDatePicker):
+                    widget.set("")
 
             # Limpar todos os itens adicionados na lista de serviços
                 servicos_tab3.clear()

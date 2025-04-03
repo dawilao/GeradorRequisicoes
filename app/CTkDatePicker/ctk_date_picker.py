@@ -200,3 +200,13 @@ class CTkDatePicker(ctk.CTkFrame):
             self.date_entry.configure(state='disabled')
         else:
             self.date_entry.configure(state='normal')
+
+    def set(self, value: str):
+        if not self.allow_manual_input:
+            self.date_entry.configure(state="normal")
+            self.date_entry.delete(0, tk.END)
+            self.date_entry.insert(0, value)
+            self.date_entry.configure(state="disabled")
+        else:
+            self.date_entry.delete(0, tk.END)
+            self.date_entry.insert(0, value)
