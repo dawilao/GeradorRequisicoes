@@ -1037,6 +1037,8 @@ def add_campos_tab3():
         servico_entry_tab3.grid_forget()
         periodo_locacao_label_tab3.grid_forget()
         periodo_locacao_combobox_tab3.grid_forget()
+        quantidade_locacao_label_tab3.grid_forget()
+        quantidade_locacao_entry_tab3.grid_forget()
         prefixo_label_tab3.grid(row=13, column=0, sticky="w", padx=(10, 10))
         prefixo_entry_tab3.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
         agencia_label_tab3.grid(row=14, column=0, sticky="w", padx=(10, 10))
