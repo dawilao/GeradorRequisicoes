@@ -69,6 +69,21 @@ def identifica_preenchimento_pref_os_age(prefixo, agencia, os_num):
 # Funções da aba "Pagamento"
 # -------------------------------
 
+itens_pagamento = []
+
+def add_item_pagamento():
+    descricao = arrumar_texto(descricao_do_item_pagamento_entry.get().upper())
+
+    if not descricao:
+        notification_manager.show_notification("Campo DESCRIÇÃO DO ITEM\nPor favor, insira uma descrição válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return
+    
+    itens_pagamento.append(descricao)
+    descricao_do_item_pagamento_entry.delete(0, tk.END)
+
+    atualizar_lista_itens_pagamento()
+
+
 def add_campos():
     tipo_servico = tipo_servico_combobox.get()
 
@@ -105,7 +120,7 @@ def add_campos():
     saida_destino_entry.delete(0, tk.END)
     tecnicos_entry.delete(0, tk.END)
 
-    if tipo_servico == "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA":
+    if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
         competencia_label.grid(row=9, column=0, sticky="w", padx=(10, 10))
         competencia_combobox.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
         porcentagem_label.grid(row=10, column=0, sticky="w", padx=(10, 10))
@@ -141,7 +156,7 @@ def add_campos():
         os_entry.grid_forget()
         agencia_label.grid_forget()
         agencia_entry.grid_forget()
-    elif tipo_servico in {"REEMBOLSO UBER", "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA"}:
+    elif tipo_servico in {"REEMBOLSO UBER", "PREST. SERVIÇO/MÃO DE OBRA"}:
         prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
         prefixo_entry.configure(placeholder_text="Opcional")
         prefixo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
@@ -166,7 +181,7 @@ def add_campos():
         os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
 
     tipo_pagamento_combobox.set("") # limpar a seleção antes de configurar os valores
-    if tipo_servico in {"PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA", "ABASTECIMENTO"}:
+    if tipo_servico in {"PREST. SERVIÇO/MÃO DE OBRA", "ABASTECIMENTO"}:
         opcoes_pagamento = ["PIX"]
     elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS", "AQUISIÇÃO COM OS", "ENVIO DE MATERIAL", "TRANSPORTADORA"}:
         opcoes_pagamento = ["PIX", "VEXPENSES", "FATURAMENTO"]
@@ -329,7 +344,7 @@ def gerar_solicitacao():
 
     if tipo_servico == "ABASTECIMENTO":
         campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
-    elif tipo_servico == "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA":
+    elif tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
         campos_obrigatorios.extend([
             (competencia, "COMPETÊNCIA"),
             (porcentagem, "% DO ADIANTAMENTO DO PARCEIRO")
@@ -428,7 +443,7 @@ def gerar_solicitacao():
     nome_arquivo_sem_ext, ext = splitext(nome_arquivo)
 
     # Gerar texto da solicitação
-    if tipo_servico == "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA":
+    if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
         texto = (
             f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
             f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
@@ -1252,6 +1267,9 @@ def janela_principal():
     global nome_benef_pix_label, nome_benef_pix_entry
     global tipo_aquisicao_label, gerar_button
     global descricao_utilidades_label, descricao_utilidades_entry
+    global frame_caixa_itens_pagamento, frame_lista_itens_pagamento
+    global descricao_do_item_pagamento_label, descricao_do_item_pagamento_entry
+    global editando_item_pagamento, btn_adicionar_servico_pagamento
 
     # Widgets da aba E-MAIL
     global nome_usuario_entry_tab2, tipo_servico_combobox_tab2, prefixo_entry_tab2, agencia_entry_tab2
@@ -1271,7 +1289,6 @@ def janela_principal():
     global espessura_label_tab3, quantidade_label_tab3, link_label_tab3, prefixo_label_tab3, os_label_tab3
     global agencia_label_tab3, opcao_entrega_label_tab3, nome_responsavel_label_tab3, contato_responsavel_agencia_label_tab3
     global altura_label_tab3, altura_entry_tab3, largura_label_tab3, largura_entry_tab3, comprimento_label_tab3, comprimento_entry_tab3
-    global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
     global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
     global local_retirada_label_tab3, local_retirada_entry_tab3, observacoes_label_tab3, observacoes_entry_tab3
     global frame_caixa_itens, editando_item, quantidade_locacao_label_tab3, quantidade_locacao_entry_tab3
@@ -1359,21 +1376,23 @@ def janela_principal():
 
         ctk.CTkLabel(master=frame, text="TIPO DE SERVIÇO:").grid(row=1, column=0, sticky="w", padx=(10, 10))
         tipo_servico_combobox = CustomComboBox(master=frame, values=[
-            "ABASTECIMENTO",  
-            "AQUISIÇÃO COM OS",  
-            "AQUISIÇÃO SEM OS",  
-            "CARRETO",  
-            "COMPRA IN LOCO",  
+            "ABASTECIMENTO",
+            "ADIANTAMENTO/PAGAMENTO PARCEIRO",
+            "AQUISIÇÃO COM OS",
+            "AQUISIÇÃO SEM OS",
+            "CARRETO",
+            "COMPRA IN LOCO",
             "ENVIO DE MATERIAL",
             "ESTACIONAMENTO",
             "HOSPEDAGEM",
             "ORÇAMENTO APROVADO",
-            "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA",  
-            "REEMBOLSO COM OS",  
-            "REEMBOLSO SEM OS",  
-            "REEMBOLSO UBER",  
-            "SOLICITAÇÃO COM OS",  
-            "SOLICITAÇÃO SEM OS",  
+            "PREST. SERVIÇO/MÃO DE OBRA",
+            "REEMBOLSO COM OS",
+            "REEMBOLSO SEM OS",
+            "REEMBOLSO UBER",
+            "RELATÓRIO EXTRA",
+            "SOLICITAÇÃO COM OS",
+            "SOLICITAÇÃO SEM OS",
             "TRANSPORTADORA"
         ], command=lambda choice: add_campos())
         tipo_servico_combobox.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
@@ -1386,6 +1405,30 @@ def janela_principal():
         contrato_combobox = CustomComboBox(master=frame, values=[])
         #contrato_combobox.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
         #contrato_combobox.set("")
+
+        # -------------------------------
+        # Frame para os itens
+        # -------------------------------
+        frame_caixa_itens_pagamento = ctk.CTkFrame(master=frame)
+        
+        frame_caixa_itens_pagamento.grid_columnconfigure(0, weight=1)
+        frame_caixa_itens_pagamento.grid_columnconfigure(1, weight=1)
+        
+        frame_lista_itens_pagamento = ctk.CTkFrame(master=frame_caixa_itens)
+
+        # Variável para controlar se um item está sendo editado
+        editando_item_pagamento = None
+
+        descricao_do_item_pagamento_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="DESCRIÇÃO DO ITEM:")
+        descricao_do_item_pagamento_entry = CustomEntry(master=frame_caixa_itens_pagamento)
+        descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
+        descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        # Botão para adicionar serviço
+        btn_adicionar_servico_pagamento = ctk.CTkButton(master=frame_caixa_itens, text="Adicionar item", command=adicionar_item_tab3)
+        # -------------------------------
+        # Fim do frame para os itens
+        # -------------------------------
 
         # Campo para MOTIVO
         motivo_label = ctk.CTkLabel(master=frame, text="MOTIVO:")
@@ -1431,7 +1474,7 @@ def janela_principal():
         widgets_para_limpar.append(valor_entry)
 
         ano_atual = datetime.now().strftime("%Y")
-        # Campos para PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA
+
         competencia_label = ctk.CTkLabel(master=frame, text="COMPETÊNCIA:")
         competencia_combobox = CustomComboBox(master=frame, values=[f"JAN/{ano_atual}", f"FEV/{ano_atual}", f"MAR/{ano_atual}", 
                                                                 f"ABR/{ano_atual}", f"MAI/{ano_atual}", f"JUN/{ano_atual}", 
@@ -1635,7 +1678,7 @@ def janela_principal():
         editando_item = None  # Inicializa como None (nenhum item está sendo editado)
 
         # Criando os campos de entrada
-        descricao_compra_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="DESCRIÇÃO:")
+        descricao_compra_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="DESCRIÇÃO DO ITEM:")
         descricao_compra_entry_tab3 = CustomEntry(master=frame_caixa_itens)
         descricao_compra_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
         descricao_compra_entry_tab3.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
