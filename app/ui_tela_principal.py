@@ -93,7 +93,8 @@ def add_campos():
         porcentagem_label, porcentagem_entry,
         motivo_label, motivo_entry,
         saida_destino_label, saida_destino_entry,
-        tecnicos_label, tecnicos_entry
+        tecnicos_label, tecnicos_entry, descricao_utilidades_label, 
+        descricao_utilidades_entry
     ]:
         widget.grid_forget()
 
@@ -239,8 +240,18 @@ def esconde_campos_pagamento_qrcode():
         nome_benef_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
         nome_benef_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
 
+def campo_descricao_utilidades():
+    tipo_aquisicao = tipo_aquisicao_combobox.get()
+
+    if tipo_aquisicao == "UTILIDADES":
+        descricao_utilidades_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        descricao_utilidades_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+    else:
+        descricao_utilidades_label.grid_forget()
+        descricao_utilidades_entry.grid_forget()
+        descricao_utilidades_entry.delete(0, tk.END)
+
 def gerar_solicitacao():
-    # Coletar dados dos campos
     nome_usuario = arrumar_texto(nome_usuario_entry.get().upper())
     tipo_servico = arrumar_texto(tipo_servico_combobox.get().upper())
     nome_fornecedor = arrumar_texto(nome_fornecedor_entry.get().upper())
@@ -256,6 +267,7 @@ def gerar_solicitacao():
     competencia = arrumar_texto(competencia_combobox.get().upper())
     porcentagem = valida_porcentagem(porcentagem_entry.get().upper())
     tipo_aquisicao = arrumar_texto(tipo_aquisicao_combobox.get().upper())
+    descricao_utilidades = arrumar_texto(descricao_utilidades_entry.get().upper())
 
     if tipo_pagamento == "PIX":
         tipo_chave_pix = arrumar_texto(tipo_chave_pix_combobox.get())
@@ -330,7 +342,10 @@ def gerar_solicitacao():
             (os_num, "OS")
         ])
     elif tipo_servico == "AQUISIÇÃO SEM OS":
-        campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
+        campos_obrigatorios.extend([
+            (tipo_aquisicao, "TIPO DE AQUISIÇÃO"),
+            (descricao_utilidades, "DESCRIÇÃO UTILIDADES"),
+        ])
     elif tipo_servico == "ENVIO DE MATERIAL":
         campos_obrigatorios.remove((contrato, "CONTRATO"))
     elif tipo_servico in {"ESTACIONAMENTO", "HOSPEDAGEM"}:
@@ -434,7 +449,7 @@ def gerar_solicitacao():
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "AQUISIÇÃO SEM OS":
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
-        texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+        texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}: {descricao_utilidades}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
         texto = (
@@ -1229,13 +1244,14 @@ def janela_principal():
     global nome_usuario_entry, tipo_servico_combobox, nome_fornecedor_entry, prefixo_entry, agencia_entry
     global os_entry, contrato_combobox, motivo_entry, valor_entry, tipo_pagamento_combobox, tecnicos_entry
     global saida_destino_entry, competencia_combobox, porcentagem_entry
-    global tipo_aquisicao_combobox, tipo_chave_pix_combobox
-    global chave_pix_entry, texto_solicitacao, switch_autocopia_var, contratos
-    global switch_gerar_excel_var, tipo_chave_pix_label, chave_pix_label
+    global tipo_aquisicao_combobox, tipo_chave_pix_combobox, chave_pix_entry
+    global texto_solicitacao, switch_autocopia_var, contratos, switch_gerar_excel_var
+    global tipo_chave_pix_label, chave_pix_label
     global competencia_label, porcentagem_label, motivo_label, saida_destino_label
     global tecnicos_label, prefixo_label, os_label, agencia_label, contrato_label
     global nome_benef_pix_label, nome_benef_pix_entry
     global tipo_aquisicao_label, gerar_button
+    global descricao_utilidades_label, descricao_utilidades_entry
 
     # Widgets da aba E-MAIL
     global nome_usuario_entry_tab2, tipo_servico_combobox_tab2, prefixo_entry_tab2, agencia_entry_tab2
@@ -1377,12 +1393,16 @@ def janela_principal():
         widgets_para_limpar.append(motivo_entry)
 
         tipo_aquisicao_label = ctk.CTkLabel(master=frame, text="TIPO DE AQUISIÇÃO:")
-        tipo_aquisicao_combobox = CustomComboBox(master=frame)
+        tipo_aquisicao_combobox = CustomComboBox(master=frame, command=lambda choice: campo_descricao_utilidades())
         tipo_aquisicao_combobox.set("")
         widgets_para_limpar.append(tipo_aquisicao_combobox)
         # Associa a função ao evento de exclusão manual (quando o campo perde o foco ou quando uma tecla é liberada)
         tipo_aquisicao_combobox.bind("<FocusOut>", restaurar_valores_tipo_aquisicao)  # Quando o campo perde o foco
         tipo_aquisicao_combobox.bind("<KeyRelease>", restaurar_valores_tipo_aquisicao)  # Quando o usuário digita algo
+
+        descricao_utilidades_label = ctk.CTkLabel(master=frame, text="DESCRIÇÃO DA SOLICITAÇÃO:")
+        descricao_utilidades_entry = CustomEntry(master=frame)
+        widgets_para_limpar.append(descricao_utilidades_entry)
 
         tecnicos_label = ctk.CTkLabel(master=frame, text="TÉCNICOS:")
         tecnicos_entry = CustomEntry(master=frame)
