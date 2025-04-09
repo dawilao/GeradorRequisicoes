@@ -59,7 +59,7 @@ def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefi
     notification_manager = NotificationManager(root)
 
     try:
-        caminho_modelo = r"G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\dist\rev1 - MODELO NOVO 2024 - ORDEM DE COMPRA.xlsx"
+        caminho_modelo = r"G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\dist\MODELO NOVO 2024 - ORDEM DE COMPRA.xlsx"
 
         if not os.path.exists(caminho_modelo):
             notification_manager.show_notification(f"Arquivo modelo não encontrado!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
