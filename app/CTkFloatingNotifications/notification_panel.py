@@ -5,7 +5,7 @@ from .notification_type import NotifyType
 class NotificationPanel(ctk.CTkFrame):
     def __init__(self, master, manager, message, notify_type=NotifyType.INFO, duration=5000, bg_color="#dbdbdb", text_color="#262626"):
         text_length = len(message)
-        width = max(250, min(600, text_length * 7.2))  # Adjust the multiplier as needed
+        width = max(250, min(600, text_length * 7.1))  # Adjust the multiplier as needed
         height = 50
 
         super().__init__(master, corner_radius=0, fg_color=bg_color, width=width, height=height)

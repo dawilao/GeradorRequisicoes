@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import messagebox
-from .utils import arrumar_texto, verificar_se_numero, valida_porcentagem, valida_os
+from .utils import arrumar_texto, verificar_se_numero, valida_porcentagem, valida_os, validar_item_pagamento
 from .gerador_excel import gerar_excel
 from .CTkDatePicker import *
 from .CTkFloatingNotifications import *
@@ -72,13 +72,24 @@ def identifica_preenchimento_pref_os_age(prefixo, agencia, os_num):
 itens_pagamento = []
 
 def add_item_pagamento():
-    descricao = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+    global valor_sem_rs, descricao_base
 
-    if not descricao:
-        notification_manager.show_notification("Campo DESCRIÇÃO DO ITEM\nPor favor, insira uma descrição válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+    entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+
+    descricao_formatada, valor_sem_rs, descricao_base, erro = validar_item_pagamento(entrada)
+
+    if erro:
+        notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
     
-    itens_pagamento.append(descricao)
+    # Adiciona dicionário com dados completos
+    item = {
+        "descricao": descricao_formatada,
+        "valor": valor_sem_rs,
+        "descricao_base": descricao_base
+    }
+
+    itens_pagamento.append(item)
 
     descricao_do_item_pagamento_entry.delete(0, tk.END)
 
@@ -88,17 +99,18 @@ def atualizar_lista_itens_pagamento():
     for widget in frame_lista_itens_pagamento.winfo_children():
         widget.destroy()
 
-    frame_lista_itens_pagamento.grid(row=5, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=(0, 10))
+    if len(itens_pagamento) > 0:
+        frame_lista_itens_pagamento.grid(row=5, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=(0, 10))
+    else:
+        frame_lista_itens_pagamento.grid_forget()
 
     for index, item in enumerate(itens_pagamento):
         row_frame_pagamento = ctk.CTkFrame(frame_lista_itens_pagamento, width=400)
         row_frame_pagamento.grid(row=index, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
 
-        detalhes_pagamento = f"{itens_pagamento[index]}"
-
         label_itens_gerados_pagamento = ctk.CTkLabel(
             row_frame_pagamento, 
-            text=detalhes_pagamento,
+            text=item["descricao"],
             anchor="w", justify="left", wraplength=340
         )
         label_itens_gerados_pagamento.grid(row=0, column=0, padx=2)
@@ -120,7 +132,8 @@ def editar_item_pagamento(index):
     global editando_item_pagamento
     editando_item_pagamento = index
 
-    descricao_nova = itens_pagamento[index]
+    item = itens_pagamento[index]
+    descricao_nova = item["descricao"]
 
     descricao_do_item_pagamento_entry.delete(0, tk.END)
     descricao_do_item_pagamento_entry.insert(0, descricao_nova)
@@ -133,13 +146,22 @@ def editar_item_pagamento(index):
 
 def salvar_edicao_pagamento(index):
     global editando_item_pagamento
-    descricao_nova = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())    
+    global valor_sem_rs, descricao_base
 
-    if not descricao_nova:
-        notification_manager.show_notification("Campo DESCRIÇÃO DO ITEM\nO campo não deve ficar em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+    entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+    descricao_formatada, valor_sem_rs, descricao_base, erro = validar_item_pagamento(entrada)
+
+    if erro:
+        notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
     
-    itens_pagamento[index] = descricao_nova
+    item_editado = {
+        "descricao": descricao_formatada,
+        "valor": valor_sem_rs,
+        "descricao_base": descricao_base
+    }
+
+    itens_pagamento[index] = item_editado
 
     descricao_do_item_pagamento_entry.delete(0, tk.END)
 
@@ -217,7 +239,7 @@ def add_campos():
         tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
     elif tipo_servico == "RELATÓRIO EXTRA":
-        frame_caixa_itens_pagamento.grid(row=4, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=2)
+        frame_caixa_itens_pagamento.grid(row=4, column=0, columnspan=2, sticky="nsew", pady=5)
 
     # Mostrar ou esconder PREFIXO, OS e AGÊNCIA
     esconde_pref_age_os = {
@@ -437,10 +459,9 @@ def gerar_solicitacao():
             (os_num, "OS")
         ])
     elif tipo_servico == "AQUISIÇÃO SEM OS":
-        campos_obrigatorios.extend([
-            (tipo_aquisicao, "TIPO DE AQUISIÇÃO"),
-            (descricao_utilidades, "DESCRIÇÃO UTILIDADES"),
-        ])
+        campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
+        if tipo_aquisicao == "UTILIDADES":
+            campos_obrigatorios.append((descricao_utilidades, "DESCRIÇÃO UTILIDADES"))
     elif tipo_servico == "ENVIO DE MATERIAL":
         campos_obrigatorios.remove((contrato, "CONTRATO"))
     elif tipo_servico in {"ESTACIONAMENTO", "HOSPEDAGEM"}:
@@ -470,6 +491,8 @@ def gerar_solicitacao():
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])
+    elif tipo_servico == "RELATÓRIO EXTRA":
+        campos_obrigatorios.append((itens_pagamento if itens_pagamento else None, "DESCRIÇÃO DO ITEM"))
 
     if tipo_pagamento == "PIX" and tipo_chave_pix != "QR CODE":
         campos_obrigatorios.extend([
@@ -480,7 +503,7 @@ def gerar_solicitacao():
     if contrato in {"ESCRITÓRIO", "ATA BB CURITIBA", "CAIXA BAHIA", "CAIXA CURITIBA", "CAIXA MANAUS", "INFRA CURITIBA"}:
         campos_obrigatorios = [
             item for item in campos_obrigatorios
-            if item not in {(prefixo, "PREFIXO"), (agencia, "AGÊNCIA"), (os_num, "OS")}
+            if item not in [(prefixo, "PREFIXO"), (agencia, "AGÊNCIA"), (os_num, "OS")]
         ]
 
     # Verificar campos vazios
@@ -496,7 +519,7 @@ def gerar_solicitacao():
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
     
-    if valor_tab1 == ValueError:
+    if valor_tab1 is ValueError:
         notification_manager.show_notification("Campo VALOR\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
     
@@ -601,6 +624,15 @@ def gerar_solicitacao():
     elif tipo_servico == "ENVIO DE MATERIAL":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
+    elif tipo_servico == "RELATÓRIO EXTRA":
+        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor} pela confecção de relatório(s) técnico(s) relacionado(s) abaixo, para o {contrato}:\n\n"
+        texto += f"SERVIÇO: CONFECÇÃO DE {tipo_servico}\n\n"
+
+        for item in itens_pagamento:
+            texto += f"{item["descricao"]}\n"
+
+        texto += "\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif contrato == "ESCRITÓRIO":
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
@@ -1297,6 +1329,10 @@ def limpar_dados():
                 widget.delete("0.0", tk.END)
             elif isinstance(widget, ctk.CTkComboBox):
                 widget.set("")
+
+            itens_pagamento.clear()
+            atualizar_lista_itens_pagamento()
+            add_campos()
     elif aba_ativa == "E-MAIL":
         # Limpar os widgets da Tab 2
         for widget in widgets_para_limpar_tab2:
@@ -1376,7 +1412,7 @@ def janela_principal():
     # Configuração da interface gráfica
     root = ctk.CTk()
     root.title("Modelo Solicitação de Pagamento")
-    root.geometry("520x600")
+    root.geometry("600x600")
     ctk.set_default_color_theme("green")
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
 
