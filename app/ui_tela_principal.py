@@ -512,8 +512,12 @@ def gerar_solicitacao():
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
 
     if campos_vazios:
-        notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
+        if campos_vazios == ["DESCRIÇÃO DO ITEM"]:
+            notification_manager.show_notification("Campo DESCRIÇÃO DO ITEM\nPor favor, adicione um item à lista.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
+        else:
+            notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
 
     if os_num == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -677,7 +681,17 @@ def gerar_solicitacao():
         pyperclip.copy(texto)
 
     if switch_gerar_excel_var.get():
-        gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais)
+        descricao_itens = ""
+
+        if tipo_servico == "RELATÓRIO EXTRA" and itens_pagamento:
+            descricao_itens = "\n".join(item["descricao_base"] for item in itens_pagamento)
+
+        gerar_excel(
+            root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefixo, agencia,
+            contrato, nome_usuario, tipo_pagamento, departamento,
+            usuarios_varios_departamentos, usuarios_gerais,
+            descricao_itens=descricao_itens
+        )
 
 # -------------------------------
 # Fim das funções da aba "Pagamento"
@@ -1621,8 +1635,8 @@ def janela_principal():
         chave_pix_entry = CustomEntry(master=frame)
         widgets_para_limpar.append(chave_pix_entry)
 
-        nome_benef_pix_label = ctk.CTkLabel(master=frame, text="NOME DO BENEF. DO PIX\n(SE APLICÁVEL):")
-        nome_benef_pix_entry = CustomEntry(master=frame)
+        nome_benef_pix_label = ctk.CTkLabel(master=frame, text="NOME DO BENEF. DO PIX:")
+        nome_benef_pix_entry = CustomEntry(master=frame, placeholder_text="Opcional")
         widgets_para_limpar.append(nome_benef_pix_entry)
 
         # Campo para SAÍDA X DESTINO (UBER)

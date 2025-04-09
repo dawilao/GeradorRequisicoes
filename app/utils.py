@@ -83,7 +83,10 @@ def validar_item_pagamento(texto):
         return None, None, None, "Agência não pode estar vazia."
 
     # --- OS ---
-    if not os_str.isdigit() or len(os_str) <= 4:
+    if not os_str.isdigit():
+        return None, None, None, "OS inválida. Deve conter apenas números."
+
+    if len(os_str) <= 4:
         return None, None, None, "OS inválida. Deve conter mais de 4 dígitos numéricos."
 
     # --- VALOR ---

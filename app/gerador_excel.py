@@ -1,11 +1,12 @@
 from openpyxl import load_workbook
+from openpyxl.styles import Alignment
 import os, shutil, time
 from tkinter import filedialog, messagebox
 from datetime import datetime
 from openpyxl.worksheet.datavalidation import DataValidation
 from app.CTkFloatingNotifications import NotificationManager, NotifyType
 
-def gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais):
+def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais, descricao_itens):
     """
     Gera um arquivo Excel de requisição baseado em um modelo pré-definido.
 
@@ -90,12 +91,12 @@ def gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, c
         sheet_principal["D16"] = contrato if contrato else "ESCRITÓRIO"
 
         if tipo_pagamento == "FATURAMENTO":
-            sheet_principal["D41"] = "FATURADO"
+            sheet_principal["D47"] = "FATURADO"
         else:
-            sheet_principal["D41"] = tipo_pagamento
+            sheet_principal["D47"] = tipo_pagamento
 
-        sheet_principal["B47"] = f"Assinatura: {nome_usuario}"
-        sheet_principal["B48"] = f"Data: {data_atual}"
+        sheet_principal["B53"] = f"Assinatura: {nome_usuario}"
+        sheet_principal["B54"] = f"Data: {data_atual}"
 
         if os_num in (0, '', None):
             sheet_principal["D14"] = "-"
@@ -126,6 +127,18 @@ def gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, c
             # Se o nome do usuário estiver na lista de 'usuarios_gerais' (mas não em 'usuarios_varios_departamentos'), atribui o valor diretamente
             sheet_principal["D13"] = departamento
 
+        if tipo_servico == "RELATÓRIO EXTRA":
+            descricao_lista = descricao_itens.split("\n")
+            sheet_principal.column_dimensions["E"].width = 15
+            linha_inicial = 19
+
+            for i, descricao in enumerate(descricao_lista):
+                sheet_principal[f"B{linha_inicial + i}"] = f"{i + 1}"
+                sheet_principal[f"C{linha_inicial + i}"] = descricao
+                sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(wrap_text=False, horizontal='center', vertical='center')
+                sheet_principal[f"F{linha_inicial + i}"] = 1
+                sheet_principal[f"G{linha_inicial + i}"] = "80,00"
+
         # Restaurando a Validação de Dados
         workbook.active = sheet_principal
         dv = DataValidation(
@@ -135,7 +148,7 @@ def gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, c
             allow_blank=True
         )
         sheet_principal.add_data_validation(dv)
-        dv.add("D42")
+        dv.add("D48")
 
         workbook.save(nome_arquivo_destino)
         workbook.close()
