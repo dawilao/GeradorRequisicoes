@@ -72,17 +72,93 @@ def identifica_preenchimento_pref_os_age(prefixo, agencia, os_num):
 itens_pagamento = []
 
 def add_item_pagamento():
-    descricao = arrumar_texto(descricao_do_item_pagamento_entry.get().upper())
+    descricao = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
 
     if not descricao:
         notification_manager.show_notification("Campo DESCRIÇÃO DO ITEM\nPor favor, insira uma descrição válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
     
     itens_pagamento.append(descricao)
+
     descricao_do_item_pagamento_entry.delete(0, tk.END)
 
     atualizar_lista_itens_pagamento()
 
+def atualizar_lista_itens_pagamento():
+    for widget in frame_lista_itens_pagamento.winfo_children():
+        widget.destroy()
+
+    frame_lista_itens_pagamento.grid(row=5, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=(0, 10))
+
+    for index, item in enumerate(itens_pagamento):
+        row_frame_pagamento = ctk.CTkFrame(frame_lista_itens_pagamento, width=400)
+        row_frame_pagamento.grid(row=index, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
+
+        detalhes_pagamento = f"{itens_pagamento[index]}"
+
+        label_itens_gerados_pagamento = ctk.CTkLabel(
+            row_frame_pagamento, 
+            text=detalhes_pagamento,
+            anchor="w", justify="left", wraplength=340
+        )
+        label_itens_gerados_pagamento.grid(row=0, column=0, padx=2)
+
+        btn_editar_item_pagamento = ctk.CTkButton(
+            row_frame_pagamento, text="Editar", width=30, 
+            command=lambda i=index: editar_item_pagamento(i)
+        )
+        btn_editar_item_pagamento.grid(row=0, column=1, padx=2)
+
+        btn_excluir_item_pagamento = ctk.CTkButton(
+            row_frame_pagamento, text="❌", width=30, 
+            fg_color="red", hover_color="darkred", 
+            command=lambda i=index: remover_item_pagamento(i)
+        )
+        btn_excluir_item_pagamento.grid(row=0, column=2, padx=2)
+    
+def editar_item_pagamento(index):
+    global editando_item_pagamento
+    editando_item_pagamento = index
+
+    descricao_nova = itens_pagamento[index]
+
+    descricao_do_item_pagamento_entry.delete(0, tk.END)
+    descricao_do_item_pagamento_entry.insert(0, descricao_nova)
+
+    descricao_do_item_pagamento_entry.focus()
+
+    btn_adicionar_servico_pagamento.configure(text="Salvar", command=lambda: salvar_edicao_pagamento(index))
+
+    atualizar_lista_itens_pagamento()
+
+def salvar_edicao_pagamento(index):
+    global editando_item_pagamento
+    descricao_nova = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())    
+
+    if not descricao_nova:
+        notification_manager.show_notification("Campo DESCRIÇÃO DO ITEM\nO campo não deve ficar em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return
+    
+    itens_pagamento[index] = descricao_nova
+
+    descricao_do_item_pagamento_entry.delete(0, tk.END)
+
+    btn_adicionar_servico_pagamento.configure(text="Adicionar", command=add_item_pagamento)
+
+    editando_item_pagamento = None  # Reabilita o botão de excluir
+
+    descricao_do_item_pagamento_entry.focus()
+
+    atualizar_lista_itens_pagamento()
+
+def remover_item_pagamento(index):
+    global editando_item_pagamento
+    if editando_item_pagamento is None:  # Só permite excluir se não estiver editando
+        del itens_pagamento[index]
+        atualizar_lista_itens_pagamento()
+    else:
+        notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a exclusão.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+        pass
 
 def add_campos():
     tipo_servico = tipo_servico_combobox.get()
@@ -109,7 +185,7 @@ def add_campos():
         motivo_label, motivo_entry,
         saida_destino_label, saida_destino_entry,
         tecnicos_label, tecnicos_entry, descricao_utilidades_label, 
-        descricao_utilidades_entry
+        descricao_utilidades_entry, frame_caixa_itens_pagamento
     ]:
         widget.grid_forget()
 
@@ -138,7 +214,10 @@ def add_campos():
 
     elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM"}:
         tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)  
+        tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+    elif tipo_servico == "RELATÓRIO EXTRA":
+        frame_caixa_itens_pagamento.grid(row=4, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=2)
 
     # Mostrar ou esconder PREFIXO, OS e AGÊNCIA
     esconde_pref_age_os = {
@@ -147,6 +226,7 @@ def add_campos():
         "ABASTECIMENTO",
         "ENVIO DE MATERIAL",
         "AQUISIÇÃO SEM OS",
+        "RELATÓRIO EXTRA"
     }
 
     if tipo_servico in esconde_pref_age_os:
@@ -1331,6 +1411,7 @@ def janela_principal():
         frame.pack(fill="both", expand=True, padx=2, pady=2)
 
         # Configurando a coluna do frame para expandir
+        frame.grid_rowconfigure(4, weight=1)  # Expande a linha
         frame.grid_rowconfigure(18, weight=1)  # Expande a linha
         frame.grid_columnconfigure(0, weight=1)  # Expande a coluna 0
         frame.grid_columnconfigure(1, weight=1)  # Expande a coluna 1
@@ -1409,12 +1490,12 @@ def janela_principal():
         # -------------------------------
         # Frame para os itens
         # -------------------------------
-        frame_caixa_itens_pagamento = ctk.CTkFrame(master=frame)
+        frame_caixa_itens_pagamento = ctk.CTkFrame(master=frame, border_width=1)
         
         frame_caixa_itens_pagamento.grid_columnconfigure(0, weight=1)
         frame_caixa_itens_pagamento.grid_columnconfigure(1, weight=1)
         
-        frame_lista_itens_pagamento = ctk.CTkFrame(master=frame_caixa_itens)
+        frame_lista_itens_pagamento = ctk.CTkFrame(master=frame_caixa_itens_pagamento)
 
         # Variável para controlar se um item está sendo editado
         editando_item_pagamento = None
@@ -1425,7 +1506,8 @@ def janela_principal():
         descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
 
         # Botão para adicionar serviço
-        btn_adicionar_servico_pagamento = ctk.CTkButton(master=frame_caixa_itens, text="Adicionar item", command=adicionar_item_tab3)
+        btn_adicionar_servico_pagamento = ctk.CTkButton(master=frame_caixa_itens_pagamento, text="Adicionar item", command=add_item_pagamento)
+        btn_adicionar_servico_pagamento.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=5)
         # -------------------------------
         # Fim do frame para os itens
         # -------------------------------
