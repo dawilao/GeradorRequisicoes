@@ -56,14 +56,52 @@ def valida_os(texto: str):
     else:
         return "OS_invalida"
 
-def validar_item_pagamento(texto):
+def validar_item_pagamento(texto, tipo_servico):
     texto_corrigido = re.sub(r"\s*-\s*", " - ", texto)
     partes = texto_corrigido.split(" - ")
 
-    if len(partes) != 4:
-        return None, None, None, "Formato inválido. Use: PREFIXO - AGÊNCIA - OS - VALOR"
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        if len(partes) != 4:
+            return None, None, "Formato inválido. Use: PREFIXO - AGÊNCIA - OS - % DO ADIANTAMENTO"
 
-    prefixo_raw, agencia, os_str, valor_str = [p.strip() for p in partes]
+        prefixo_raw, agencia, os_str, percentual_raw = [p.strip() for p in partes]
+
+        # --- VALIDAÇÃO DO PERCENTUAL ---
+        # Remove o símbolo % se houver
+        percentual_limpo = percentual_raw.replace("%", "").strip()
+
+        # Verifica se é numérico puro
+        if not percentual_limpo.isdigit():
+            return None, None, "Percentual inválido. Deve conter apenas números, com ou sem '%'."
+
+        percentual_valor = int(percentual_limpo)
+
+        if percentual_valor < 1 or percentual_valor > 100:
+            return None, None, "Percentual inválido. Deve estar entre 1 e 100."
+
+        # Reaplica o símbolo de % para exibir formatado
+        percentual = f"{percentual_valor}%"
+
+        valor_formatado = None
+        valor_com_rs = None
+
+    else:  # PADRÃO PARA PAGAMENTO EXTRA
+        if len(partes) != 4:
+            return None, None, "Formato inválido. Use: PREFIXO - AGÊNCIA - OS - VALOR"
+
+        prefixo_raw, agencia, os_str, valor_str = [p.strip() for p in partes]
+
+        if not valor_str:
+            return None, None, "Valor não pode estar vazio."
+
+        valor_limpo = valor_str.upper().replace("R$", "").strip()
+        valor_numerico = re.sub(r"[^\d,\.]", "", valor_limpo)
+        valor_formatado = verificar_se_numero(valor_numerico)
+
+        if not valor_formatado or isinstance(valor_formatado, Exception):
+            return None, None, "Valor inválido."
+
+        valor_com_rs = f"R$ {valor_formatado}"
 
     # --- PREFIXO ---
     if "/" in prefixo_raw:
@@ -73,38 +111,29 @@ def validar_item_pagamento(texto):
             parte2 = parte2.zfill(2)
             prefixo_formatado = f"{parte1}/{parte2}"
         except:
-            return None, None, None, "Prefixo inválido. Use o padrão XXXX/XX."
+            return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
     else:
         parte1 = prefixo_raw.zfill(4)
         prefixo_formatado = f"{parte1}/00"
 
     # --- AGÊNCIA ---
     if not agencia:
-        return None, None, None, "Agência não pode estar vazia."
+        return None, None, "Agência não pode estar vazia."
 
     # --- OS ---
-    if not os_str.isdigit():
-        return None, None, None, "OS inválida. Deve conter apenas números."
+    os_str = valida_os(os_str)
+    if os_str == "OS_invalida":
+        return None, None, "OS inválida. Não deve conter textos."
 
     if len(os_str) <= 4:
-        return None, None, None, "OS inválida. Deve conter mais de 4 dígitos numéricos."
+        return None, None, "OS inválida. Deve conter mais de 4 dígitos numéricos."
 
-    # --- VALOR ---
-    valor_limpo = valor_str.upper().replace("R$", "").strip()
-    valor_numerico = re.sub(r"[^\d,\.]", "", valor_limpo)
-
-    valor_formatado = verificar_se_numero(valor_numerico)
-
-    if not valor_formatado or isinstance(valor_formatado, Exception):
-        return None, None, None, "Valor inválido."
-
-    valor_com_rs = f"R$ {valor_formatado}"
-    valor_puro = valor_formatado  # Já está formatado sem o R$
-
-    # --- Descrição base (sem o valor) ---
+    # --- Descrição base e final ---
     descricao_base = f"{prefixo_formatado} - {agencia} - {os_str}"
 
-    # --- Descrição final com o valor ---
-    descricao_final = f"{descricao_base} - {valor_com_rs}"
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        descricao_final = f"{descricao_base} - ADIANTAMENTO DE {percentual}"
+    else:
+        descricao_final = f"{descricao_base} - {valor_com_rs}"
 
-    return descricao_final, valor_puro, descricao_base, None
+    return descricao_final, descricao_base, None

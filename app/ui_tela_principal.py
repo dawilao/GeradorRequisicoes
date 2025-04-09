@@ -72,11 +72,11 @@ def identifica_preenchimento_pref_os_age(prefixo, agencia, os_num):
 itens_pagamento = []
 
 def add_item_pagamento():
-    global valor_sem_rs, descricao_base
+    global descricao_base
 
     entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
 
-    descricao_formatada, valor_sem_rs, descricao_base, erro = validar_item_pagamento(entrada)
+    descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
 
     if erro:
         notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -85,7 +85,6 @@ def add_item_pagamento():
     # Adiciona dicionário com dados completos
     item = {
         "descricao": descricao_formatada,
-        "valor": valor_sem_rs,
         "descricao_base": descricao_base
     }
 
@@ -100,7 +99,7 @@ def atualizar_lista_itens_pagamento():
         widget.destroy()
 
     if len(itens_pagamento) > 0:
-        frame_lista_itens_pagamento.grid(row=5, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=(0, 10))
+        frame_lista_itens_pagamento.grid(row=11, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=(0, 10))
     else:
         frame_lista_itens_pagamento.grid_forget()
 
@@ -135,6 +134,9 @@ def editar_item_pagamento(index):
     item = itens_pagamento[index]
     descricao_nova = item["descricao"]
 
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":  # para remover o texto "ADIANTAMENTO DE"
+        descricao_nova = descricao_nova.replace("ADIANTAMENTO DE ", "").strip()
+
     descricao_do_item_pagamento_entry.delete(0, tk.END)
     descricao_do_item_pagamento_entry.insert(0, descricao_nova)
 
@@ -146,10 +148,10 @@ def editar_item_pagamento(index):
 
 def salvar_edicao_pagamento(index):
     global editando_item_pagamento
-    global valor_sem_rs, descricao_base
+    global descricao_base
 
     entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
-    descricao_formatada, valor_sem_rs, descricao_base, erro = validar_item_pagamento(entrada)
+    descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
 
     if erro:
         notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -157,7 +159,6 @@ def salvar_edicao_pagamento(index):
     
     item_editado = {
         "descricao": descricao_formatada,
-        "valor": valor_sem_rs,
         "descricao_base": descricao_base
     }
 
@@ -183,14 +184,22 @@ def remover_item_pagamento(index):
         pass
 
 def add_campos():
+    global tipo_servico
+
     tipo_servico = tipo_servico_combobox.get()
 
     prefixo_label.configure(text="PREFIXO:")
     agencia_label.configure(text="AGÊNCIA:")
     os_label.configure(text="OS ou Nº DO CONTRATO (CAIXA):")
 
-    contrato_combobox.configure(values=contratos)
-    contrato_combobox.set("")
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO" and "ESCRITÓRIO" in contratos:
+        contrato_sem_escritorio = contratos.copy()
+        contrato_sem_escritorio.remove("ESCRITÓRIO")
+        contrato_combobox.configure(values=contrato_sem_escritorio)
+        contrato_combobox.set("")
+    else:
+        contrato_combobox.configure(values=contratos)
+        contrato_combobox.set("")
 
     tipo_pagamento_combobox.set("")
     tipo_chave_pix_label.grid_forget()
@@ -238,8 +247,24 @@ def add_campos():
         tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    elif tipo_servico == "RELATÓRIO EXTRA":
+    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
         frame_caixa_itens_pagamento.grid(row=4, column=0, columnspan=2, sticky="nsew", pady=5)
+
+        if len(itens_pagamento) > 0:
+            itens_pagamento.clear()
+            atualizar_lista_itens_pagamento()
+            add_campos()
+
+        if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+            descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - PORCENTAGEM")
+            root.focus()
+        else:
+            descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - VALOR")
+            root.focus()
+
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        competencia_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        competencia_combobox.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
 
     # Mostrar ou esconder PREFIXO, OS e AGÊNCIA
     esconde_pref_age_os = {
@@ -248,7 +273,8 @@ def add_campos():
         "ABASTECIMENTO",
         "ENVIO DE MATERIAL",
         "AQUISIÇÃO SEM OS",
-        "RELATÓRIO EXTRA"
+        "RELATÓRIO EXTRA",
+        "ADIANTAMENTO/PAGAMENTO PARCEIRO"
     }
 
     if tipo_servico in esconde_pref_age_os:
@@ -283,7 +309,7 @@ def add_campos():
         os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
 
     tipo_pagamento_combobox.set("") # limpar a seleção antes de configurar os valores
-    if tipo_servico in {"PREST. SERVIÇO/MÃO DE OBRA", "ABASTECIMENTO"}:
+    if tipo_servico in {"PREST. SERVIÇO/MÃO DE OBRA", "ABASTECIMENTO", "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
         opcoes_pagamento = ["PIX"]
     elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS", "AQUISIÇÃO COM OS", "ENVIO DE MATERIAL", "TRANSPORTADORA"}:
         opcoes_pagamento = ["PIX", "VEXPENSES", "FATURAMENTO"]
@@ -491,8 +517,10 @@ def gerar_solicitacao():
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])
-    elif tipo_servico == "RELATÓRIO EXTRA":
+    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
         campos_obrigatorios.append((itens_pagamento if itens_pagamento else None, "DESCRIÇÃO DO ITEM"))
+        if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+            campos_obrigatorios.append((competencia, "COMPETÊNCIA"))
 
     if tipo_pagamento == "PIX" and tipo_chave_pix != "QR CODE":
         campos_obrigatorios.extend([
@@ -638,6 +666,23 @@ def gerar_solicitacao():
 
         texto += "\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        if len(itens_pagamento) == 1:
+            texto = (
+                f"Solicito o pagamento para {nome_fornecedor}, referente à obra listada abaixo, para {contrato}:\n\n"
+            )
+        else:
+            texto = (
+                f"Solicito o pagamento para {nome_fornecedor}, referente as obras listadas abaixo, para {contrato}:\n\n"
+            )
+        texto += f"SERVIÇO: {tipo_servico}\n\n"
+        texto += f"COMPETÊNCIA: {competencia}\n\n"
+        
+        for item in itens_pagamento:
+            texto += f"{item["descricao"]}\n"
+        
+        texto += "\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif contrato == "ESCRITÓRIO":
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
@@ -683,7 +728,7 @@ def gerar_solicitacao():
     if switch_gerar_excel_var.get():
         descricao_itens = ""
 
-        if tipo_servico == "RELATÓRIO EXTRA" and itens_pagamento:
+        if tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"} and itens_pagamento:
             descricao_itens = "\n".join(item["descricao_base"] for item in itens_pagamento)
 
         gerar_excel(
@@ -1048,7 +1093,7 @@ def salvar_edicao(index):
         return
     else:
         servicos_tab3[index] = (novo_servico, nova_quantidade, nova_altura, nova_largura, novo_comprimento, nova_espessura, novo_link)
-        
+
         # Limpa os campos após a edição
         descricao_compra_entry_tab3.delete(0, "end")
         quantidade_entry_tab3.delete(0, "end")
@@ -1060,7 +1105,7 @@ def salvar_edicao(index):
 
         # Restaura o texto do botão para "Adicionar item"
         btn_adicionar_servico.configure(text="Adicionar item", command=adicionar_item_tab3)
-        
+
         # Reabilita o botão de excluir
         editando_item = None  # Desmarca a edição
 
@@ -1158,7 +1203,7 @@ def gerar_texto_aquisicao():
     if os_num_tab3 == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
-    
+
     if quantidade_periodo_locacao_tab3:
         if quantidade_periodo_locacao_tab3.isdigit():
             quantidade_periodo_locacao_tab3 = int(quantidade_periodo_locacao_tab3)
@@ -1335,18 +1380,23 @@ def limpar_dados():
     aba_ativa  = tabview.get()
     
     if aba_ativa == "PAGAMENTO":
-        # Limpar os widgets da Tab 1
-        for widget in widgets_para_limpar:
-            if isinstance(widget, ctk.CTkEntry):
-                widget.delete(0, tk.END)
-            elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete("0.0", tk.END)
-            elif isinstance(widget, ctk.CTkComboBox):
-                widget.set("")
+        if editando_item_pagamento is None:
+            # Limpar os widgets da Tab 1
+            for widget in widgets_para_limpar:
+                if isinstance(widget, ctk.CTkEntry):
+                    widget.delete(0, tk.END)
+                elif isinstance(widget, ctk.CTkTextbox):
+                    widget.delete("0.0", tk.END)
+                elif isinstance(widget, ctk.CTkComboBox):
+                    widget.set("")
 
-            itens_pagamento.clear()
-            atualizar_lista_itens_pagamento()
-            add_campos()
+                itens_pagamento.clear()
+                atualizar_lista_itens_pagamento()
+                add_campos()
+        else:
+            notification_manager = NotificationManager(root)  # passando a instância da janela principal
+            notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a limpeza dos campos.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+            pass 
     elif aba_ativa == "E-MAIL":
         # Limpar os widgets da Tab 2
         for widget in widgets_para_limpar_tab2:
@@ -1371,7 +1421,6 @@ def limpar_dados():
 
                 servicos_tab3.clear()
                 atualizar_lista_itens_tab3()
-
                 add_campos_tab3()
         else:
             notification_manager = NotificationManager(root)  # passando a instância da janela principal
@@ -1426,7 +1475,7 @@ def janela_principal():
     # Configuração da interface gráfica
     root = ctk.CTk()
     root.title("Modelo Solicitação de Pagamento")
-    root.geometry("600x600")
+    root.geometry("650x600")
     ctk.set_default_color_theme("green")
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
 
@@ -1557,7 +1606,7 @@ def janela_principal():
 
         # Botão para adicionar serviço
         btn_adicionar_servico_pagamento = ctk.CTkButton(master=frame_caixa_itens_pagamento, text="Adicionar item", command=add_item_pagamento)
-        btn_adicionar_servico_pagamento.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=5)
+        btn_adicionar_servico_pagamento.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=5)
         # -------------------------------
         # Fim do frame para os itens
         # -------------------------------

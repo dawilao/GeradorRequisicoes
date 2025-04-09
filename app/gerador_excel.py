@@ -59,7 +59,7 @@ def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefi
     notification_manager = NotificationManager(root)
 
     try:
-        caminho_modelo = r"G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\dist\MODELO NOVO 2024 - ORDEM DE COMPRA.xlsx"
+        caminho_modelo = r"G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\dist\rev1 - MODELO NOVO 2024 - ORDEM DE COMPRA.xlsx"
 
         if not os.path.exists(caminho_modelo):
             notification_manager.show_notification(f"Arquivo modelo não encontrado!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -138,6 +138,16 @@ def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefi
                 sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(wrap_text=False, horizontal='center', vertical='center')
                 sheet_principal[f"F{linha_inicial + i}"] = 1
                 sheet_principal[f"G{linha_inicial + i}"] = "80,00"
+        elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+            descricao_lista = descricao_itens.split("\n")
+            sheet_principal.column_dimensions["E"].width = 15
+            linha_inicial = 19
+            
+            for i, descricao in enumerate(descricao_lista):
+                sheet_principal[f"B{linha_inicial + i}"] = f"{i + 1}"
+                sheet_principal[f"C{linha_inicial + i}"] = descricao
+                sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(wrap_text=False, horizontal='center', vertical='center')
+                sheet_principal[f"F{linha_inicial + i}"] = 1
 
         # Restaurando a Validação de Dados
         workbook.active = sheet_principal
