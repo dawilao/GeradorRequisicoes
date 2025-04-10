@@ -17,6 +17,16 @@ def verificar_se_numero(texto):
     except ValueError:
         return ValueError  # Retorna um valor padrão caso a conversão falhe
 
+def valida_prefixo(prefixo_raw):
+    if re.fullmatch(r"\d{4}/\d{2}", prefixo_raw):
+        return prefixo_raw, "Formato válido", None
+    elif prefixo_raw.isdigit():
+        parte1 = prefixo_raw.zfill(4)
+        prefixo_formatado = f"{parte1}/00"
+        return prefixo_formatado, "Formato ajustado", None
+    else:
+        return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
+
 def valida_porcentagem(valor):
     if not valor:
         return ""
@@ -110,11 +120,15 @@ def validar_item_pagamento(texto, tipo_servico):
             parte1 = parte1.zfill(4)
             parte2 = parte2.zfill(2)
             prefixo_formatado = f"{parte1}/{parte2}"
+            if not re.fullmatch(r"\d{4}/\d{2}", prefixo_formatado):
+                return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
         except:
             return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
-    else:
+    elif prefixo_raw.isdigit():
         parte1 = prefixo_raw.zfill(4)
         prefixo_formatado = f"{parte1}/00"
+    else:
+        return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
 
     # --- AGÊNCIA ---
     if not agencia:
