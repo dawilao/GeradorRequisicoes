@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import messagebox
-from .utils import arrumar_texto, verificar_se_numero, valida_porcentagem, valida_os
+from .utils import arrumar_texto, verificar_se_numero, valida_porcentagem, valida_os, validar_item_pagamento
 from .gerador_excel import gerar_excel
 from .CTkDatePicker import *
 from .CTkFloatingNotifications import *
@@ -65,8 +65,336 @@ def identifica_preenchimento_pref_os_age(prefixo, agencia, os_num):
         )
         return True
 
+# -------------------------------
+# Funções da aba "Pagamento"
+# -------------------------------
+
+itens_pagamento = []
+
+def add_item_pagamento():
+    global descricao_base
+
+    entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+
+    descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
+
+    if erro:
+        notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return
+    
+    # Adiciona dicionário com dados completos
+    item = {
+        "descricao": descricao_formatada,
+        "descricao_base": descricao_base
+    }
+
+    itens_pagamento.append(item)
+
+    descricao_do_item_pagamento_entry.delete(0, tk.END)
+
+    atualizar_lista_itens_pagamento()
+
+def atualizar_lista_itens_pagamento():
+    for widget in frame_lista_itens_pagamento.winfo_children():
+        widget.destroy()
+
+    if len(itens_pagamento) > 0:
+        frame_lista_itens_pagamento.grid(row=11, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=(0, 10))
+    else:
+        frame_lista_itens_pagamento.grid_forget()
+
+    for index, item in enumerate(itens_pagamento):
+        row_frame_pagamento = ctk.CTkFrame(frame_lista_itens_pagamento, width=400)
+        row_frame_pagamento.grid(row=index, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
+
+        label_itens_gerados_pagamento = ctk.CTkLabel(
+            row_frame_pagamento, 
+            text=item["descricao"],
+            anchor="w", justify="left", wraplength=340
+        )
+        label_itens_gerados_pagamento.grid(row=0, column=0, padx=2)
+
+        btn_editar_item_pagamento = ctk.CTkButton(
+            row_frame_pagamento, text="Editar", width=30, 
+            command=lambda i=index: editar_item_pagamento(i)
+        )
+        btn_editar_item_pagamento.grid(row=0, column=1, padx=2)
+
+        btn_excluir_item_pagamento = ctk.CTkButton(
+            row_frame_pagamento, text="❌", width=30, 
+            fg_color="red", hover_color="darkred", 
+            command=lambda i=index: remover_item_pagamento(i)
+        )
+        btn_excluir_item_pagamento.grid(row=0, column=2, padx=2)
+    
+def editar_item_pagamento(index):
+    global editando_item_pagamento
+    editando_item_pagamento = index
+
+    item = itens_pagamento[index]
+    descricao_nova = item["descricao"]
+
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":  # para remover o texto "ADIANTAMENTO DE"
+        descricao_nova = descricao_nova.replace("ADIANTAMENTO DE ", "").strip()
+
+    descricao_do_item_pagamento_entry.delete(0, tk.END)
+    descricao_do_item_pagamento_entry.insert(0, descricao_nova)
+
+    descricao_do_item_pagamento_entry.focus()
+
+    btn_adicionar_servico_pagamento.configure(text="Salvar", command=lambda: salvar_edicao_pagamento(index))
+
+    atualizar_lista_itens_pagamento()
+
+def salvar_edicao_pagamento(index):
+    global editando_item_pagamento
+    global descricao_base
+
+    entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+    descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
+
+    if erro:
+        notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return
+    
+    item_editado = {
+        "descricao": descricao_formatada,
+        "descricao_base": descricao_base
+    }
+
+    itens_pagamento[index] = item_editado
+
+    descricao_do_item_pagamento_entry.delete(0, tk.END)
+
+    btn_adicionar_servico_pagamento.configure(text="Adicionar", command=add_item_pagamento)
+
+    editando_item_pagamento = None  # Reabilita o botão de excluir
+
+    descricao_do_item_pagamento_entry.focus()
+
+    atualizar_lista_itens_pagamento()
+
+def remover_item_pagamento(index):
+    global editando_item_pagamento
+    if editando_item_pagamento is None:  # Só permite excluir se não estiver editando
+        del itens_pagamento[index]
+        atualizar_lista_itens_pagamento()
+    else:
+        notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a exclusão.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+        pass
+
+def add_campos():
+    global tipo_servico
+
+    tipo_servico = tipo_servico_combobox.get()
+
+    prefixo_label.configure(text="PREFIXO:")
+    agencia_label.configure(text="AGÊNCIA:")
+    os_label.configure(text="OS ou Nº DO CONTRATO (CAIXA):")
+
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO" and "ESCRITÓRIO" in contratos:
+        contrato_sem_escritorio = contratos.copy()
+        contrato_sem_escritorio.remove("ESCRITÓRIO")
+        contrato_combobox.configure(values=contrato_sem_escritorio)
+        contrato_combobox.set("")
+    else:
+        contrato_combobox.configure(values=contratos)
+        contrato_combobox.set("")
+
+    tipo_pagamento_combobox.set("")
+    tipo_chave_pix_label.grid_forget()
+    tipo_chave_pix_combobox.grid_forget()
+    chave_pix_label.grid_forget()
+    chave_pix_entry.grid_forget()
+    nome_benef_pix_label.grid_forget()
+    nome_benef_pix_entry.grid_forget()
+
+    # Oculta todos os campos por padrão
+    for widget in [
+        competencia_label, competencia_combobox,
+        porcentagem_label, porcentagem_entry,
+        motivo_label, motivo_entry,
+        saida_destino_label, saida_destino_entry,
+        tecnicos_label, tecnicos_entry, descricao_utilidades_label, 
+        descricao_utilidades_entry, frame_caixa_itens_pagamento
+    ]:
+        widget.grid_forget()
+
+    # Limpa os campos de entrada por padrão
+    competencia_combobox.set("")
+    porcentagem_entry.delete(0, tk.END)
+    motivo_entry.delete(0, tk.END)
+    saida_destino_entry.delete(0, tk.END)
+    tecnicos_entry.delete(0, tk.END)
+
+    if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
+        competencia_label.grid(row=9, column=0, sticky="w", padx=(10, 10))
+        competencia_combobox.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
+        porcentagem_label.grid(row=10, column=0, sticky="w", padx=(10, 10))
+        porcentagem_entry.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS", "REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
+        motivo_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
+        motivo_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+    elif tipo_servico == "REEMBOLSO UBER":
+        saida_destino_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
+        saida_destino_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
+        motivo_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        motivo_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+    elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM"}:
+        tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
+        tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
+        frame_caixa_itens_pagamento.grid(row=4, column=0, columnspan=2, sticky="nsew", pady=5)
+
+        if len(itens_pagamento) > 0:
+            itens_pagamento.clear()
+            atualizar_lista_itens_pagamento()
+            add_campos()
+
+        if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+            descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - PORCENTAGEM")
+            root.focus()
+        else:
+            descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - VALOR")
+            root.focus()
+
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        competencia_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        competencia_combobox.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+    # Mostrar ou esconder PREFIXO, OS e AGÊNCIA
+    esconde_pref_age_os = {
+        "REEMBOLSO SEM OS",
+        "SOLICITAÇÃO SEM OS",
+        "ABASTECIMENTO",
+        "ENVIO DE MATERIAL",
+        "AQUISIÇÃO SEM OS",
+        "RELATÓRIO EXTRA",
+        "ADIANTAMENTO/PAGAMENTO PARCEIRO"
+    }
+
+    if tipo_servico in esconde_pref_age_os:
+        prefixo_label.grid_forget()
+        prefixo_entry.grid_forget()
+        os_label.grid_forget()
+        os_entry.grid_forget()
+        agencia_label.grid_forget()
+        agencia_entry.grid_forget()
+    elif tipo_servico in {"REEMBOLSO UBER", "PREST. SERVIÇO/MÃO DE OBRA"}:
+        prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        prefixo_entry.configure(placeholder_text="Opcional")
+        prefixo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        agencia_label.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        agencia_entry.configure(placeholder_text="Opcional")
+        agencia_entry.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        os_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        os_entry.configure(placeholder_text="Opcional")
+        os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+    
+    else:
+        prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        prefixo_entry.configure(placeholder_text="")
+        prefixo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_label.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        agencia_entry.configure(placeholder_text="")
+        agencia_entry.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        os_entry.configure(placeholder_text="")
+        os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+    tipo_pagamento_combobox.set("") # limpar a seleção antes de configurar os valores
+    if tipo_servico in {"PREST. SERVIÇO/MÃO DE OBRA", "ABASTECIMENTO", "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
+        opcoes_pagamento = ["PIX"]
+    elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS", "AQUISIÇÃO COM OS", "ENVIO DE MATERIAL", "TRANSPORTADORA"}:
+        opcoes_pagamento = ["PIX", "VEXPENSES", "FATURAMENTO"]
+    else:
+        opcoes_pagamento = ["PIX", "VEXPENSES"]
+
+    tipo_pagamento_combobox.configure(values=opcoes_pagamento)
+
+    if tipo_servico == "ENVIO DE MATERIAL":
+        contrato_label.grid_forget()
+        contrato_combobox.grid_forget()
+    else:
+        contrato_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
+        contrato_combobox.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+    
+    if tipo_servico == "AQUISIÇÃO COM OS":
+        tipo_aquisicao_combobox.configure(values=["CORRETIVA DIÁRIA" , "LOCAÇÃO"])
+        tipo_aquisicao_combobox.set("")
+        tipo_aquisicao_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
+        tipo_aquisicao_combobox.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
+    elif tipo_servico == "AQUISIÇÃO SEM OS":
+        tipo_aquisicao_combobox.configure(values=["EPI", "CRACHÁ", "FERRAMENTAS", "FARDAMENTO", "ESTOQUE", "UTILIDADES"])
+        tipo_aquisicao_combobox.set("")
+        tipo_aquisicao_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
+        tipo_aquisicao_combobox.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
+    elif tipo_servico == "COMPRA IN LOCO":
+        tipo_aquisicao_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
+        tipo_aquisicao_combobox.configure(values=["CORRETIVA DIÁRIA", "ORÇAMENTO APROVADO"])
+        tipo_aquisicao_combobox.set("")
+        tipo_aquisicao_combobox.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)        
+    else:
+        tipo_aquisicao_label.grid_forget()
+        tipo_aquisicao_combobox.grid_forget()
+
+def adiciona_campo_pix():
+    tipo_pagamento = tipo_pagamento_combobox.get()
+
+    # Mostrar ou esconder campos para PIX
+    if tipo_pagamento == 'PIX':
+        tipo_chave_pix_label.grid(row=13, column=0, sticky="w", padx=(10, 10))
+        tipo_chave_pix_combobox.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
+        chave_pix_label.grid(row=14, column=0, sticky="w", padx=(10, 10))
+        chave_pix_entry.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
+        nome_benef_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
+        nome_benef_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
+    else:
+        tipo_chave_pix_label.grid_forget()
+        tipo_chave_pix_combobox.grid_forget()
+        tipo_chave_pix_combobox.set("")
+        chave_pix_label.grid_forget()
+        chave_pix_entry.grid_forget()
+        chave_pix_entry.delete(0, tk.END)
+        nome_benef_pix_label.grid_forget()
+        nome_benef_pix_entry.grid_forget()
+        nome_benef_pix_entry.delete(0, tk.END)
+
+def esconde_campos_pagamento_qrcode():
+    tipo_chave = tipo_chave_pix_combobox.get()
+
+    if tipo_chave == "QR CODE":
+        chave_pix_label.grid_forget()
+        chave_pix_entry.grid_forget()
+        nome_benef_pix_label.grid_forget()
+        nome_benef_pix_entry.grid_forget()
+
+        chave_pix_entry.delete(0, tk.END)
+        nome_benef_pix_entry.delete(0, tk.END)
+    else:
+        chave_pix_label.grid(row=14, column=0, sticky="w", padx=(10, 10))
+        chave_pix_entry.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
+        nome_benef_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
+        nome_benef_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+def campo_descricao_utilidades():
+    tipo_aquisicao = tipo_aquisicao_combobox.get()
+
+    if tipo_aquisicao == "UTILIDADES":
+        descricao_utilidades_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        descricao_utilidades_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+    else:
+        descricao_utilidades_label.grid_forget()
+        descricao_utilidades_entry.grid_forget()
+        descricao_utilidades_entry.delete(0, tk.END)
+
 def gerar_solicitacao():
-    # Coletar dados dos campos
     nome_usuario = arrumar_texto(nome_usuario_entry.get().upper())
     tipo_servico = arrumar_texto(tipo_servico_combobox.get().upper())
     nome_fornecedor = arrumar_texto(nome_fornecedor_entry.get().upper())
@@ -82,6 +410,7 @@ def gerar_solicitacao():
     competencia = arrumar_texto(competencia_combobox.get().upper())
     porcentagem = valida_porcentagem(porcentagem_entry.get().upper())
     tipo_aquisicao = arrumar_texto(tipo_aquisicao_combobox.get().upper())
+    descricao_utilidades = arrumar_texto(descricao_utilidades_entry.get().upper())
 
     if tipo_pagamento == "PIX":
         tipo_chave_pix = arrumar_texto(tipo_chave_pix_combobox.get())
@@ -120,7 +449,7 @@ def gerar_solicitacao():
         "C. O. RECIFE - PE - 5254": "PE",
         "C. O. MANAUS - AM - 7649": "AM",
         "C. O. VOLTA REDONDA - RJ - 0215": "VR",
-        "C. O. RONDÔNIA - RD - 0710": "RO",
+        "C. O. RONDÔNIA - RD - 0710": "RD",
         "ATA BB CURITIBA - 0232": "ATA PR",
         "C. E. MANAUS - S/N": "BB AM",
         "CAIXA BAHIA - 4922.2024": "CAIXA BA",
@@ -143,7 +472,7 @@ def gerar_solicitacao():
 
     if tipo_servico == "ABASTECIMENTO":
         campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
-    elif tipo_servico == "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA":
+    elif tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
         campos_obrigatorios.extend([
             (competencia, "COMPETÊNCIA"),
             (porcentagem, "% DO ADIANTAMENTO DO PARCEIRO")
@@ -157,6 +486,8 @@ def gerar_solicitacao():
         ])
     elif tipo_servico == "AQUISIÇÃO SEM OS":
         campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
+        if tipo_aquisicao == "UTILIDADES":
+            campos_obrigatorios.append((descricao_utilidades, "DESCRIÇÃO UTILIDADES"))
     elif tipo_servico == "ENVIO DE MATERIAL":
         campos_obrigatorios.remove((contrato, "CONTRATO"))
     elif tipo_servico in {"ESTACIONAMENTO", "HOSPEDAGEM"}:
@@ -186,6 +517,10 @@ def gerar_solicitacao():
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])
+    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
+        campos_obrigatorios.append((itens_pagamento if itens_pagamento else None, "DESCRIÇÃO DO ITEM"))
+        if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+            campos_obrigatorios.append((competencia, "COMPETÊNCIA"))
 
     if tipo_pagamento == "PIX" and tipo_chave_pix != "QR CODE":
         campos_obrigatorios.extend([
@@ -196,7 +531,7 @@ def gerar_solicitacao():
     if contrato in {"ESCRITÓRIO", "ATA BB CURITIBA", "CAIXA BAHIA", "CAIXA CURITIBA", "CAIXA MANAUS", "INFRA CURITIBA"}:
         campos_obrigatorios = [
             item for item in campos_obrigatorios
-            if item not in {(prefixo, "PREFIXO"), (agencia, "AGÊNCIA"), (os_num, "OS")}
+            if item not in [(prefixo, "PREFIXO"), (agencia, "AGÊNCIA"), (os_num, "OS")]
         ]
 
     # Verificar campos vazios
@@ -205,14 +540,18 @@ def gerar_solicitacao():
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
 
     if campos_vazios:
-        notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
+        if campos_vazios == ["DESCRIÇÃO DO ITEM"]:
+            notification_manager.show_notification("Campo DESCRIÇÃO DO ITEM\nPor favor, adicione um item à lista.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
+        else:
+            notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
 
     if os_num == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
     
-    if valor_tab1 == ValueError:
+    if valor_tab1 is ValueError:
         notification_manager.show_notification("Campo VALOR\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
     
@@ -239,7 +578,7 @@ def gerar_solicitacao():
     nome_arquivo_sem_ext, ext = splitext(nome_arquivo)
 
     # Gerar texto da solicitação
-    if tipo_servico == "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA":
+    if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
         texto = (
             f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
             f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
@@ -260,7 +599,7 @@ def gerar_solicitacao():
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "AQUISIÇÃO SEM OS":
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
-        texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+        texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}: {descricao_utilidades}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
         texto = (
@@ -318,6 +657,32 @@ def gerar_solicitacao():
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    elif tipo_servico == "RELATÓRIO EXTRA":
+        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor} pela confecção de relatório(s) técnico(s) relacionado(s) abaixo, para o {contrato}:\n\n"
+        texto += f"SERVIÇO: CONFECÇÃO DE {tipo_servico}\n\n"
+
+        for item in itens_pagamento:
+            texto += f"{item["descricao"]}\n"
+
+        texto += "\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
+    elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        if len(itens_pagamento) == 1:
+            texto = (
+                f"Solicito o pagamento para {nome_fornecedor}, referente à obra listada abaixo, para {contrato}:\n\n"
+            )
+        else:
+            texto = (
+                f"Solicito o pagamento para {nome_fornecedor}, referente as obras listadas abaixo, para {contrato}:\n\n"
+            )
+        texto += f"SERVIÇO: {tipo_servico}\n\n"
+        texto += f"COMPETÊNCIA: {competencia}\n\n"
+        
+        for item in itens_pagamento:
+            texto += f"{item["descricao"]}\n"
+        
+        texto += "\n"
+        texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif contrato == "ESCRITÓRIO":
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
@@ -361,39 +726,21 @@ def gerar_solicitacao():
         pyperclip.copy(texto)
 
     if switch_gerar_excel_var.get():
-        gerar_excel(root, nome_arquivo, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais)
+        descricao_itens = ""
 
-def limpar_dados():
-    aba_ativa  = tabview.get()
-    
-    # Limpar widgets da aba ativa
-    if aba_ativa == "PAGAMENTO":
-        # Limpar os widgets da Tab 1
-        for widget in widgets_para_limpar:
-            if isinstance(widget, ctk.CTkEntry):
-                widget.delete(0, tk.END)  # Limpa o campo de entrada
-            elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete("0.0", tk.END)  # Limpa o campo de texto
-            elif isinstance(widget, ctk.CTkComboBox):
-                widget.set("")  # Reseta o ComboBox
-    elif aba_ativa == "E-MAIL":
-        # Limpar os widgets da Tab 2
-        for widget in widgets_para_limpar_tab2:
-            if isinstance(widget, ctk.CTkEntry):
-                widget.delete(0, tk.END)  # Limpa o campo de entrada
-            elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete("0.0", tk.END)  # Limpa o campo de texto
-            elif isinstance(widget, ctk.CTkComboBox):
-                widget.set("")  # Reseta o ComboBox
-    elif aba_ativa == "AQUISIÇÃO":
-        # Limpar os widgets da Tab 3
-        for widget in widgets_para_limpar_tab3:
-            if isinstance(widget, ctk.CTkEntry):
-                widget.delete(0, tk.END)  # Limpa o campo de entrada
-            elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete("0.0", tk.END)  # Limpa o campo de texto
-            elif isinstance(widget, ctk.CTkComboBox):
-                widget.set("")  # Reseta o ComboBox
+        if tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"} and itens_pagamento:
+            descricao_itens = "\n".join(item["descricao_base"] for item in itens_pagamento)
+
+        gerar_excel(
+            root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefixo, agencia,
+            contrato, nome_usuario, tipo_pagamento, departamento,
+            usuarios_varios_departamentos, usuarios_gerais,
+            descricao_itens=descricao_itens
+        )
+
+# -------------------------------
+# Fim das funções da aba "Pagamento"
+# -------------------------------
 
 def gerar_texto_email():
     # Coletar dados dos campos
@@ -477,43 +824,339 @@ def gerar_texto_email():
     if switch_autocopia_frame_tab2_var.get():
         pyperclip.copy(texto)
 
+# -------------------------------
+# Funções da aba "Aquisições"
+# -------------------------------
+
+def add_campos_tab3():
+    tipo_aquisicao_tab3 = tipo_aquisicao_combobox_tab3.get()
+    contrato_tab3 = contrato_combobox_tab3.get()
+ 
+    if tipo_aquisicao_tab3 == "COMPRA":
+        data_label_tab3.grid_forget()
+        data_entry_tab3.grid_forget()
+        #quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        #quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+        frame_caixa_itens.grid(row=3, column=0, columnspan=2, sticky="nsew", pady=5)       
+        btn_adicionar_servico.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=5)
+        prazo_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
+        prazo_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
+        servico_label_tab3.grid_forget()
+        servico_entry_tab3.grid_forget()
+        periodo_locacao_label_tab3.grid_forget()
+        periodo_locacao_combobox_tab3.grid_forget()
+        quantidade_locacao_label_tab3.grid_forget()
+        quantidade_locacao_entry_tab3.grid_forget()
+        prefixo_label_tab3.grid(row=13, column=0, sticky="w", padx=(10, 10))
+        prefixo_entry_tab3.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
+        prefixo_entry_tab3.configure(placeholder_text="Opcional")
+        agencia_label_tab3.grid(row=14, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab3.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_entry_tab3.configure(placeholder_text="Opcional")
+        os_label_tab3.grid(row=15, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab3.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_entry_tab3.configure(placeholder_text="Opcional")
+        opcao_entrega_label_tab3.grid(row=16, column=0, sticky="w", padx=(10, 10))
+        opcao_entrega_combobox_tab3.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
+        nome_responsavel_label_tab3.grid(row=18, column=0, sticky="w", padx=(10, 10))
+        nome_responsavel_entry_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=2)
+        contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
+        contato_responsavel_entry_tab3.grid(row=19, column=1, sticky="ew", padx=(0, 10), pady=2)
+        observacoes_label_tab3.grid(row=20, column=0, sticky="w", padx=(10, 10))
+        observacoes_entry_tab3.grid(row=20, column=1, sticky="ew", padx=(0, 10), pady=2)
+    elif tipo_aquisicao_tab3 == "LOCAÇÃO":
+        frame_caixa_itens.grid_forget()
+        prazo_label_tab3.grid_forget()
+        prazo_entry_tab3.grid_forget()
+        descricao_locacao_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
+        descricao_locacao_entry_tab3.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+        data_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        data_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+        servico_label_tab3.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        servico_entry_tab3.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+        periodo_locacao_label_tab3.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        periodo_locacao_combobox_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+        quantidade_locacao_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        quantidade_locacao_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+        prefixo_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
+        prefixo_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
+        prefixo_entry_tab3.configure(placeholder_text="")
+        agencia_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_entry_tab3.configure(placeholder_text="")
+        os_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_entry_tab3.configure(placeholder_text="")
+        opcao_entrega_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
+        opcao_entrega_combobox_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
+        nome_responsavel_label_tab3.grid(row=18, column=0, sticky="w", padx=(10, 10))
+        nome_responsavel_entry_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=2)
+        contato_responsavel_agencia_label_tab3.grid(row=19, column=0, sticky="w", padx=(10, 10))
+        contato_responsavel_entry_tab3.grid(row=19, column=1, sticky="ew", padx=(0, 10), pady=2)
+        observacoes_label_tab3.grid(row=20, column=0, sticky="w", padx=(10, 10))
+        observacoes_entry_tab3.grid(row=20, column=1, sticky="ew", padx=(0, 10), pady=2)
+    
+    if contrato_tab3 == "ESCRITÓRIO":
+        prefixo_label_tab3.grid_forget()
+        prefixo_entry_tab3.grid_forget()
+        prefixo_entry_tab3.delete(0, tk.END)
+        os_label_tab3.grid_forget()
+        os_entry_tab3.grid_forget()
+        os_entry_tab3.delete(0, tk.END)
+        agencia_label_tab3.grid_forget()
+        agencia_entry_tab3.grid_forget()
+        agencia_entry_tab3.delete(0, tk.END)
+
+    if opcao_entrega_combobox_tab3.get() == "":
+        local_retirada_label_tab3.grid_forget()
+        local_retirada_entry_tab3.grid_forget()
+        endereco_agencia_label_tab3.grid_forget()
+        endereco_agencia_entry_tab3.grid_forget()
+    elif opcao_entrega_combobox_tab3.get() == "ENTREGA":
+        local_retirada_label_tab3.grid_forget()
+        local_retirada_entry_tab3.grid_forget()
+        endereco_agencia_label_tab3.grid(row=17, column=0, sticky="w", padx=(10, 10))
+        endereco_agencia_entry_tab3.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=2)
+    elif opcao_entrega_combobox_tab3.get() == "RETIRADA":
+        endereco_agencia_label_tab3.grid_forget()
+        endereco_agencia_entry_tab3.grid_forget()
+        local_retirada_label_tab3.grid(row=17, column=0, sticky="w", padx=(10, 10))
+        local_retirada_entry_tab3.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+# Lista para armazenar serviços e quantidades
+servicos_tab3 = []  # Exemplo: [("Abertura de porta", 1, "2m", "1m", "3m", "2cm", "http://exemplo.com")]
+
+# Função para adicionar serviços à lista
+def adicionar_item_tab3():
+    servico = descricao_compra_entry_tab3.get().strip().upper()
+    quantidade = quantidade_entry_tab3.get().strip().upper()
+    altura = altura_entry_tab3.get().strip().upper()
+    largura = largura_entry_tab3.get().strip().upper()
+    comprimento = comprimento_entry_tab3.get().strip().upper()
+    espessura = espessura_entry_tab3.get().strip().upper()
+    link = link_entry_tab3.get().strip().upper()
+
+    if servico and not quantidade:
+        notification_manager.show_notification(
+            "Campo QUANTIDADE\nPreencha o campo!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    elif not servico and quantidade:
+        notification_manager.show_notification(
+            "Campo DESCRIÇÃO\nPreencha o campo!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    elif not servico and not quantidade:
+        notification_manager.show_notification(
+            "Campos DESCRIÇÃO e QUANTIDADE\nPreencha os campos!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    else:
+        servicos_tab3.append([
+            servico, quantidade, altura, largura, comprimento, espessura, link
+        ])
+        descricao_compra_entry_tab3.delete(0, "end")
+
+        quantidade_entry_tab3.delete(0, "end")
+
+        altura_entry_tab3.delete(0, "end")
+        altura_entry_tab3.focus()  # Foca em outro elemento para atualizar o placeholder
+
+        largura_entry_tab3.delete(0, "end")
+        largura_entry_tab3.focus()
+
+        comprimento_entry_tab3.delete(0, "end")
+        comprimento_entry_tab3.focus()
+
+        espessura_entry_tab3.delete(0, "end")
+        espessura_entry_tab3.focus()
+
+        link_entry_tab3.delete(0, "end")
+        link_entry_tab3.focus()
+
+        descricao_compra_entry_tab3.focus()
+
+        atualizar_lista_itens_tab3()
+
+def atualizar_lista_itens_tab3():
+    for widget in frame_lista_itens.winfo_children():
+        widget.destroy()
+
+    if len(servicos_tab3) > 0:
+        frame_lista_itens.grid(row=11, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
+    else:
+        frame_lista_itens.grid_forget()
+
+    for index, (nome_item, quantidade, altura, largura, comprimento, espessura, link) in enumerate(servicos_tab3):
+        row_frame = ctk.CTkFrame(frame_lista_itens, width=400)
+        row_frame.grid(row=index, column=0, columnspan=2, sticky="ew", padx=10, pady=2)
+
+        detalhes = f"Descrição: {nome_item}, Quantidade: {quantidade}"
+        if altura:
+            detalhes += f", Altura: {altura}"
+        if largura:
+            detalhes += f", Largura: {largura}"
+        if comprimento:
+            detalhes += f", Comprimento: {comprimento}"
+        if espessura:
+            detalhes += f", Espessura: {espessura}"
+        if link:
+            detalhes += f", Link: {link}"
+
+        label_servico_gerado = ctk.CTkLabel(
+            row_frame, 
+            text=detalhes,
+            anchor="w", justify="left", wraplength=340
+        )
+        label_servico_gerado.grid(row=0, column=0, padx=2)
+
+        btn_editar = ctk.CTkButton(
+            row_frame, text="Editar", width=30, 
+            command=lambda i=index: editar_item_tab3(i)
+        )
+        btn_editar.grid(row=0, column=1, padx=2)
+
+        btn_excluir = ctk.CTkButton(
+            row_frame, text="❌", width=30, 
+            fg_color="red", hover_color="darkred", 
+            command=lambda i=index: remover_item_tab3(i)
+        )
+        btn_excluir.grid(row=0, column=2, padx=2)
+
+# Função para editar um serviço
+def editar_item_tab3(index):
+    global editando_item
+    editando_item = index  # Marca que o item está sendo editado
+
+    servico_atual, quantidade_atual, altura_atual, largura_atual, \
+    comprimento_atual, espessura_atual, link_atual = servicos_tab3[index]
+
+    # Preenche os campos de entrada com os valores do item selecionado
+    descricao_compra_entry_tab3.delete(0, "end")
+    descricao_compra_entry_tab3.insert(0, servico_atual)
+
+    quantidade_entry_tab3.delete(0, "end")
+    quantidade_entry_tab3.insert(0, str(quantidade_atual))
+
+    altura_entry_tab3.delete(0, "end")
+    altura_entry_tab3.insert(0, altura_atual)
+    altura_entry_tab3.focus()
+
+    largura_entry_tab3.delete(0, "end")
+    largura_entry_tab3.insert(0, largura_atual)
+    largura_entry_tab3.focus()
+
+    comprimento_entry_tab3.delete(0, "end")
+    comprimento_entry_tab3.insert(0, comprimento_atual)
+    comprimento_entry_tab3.focus()
+
+    espessura_entry_tab3.delete(0, "end")
+    espessura_entry_tab3.insert(0, espessura_atual)
+    espessura_entry_tab3.focus()
+
+    link_entry_tab3.delete(0, "end")
+    link_entry_tab3.insert(0, link_atual)
+    link_entry_tab3.focus()
+
+    descricao_compra_entry_tab3.focus()
+
+    btn_adicionar_servico.configure(text="Salvar", command=lambda: salvar_edicao(index))
+
+    # Desabilita o botão de excluir
+    atualizar_lista_itens_tab3()
+
+# Função para salvar a edição
+def salvar_edicao(index):
+    global editando_item
+    novo_servico = descricao_compra_entry_tab3.get().strip()
+    nova_quantidade = quantidade_entry_tab3.get().strip()
+    nova_altura = altura_entry_tab3.get().strip()
+    nova_largura = largura_entry_tab3.get().strip()
+    novo_comprimento = comprimento_entry_tab3.get().strip()
+    nova_espessura = espessura_entry_tab3.get().strip()
+    novo_link = link_entry_tab3.get().strip()
+
+    if novo_servico and not nova_quantidade:
+        notification_manager.show_notification(
+            "Campo QUANTIDADE\nA quantidade não pode ser nula!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    elif not novo_servico and nova_quantidade:
+        notification_manager.show_notification(
+            "Campo DESCRIÇÃO\nO campo deve ser preenchido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    elif not novo_servico and not nova_quantidade:
+        notification_manager.show_notification(
+            "Campos DESCRIÇÃO e QUANTIDADE\nOs campos devem ser preenchidos!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+        )
+        return
+    else:
+        servicos_tab3[index] = (novo_servico, nova_quantidade, nova_altura, nova_largura, novo_comprimento, nova_espessura, novo_link)
+
+        # Limpa os campos após a edição
+        descricao_compra_entry_tab3.delete(0, "end")
+        quantidade_entry_tab3.delete(0, "end")
+        altura_entry_tab3.delete(0, "end")
+        largura_entry_tab3.delete(0, "end")
+        comprimento_entry_tab3.delete(0, "end")
+        espessura_entry_tab3.delete(0, "end")
+        link_entry_tab3.delete(0, "end")
+
+        # Restaura o texto do botão para "Adicionar item"
+        btn_adicionar_servico.configure(text="Adicionar item", command=adicionar_item_tab3)
+
+        # Reabilita o botão de excluir
+        editando_item = None  # Desmarca a edição
+
+        descricao_compra_entry_tab3.focus()
+
+        atualizar_lista_itens_tab3()
+
+# Função para remover um serviço da lista
+def remover_item_tab3(index):
+    global editando_item
+    if editando_item is None:  # Só permite excluir se não estiver editando
+        del servicos_tab3[index]
+        atualizar_lista_itens_tab3()
+    else:
+        notification_manager = NotificationManager(root)  # passando a instância da janela principal
+        notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a exclusão.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+        pass
+
 def gerar_texto_aquisicao():
     # Coletar dados dos campos
     nome_usuario_tab3 = arrumar_texto(nome_usuario_entry_tab3.get().upper())
     tipo_aquisicao_tab3 = arrumar_texto(tipo_aquisicao_combobox_tab3.get().upper())
     contrato_tab3 = arrumar_texto(contrato_combobox_tab3.get().upper())
-    descricao_tab3 = arrumar_texto(descricao_entry_tab3.get().upper())
+    descricao_tab3 = arrumar_texto(descricao_locacao_entry_tab3.get().upper())
     prazo_tab3 = arrumar_texto(prazo_entry_tab3.get_date().upper())
     data_tab3 = arrumar_texto(data_entry_tab3.get_date().upper())
-    altura_tab3 = arrumar_texto(altura_entry_tab3.get().upper())
-    largura_tab3 = arrumar_texto(largura_entry_tab3.get().upper())
-    comprimento_tab3 = arrumar_texto(comprimento_entry_tab3.get().upper())
     servico_tab3 = arrumar_texto(servico_entry_tab3.get().upper())
-    espessura_tab3 = arrumar_texto(espessura_entry_tab3.get().upper())
     periodo_locacao_tab3 = arrumar_texto(periodo_locacao_combobox_tab3.get().upper())
-    quantidade_tab3 = arrumar_texto(quantidade_entry_tab3.get().upper())
-    link_tab3 = arrumar_texto(link_entry_tab3.get())
+    quantidade_periodo_locacao_tab3 = arrumar_texto(quantidade_locacao_entry_tab3.get().upper())
     prefixo_tab3 = arrumar_texto(prefixo_entry_tab3.get())
     agencia_tab3 = arrumar_texto(agencia_entry_tab3.get().upper())
     os_num_tab3 = valida_os(os_entry_tab3.get())
     opcao_entrega_tab3 = arrumar_texto(opcao_entrega_combobox_tab3.get().upper())
     endereco_agencia_tab3 = arrumar_texto(endereco_agencia_entry_tab3.get().upper())
+    local_retirada_tab3 = arrumar_texto(local_retirada_entry_tab3.get().upper())
     nome_responsavel_tab3 = arrumar_texto(nome_responsavel_entry_tab3.get().upper())
     contato_responsavel_tab3 = arrumar_texto(contato_responsavel_entry_tab3.get().upper())
+    observacoes_tab3 = arrumar_texto(observacoes_entry_tab3.get().upper())
 
     # Verificar se algum campo obrigatório está vazio
     campos_obrigatorios = [
         (nome_usuario_tab3, "USUÁRIO"),
         (tipo_aquisicao_tab3, "TIPO DE SERVIÇO"),
-        (contrato_tab3, "CONTRATO"),
-        (descricao_tab3, "DESCRIÇÃO")
+        (contrato_tab3, "CONTRATO")
     ]
 
     if tipo_aquisicao_tab3 == "COMPRA":
         # Adiciona os campos comuns para os dois tipos
         campos_obrigatorios.extend([
+            (servicos_tab3 if servicos_tab3 else None, "DESCRIÇÃO E QUANTIDADE"),
             (prazo_tab3, "PRAZO"),
-            (quantidade_tab3, "QUANTIDADE"),
             (opcao_entrega_tab3, "OPÇÃO DE ENTREGA"),
             (nome_responsavel_tab3, "NOME DO RESPONSÁVEL"),
             (contato_responsavel_tab3, "CONTATO DO RESPONSÁVEL")
@@ -526,8 +1169,8 @@ def gerar_texto_aquisicao():
         # Adiciona os campos comuns para os dois tipos
         campos_obrigatorios.extend([
             (data_tab3, "DATA DA LOCAÇÃO"),
-            (servico_tab3, "SERVIÇO"),
             (periodo_locacao_tab3, "PERÍODO DE LOCAÇÃO"),
+            (quantidade_periodo_locacao_tab3, "QUANTIDADE DE PERÍODOS"),
             (prefixo_tab3, "PREFIXO"),
             (agencia_tab3, "AGÊNCIA"),
             (os_num_tab3, "OS"),
@@ -542,7 +1185,7 @@ def gerar_texto_aquisicao():
     if contrato_tab3 == "ESCRITÓRIO":
         campos_obrigatorios = [
             item for item in campos_obrigatorios
-            if item not in {(prefixo_tab3, "PREFIXO"), (agencia_tab3, "AGÊNCIA"), (os_num_tab3, "OS")}
+            if item not in [(prefixo_tab3, "PREFIXO"), (agencia_tab3, "AGÊNCIA"), (os_num_tab3, "OS")]
         ]
 
     # Verificar campos vazios
@@ -550,39 +1193,111 @@ def gerar_texto_aquisicao():
 
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
-        notification_manager.show_notification("Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
+        if campos_vazios == ["DESCRIÇÃO E QUANTIDADE"]:
+            notification_manager.show_notification("Item(ns) não adicionado(s)", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
+        else:
+            notification_manager.show_notification("Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
 
     if os_num_tab3 == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
 
+    if quantidade_periodo_locacao_tab3:
+        if quantidade_periodo_locacao_tab3.isdigit():
+            quantidade_periodo_locacao_tab3 = int(quantidade_periodo_locacao_tab3)
+
+        if not isinstance(quantidade_periodo_locacao_tab3, int) or quantidade_periodo_locacao_tab3 < 1:
+            notification_manager.show_notification("Campo QUANTIDADE DE PERÍODOS\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
+
     if tipo_aquisicao_tab3 == "COMPRA":
-            texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
-            texto += f"▪ *Contrato:* {contrato_tab3}\n"
-            texto += f"▪ *Descrição da aquisição:* {descricao_tab3}\n"
-            texto += f"▪ *Prazo para aquisição:* {prazo_tab3}\n"
-            texto += f"▪ *Altura:* {altura_tab3}\n" if altura_tab3 else ""
-            texto += f"▪ *Largura:* {largura_tab3}\n" if largura_tab3 else ""
-            texto += f"▪ *Comprimento:* {comprimento_tab3}\n" if comprimento_tab3 else ""
-            texto += f"▪ *Espessura:* {espessura_tab3}\n" if espessura_tab3 else ""
-            texto += f"▪ *Quantidade:* {quantidade_tab3}\n"
-            texto += f"▪ *Link:* {link_tab3}\n" if link_tab3 else ""
-            texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else f""
-            texto += f"▪ *Entrega ou Retirada:* ENTREGA\n▪ *Endereço da Agência:* {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ *Entrega ou Retirada:* RETIRADA\n"            
-            texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
-            texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
+        texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
+        texto += f"▪ *Contrato:* {contrato_tab3}\n"
+        texto += f"▪ *Prazo para aquisição:* {prazo_tab3}\n"
+
+        if servicos_tab3:  # Verifica se a lista não está vazia
+            if len(servicos_tab3) == 1:  # Apenas um item, mantém o formato original
+                servico, quantidade, altura, largura, comprimento, espessura, link = servicos_tab3[0]
+                texto += f"▪ *Descrição da aquisição:* {servico}\n"
+                texto += f"▪ *Altura:* {altura}\n" if altura else ""
+                texto += f"▪ *Largura:* {largura}\n" if largura else ""
+                texto += f"▪ *Comprimento:* {comprimento}\n" if comprimento else ""
+                texto += f"▪ *Espessura:* {espessura}\n" if espessura else ""
+                texto += f"▪ *Quantidade:* {quantidade}\n"
+                texto += f"▪ *Link:* {link}\n" if link else ""
+            else:  # Mais de um item, gera uma lista formatada
+                texto += "▪ *Itens da solicitação:*\n"
+                for idx, (servico, quantidade, altura, largura, comprimento, espessura, link) in enumerate(servicos_tab3, start=1):
+                    texto += f"   {idx}. {servico} - {quantidade} unidade(s)\n"
+                    if altura:
+                        texto += f"      - *Altura:* {altura}\n"
+                    if largura:
+                        texto += f"      - *Largura:* {largura}\n"
+                    if comprimento:
+                        texto += f"      - *Comprimento:* {comprimento}\n"
+                    if espessura:
+                        texto += f"      - *Espessura:* {espessura}\n"
+                    if link:
+                        texto += f"      - *Link:* {link}\n"
+
+        texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else ""
+        
+        if opcao_entrega_tab3 == "ENTREGA":
+            texto += f"▪ *Entrega ou Retirada:* ENTREGA\n"
+            texto += f"▪ *Endereço da Entrega:* {endereco_agencia_tab3}\n"
+        else: 
+            texto += "▪ *Entrega ou Retirada:* RETIRADA\n"
+
+            if local_retirada_tab3:
+                texto += f"▪ *Local de Retirada:* {local_retirada_tab3}\n"
+                
+        texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
+        texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
+        texto += f"▪ *Observações:* {observacoes_tab3}\n" if observacoes_tab3 else ""
     else:        
-            texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
-            texto += f"▪ *Contrato:* {contrato_tab3}\n"
-            texto += f"▪ *Descrição da locação:* {descricao_tab3}\n"
-            texto += f"▪ *Data da locação:* {data_tab3}\n"
-            texto += f"▪ *Serviço:* {servico_tab3}\n"
-            texto += f"▪ *Período da locação:* {periodo_locacao_tab3}\n"
-            texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else f""
-            texto += f"▪ *Entrega ou Retirada:* ENTREGA\n▪ *Endereço da Agência:* {endereco_agencia_tab3}\n" if opcao_entrega_tab3 == "ENTREGA" else "▪ *Entrega ou Retirada:* RETIRADA\n"            
-            texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
-            texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"            
+        texto = f"*SOLICITAÇÃO DE AQUISIÇÃO - {tipo_aquisicao_tab3}*\n\n"
+        texto += f"▪ *Contrato:* {contrato_tab3}\n"
+        texto += f"▪ *Descrição da locação:* {descricao_tab3}\n"
+        texto += f"▪ *Data da locação:* {data_tab3}\n"
+        texto += f"▪ *Serviço:* {servico_tab3}\n"
+        
+        if periodo_locacao_tab3 == "DIÁRIA":
+            if quantidade_periodo_locacao_tab3 == 1:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} {periodo_locacao_tab3}\n"
+            else:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} {periodo_locacao_tab3}S\n"
+        elif periodo_locacao_tab3 == "SEMANAL":
+            if quantidade_periodo_locacao_tab3 == 1:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} SEMANA\n"
+            else:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} SEMANAS\n"
+        elif periodo_locacao_tab3 == "QUINZENAL":
+            if quantidade_periodo_locacao_tab3 == 1:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} QUINZENA\n"
+            else:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} QUINZENAS\n"
+        else:
+            if quantidade_periodo_locacao_tab3 == 1:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} MÊS\n"
+            else:
+                texto += f"▪ *Período da locação:* {quantidade_periodo_locacao_tab3} MESES\n"
+        
+        texto += f"▪ *Prefixo, Agência e OS:* {prefixo_tab3} - {agencia_tab3} - {os_num_tab3}\n" if os_num_tab3 else f""
+        
+        if opcao_entrega_tab3 == "ENTREGA":
+            texto += f"▪ *Entrega ou Retirada:* ENTREGA\n"
+            texto += f"▪ *Endereço da Entrega:* {endereco_agencia_tab3}\n"
+        else: 
+            texto += "▪ *Entrega ou Retirada:* RETIRADA\n"
+
+            if local_retirada_tab3:
+                texto += f"▪ *Local de Retirada:* {local_retirada_tab3}\n"
+
+        texto += f"▪ *Nome do responsável:* {nome_responsavel_tab3}\n"
+        texto += f"▪ *Contato do responsável:* {contato_responsavel_tab3}\n"
+        texto += f"▪ *Observações:* {observacoes_tab3}\n" if observacoes_tab3 else ""
 
     # Exibir texto na caixa de texto
     texto_aquisicao.delete(1.0, tk.END)
@@ -591,176 +1306,10 @@ def gerar_texto_aquisicao():
     # Copiar automaticamente o texto gerado caso o switch esteja ativo
     if switch_autocopia_frame_tab3_var.get():
         pyperclip.copy(texto)
-    
-def add_campos():
-    tipo_servico = tipo_servico_combobox.get()
 
-    prefixo_label.configure(text="PREFIXO:")
-    agencia_label.configure(text="AGÊNCIA:")
-    os_label.configure(text="OS ou Nº DO CONTRATO (CAIXA):")
-
-    contrato_combobox.configure(values=contratos)
-    contrato_combobox.set("")
-
-    tipo_pagamento_combobox.set("")
-    tipo_chave_pix_label.grid_forget()
-    tipo_chave_pix_combobox.grid_forget()
-    chave_pix_label.grid_forget()
-    chave_pix_entry.grid_forget()
-    nome_benef_pix_label.grid_forget()
-    nome_benef_pix_entry.grid_forget()
-
-    # Oculta todos os campos por padrão
-    for widget in [
-        competencia_label, competencia_combobox,
-        porcentagem_label, porcentagem_entry,
-        motivo_label, motivo_entry,
-        saida_destino_label, saida_destino_entry,
-        tecnicos_label, tecnicos_entry
-    ]:
-        widget.grid_forget()
-
-    # Limpa os campos de entrada por padrão
-    competencia_combobox.set("")
-    porcentagem_entry.delete(0, tk.END)
-    motivo_entry.delete(0, tk.END)
-    saida_destino_entry.delete(0, tk.END)
-    tecnicos_entry.delete(0, tk.END)
-
-    if tipo_servico == "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA":
-        competencia_label.grid(row=9, column=0, sticky="w", padx=(10, 10))
-        competencia_combobox.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        porcentagem_label.grid(row=10, column=0, sticky="w", padx=(10, 10))
-        porcentagem_entry.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-
-    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS", "REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
-        motivo_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        motivo_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
-
-    elif tipo_servico == "REEMBOLSO UBER":
-        saida_destino_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        saida_destino_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
-        motivo_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        motivo_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-
-    elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM"}:
-        tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)  
-
-    # Mostrar ou esconder PREFIXO, OS e AGÊNCIA
-    esconde_pref_age_os = {
-        "REEMBOLSO SEM OS",
-        "SOLICITAÇÃO SEM OS",
-        "ABASTECIMENTO",
-        "ENVIO DE MATERIAL",
-        "AQUISIÇÃO SEM OS",
-    }
-
-    if tipo_servico in esconde_pref_age_os:
-        prefixo_label.grid_forget()
-        prefixo_entry.grid_forget()
-        os_label.grid_forget()
-        os_entry.grid_forget()
-        agencia_label.grid_forget()
-        agencia_entry.grid_forget()
-    elif tipo_servico in {"REEMBOLSO UBER", "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA"}:
-        prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
-        prefixo_entry.configure(placeholder_text="Opcional")
-        prefixo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
-
-        agencia_label.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        agencia_entry.configure(placeholder_text="Opcional")
-        agencia_entry.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
-
-        os_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
-        os_entry.configure(placeholder_text="Opcional")
-        os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
-    
-    else:
-        prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
-        prefixo_entry.configure(placeholder_text="")
-        prefixo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        agencia_entry.configure(placeholder_text="")
-        agencia_entry.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
-        os_entry.configure(placeholder_text="")
-        os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
-
-    tipo_pagamento_combobox.set("") # limpar a seleção antes de configurar os valores
-    if tipo_servico in {"PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA", "ABASTECIMENTO"}:
-        opcoes_pagamento = ["PIX"]
-    elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS", "AQUISIÇÃO COM OS", "ENVIO DE MATERIAL", "TRANSPORTADORA"}:
-        opcoes_pagamento = ["PIX", "VEXPENSES", "FATURAMENTO"]
-    else:
-        opcoes_pagamento = ["PIX", "VEXPENSES"]
-
-    tipo_pagamento_combobox.configure(values=opcoes_pagamento)
-
-    if tipo_servico == "ENVIO DE MATERIAL":
-        contrato_label.grid_forget()
-        contrato_combobox.grid_forget()
-    else:
-        contrato_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
-        contrato_combobox.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
-    
-    if tipo_servico == "AQUISIÇÃO COM OS":
-        tipo_aquisicao_combobox.configure(values=["CORRETIVA DIÁRIA" , "LOCAÇÃO"])
-        tipo_aquisicao_combobox.set("")
-        tipo_aquisicao_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        tipo_aquisicao_combobox.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
-    elif tipo_servico == "AQUISIÇÃO SEM OS":
-        tipo_aquisicao_combobox.configure(values=["EPI", "CRACHÁ", "FERRAMENTAS", "FARDAMENTO", "ESTOQUE", "UTILIDADES"])
-        tipo_aquisicao_combobox.set("")
-        tipo_aquisicao_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        tipo_aquisicao_combobox.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
-    elif tipo_servico == "COMPRA IN LOCO":
-        tipo_aquisicao_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        tipo_aquisicao_combobox.configure(values=["CORRETIVA DIÁRIA", "ORÇAMENTO APROVADO"])
-        tipo_aquisicao_combobox.set("")
-        tipo_aquisicao_combobox.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)        
-    else:
-        tipo_aquisicao_label.grid_forget()
-        tipo_aquisicao_combobox.grid_forget()
-
-def adiciona_campo_pix():
-    tipo_pagamento = tipo_pagamento_combobox.get()
-
-    # Mostrar ou esconder campos para PIX
-    if tipo_pagamento == 'PIX':
-        tipo_chave_pix_label.grid(row=13, column=0, sticky="w", padx=(10, 10))
-        tipo_chave_pix_combobox.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
-        chave_pix_label.grid(row=14, column=0, sticky="w", padx=(10, 10))
-        chave_pix_entry.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
-        nome_benef_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
-        nome_benef_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
-    else:
-        tipo_chave_pix_label.grid_forget()
-        tipo_chave_pix_combobox.grid_forget()
-        tipo_chave_pix_combobox.set("")
-        chave_pix_label.grid_forget()
-        chave_pix_entry.grid_forget()
-        chave_pix_entry.delete(0, tk.END)
-        nome_benef_pix_label.grid_forget()
-        nome_benef_pix_entry.grid_forget()
-        nome_benef_pix_entry.delete(0, tk.END)
-
-def esconde_campos_pagamento_qrcode():
-    tipo_chave = tipo_chave_pix_combobox.get()
-
-    if tipo_chave == "QR CODE":
-        chave_pix_label.grid_forget()
-        chave_pix_entry.grid_forget()
-        nome_benef_pix_label.grid_forget()
-        nome_benef_pix_entry.grid_forget()
-
-        chave_pix_entry.delete(0, tk.END)
-        nome_benef_pix_entry.delete(0, tk.END)
-    else:
-        chave_pix_label.grid(row=14, column=0, sticky="w", padx=(10, 10))
-        chave_pix_entry.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
-        nome_benef_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
-        nome_benef_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)        
+# -------------------------------
+# Fim das funções da aba "Aquisições"
+# -------------------------------
 
 def add_campos_tab2():
     tipo_servico_tab2 = tipo_servico_combobox_tab2.get()
@@ -798,95 +1347,6 @@ def on_return_press(event):
     elif aba_atual == "AQUISIÇÃO":
         gerar_button_tab3.invoke()
 
-def add_campos_tab3():
-    tipo_aquisicao_tab3 = tipo_aquisicao_combobox_tab3.get()
-    contrato_tab3 = contrato_combobox_tab3.get()
- 
-    if tipo_aquisicao_tab3 == "COMPRA":
-        data_label_tab3.grid_forget()
-        data_entry_tab3.grid_forget()
-        prazo_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        prazo_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-        servico_label_tab3.grid_forget()
-        servico_entry_tab3.grid_forget()
-        altura_label_tab3.grid(row=5, column=0, sticky="w", padx=(10, 10))
-        altura_entry_tab3.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
-        largura_label_tab3.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        largura_entry_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
-        comprimento_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
-        comprimento_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
-        periodo_locacao_label_tab3.grid_forget()
-        periodo_locacao_combobox_tab3.grid_forget()
-        espessura_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
-        espessura_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
-        quantidade_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
-        quantidade_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        link_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
-        link_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-        prefixo_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
-        prefixo_entry_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab3.grid(row=13, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab3.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
-        opcao_entrega_label_tab3.grid(row=14, column=0, sticky="w", padx=(10, 10))
-        opcao_entrega_combobox_tab3.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
-        nome_responsavel_label_tab3.grid(row=16, column=0, sticky="w", padx=(10, 10))
-        nome_responsavel_entry_tab3.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
-        contato_responsavel_agencia_label_tab3.grid(row=17, column=0, sticky="w", padx=(10, 10))
-        contato_responsavel_entry_tab3.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=2)
-    elif tipo_aquisicao_tab3 == "LOCAÇÃO":
-        prazo_label_tab3.grid_forget()
-        prazo_entry_tab3.grid_forget()
-        data_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        data_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-        altura_label_tab3.grid_forget()
-        altura_entry_tab3.grid_forget()
-        largura_label_tab3.grid_forget()
-        largura_entry_tab3.grid_forget()
-        comprimento_label_tab3.grid_forget()
-        comprimento_entry_tab3.grid_forget()
-        servico_label_tab3.grid(row=5, column=0, sticky="w", padx=(10, 10))
-        servico_entry_tab3.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
-        espessura_label_tab3.grid_forget()
-        espessura_entry_tab3.grid_forget()
-        periodo_locacao_label_tab3.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        periodo_locacao_combobox_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
-        quantidade_label_tab3.grid_forget()
-        quantidade_entry_tab3.grid_forget()
-        link_label_tab3.grid_forget()
-        link_entry_tab3.grid_forget()
-        prefixo_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
-        prefixo_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab3.grid(row=10, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab3.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab3.grid(row=11, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab3.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
-        opcao_entrega_label_tab3.grid(row=12, column=0, sticky="w", padx=(10, 10))
-        opcao_entrega_combobox_tab3.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=2)
-        nome_responsavel_label_tab3.grid(row=16, column=0, sticky="w", padx=(10, 10))
-        nome_responsavel_entry_tab3.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
-        contato_responsavel_agencia_label_tab3.grid(row=17, column=0, sticky="w", padx=(10, 10))
-        contato_responsavel_entry_tab3.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=2)
-    
-    if contrato_tab3 == "ESCRITÓRIO":
-        prefixo_label_tab3.grid_forget()
-        prefixo_entry_tab3.grid_forget()
-        prefixo_entry_tab3.delete(0, tk.END)
-        os_label_tab3.grid_forget()
-        os_entry_tab3.grid_forget()
-        os_entry_tab3.delete(0, tk.END)
-        agencia_label_tab3.grid_forget()
-        agencia_entry_tab3.grid_forget()
-        agencia_entry_tab3.delete(0, tk.END)
-
-    if opcao_entrega_combobox_tab3.get() == "ENTREGA":
-        endereco_agencia_label_tab3.grid(row=15, column=0, sticky="w", padx=(10, 10))
-        endereco_agencia_entry_tab3.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
-    else:
-        endereco_agencia_label_tab3.grid_forget()
-        endereco_agencia_entry_tab3.grid_forget()
-
 def restaurar_valores_tipo_aquisicao(event):
     """Se o usuário apagar manualmente, restaura os valores corretos"""
     tipo_atual = tipo_servico_combobox.get()
@@ -912,24 +1372,83 @@ def restaurar_valores_tipo_aquisicao(event):
     if tipo_aquisicao_combobox.get() == "":
         tipo_aquisicao_combobox.set("")  # Mantém o campo vazio
 
+def limpar_dados():
+    """
+    Limpar widgets da aba ativa
+    """
+    
+    aba_ativa  = tabview.get()
+    
+    if aba_ativa == "PAGAMENTO":
+        if editando_item_pagamento is None:
+            # Limpar os widgets da Tab 1
+            for widget in widgets_para_limpar:
+                if isinstance(widget, ctk.CTkEntry):
+                    widget.delete(0, tk.END)
+                elif isinstance(widget, ctk.CTkTextbox):
+                    widget.delete("0.0", tk.END)
+                elif isinstance(widget, ctk.CTkComboBox):
+                    widget.set("")
+
+                itens_pagamento.clear()
+                atualizar_lista_itens_pagamento()
+                add_campos()
+        else:
+            notification_manager = NotificationManager(root)  # passando a instância da janela principal
+            notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a limpeza dos campos.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+            pass 
+    elif aba_ativa == "E-MAIL":
+        # Limpar os widgets da Tab 2
+        for widget in widgets_para_limpar_tab2:
+            if isinstance(widget, ctk.CTkEntry):
+                widget.delete(0, tk.END)
+            elif isinstance(widget, ctk.CTkTextbox):
+                widget.delete("0.0", tk.END)
+            elif isinstance(widget, ctk.CTkComboBox):
+                widget.set("")
+    elif aba_ativa == "AQUISIÇÃO":
+        if editando_item is None:
+            # Limpar os widgets da Tab 3
+            for widget in widgets_para_limpar_tab3:
+                if isinstance(widget, ctk.CTkEntry):
+                    widget.delete(0, tk.END)
+                elif isinstance(widget, ctk.CTkTextbox):
+                    widget.delete("0.0", tk.END)
+                elif isinstance(widget, ctk.CTkComboBox):
+                    widget.set("")
+                elif isinstance(widget, CTkDatePicker):
+                    widget.set("")
+
+                servicos_tab3.clear()
+                atualizar_lista_itens_tab3()
+                add_campos_tab3()
+        else:
+            notification_manager = NotificationManager(root)  # passando a instância da janela principal
+            notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a limpeza dos campos.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+            pass
+
 def janela_principal():
     from .ui_tela_login import nome_completo_usuario, abas_permitidas
 
     # Variáveis globais principais
     global root, tabview, frame, widgets_para_limpar, widgets_para_limpar_tab2, widgets_para_limpar_tab3
-    global usuarios_varios_departamentos, usuarios_gerais
+    global usuarios_varios_departamentos, usuarios_gerais, notification_manager
 
     # Widgets da aba PAGAMENTO
     global nome_usuario_entry, tipo_servico_combobox, nome_fornecedor_entry, prefixo_entry, agencia_entry
     global os_entry, contrato_combobox, motivo_entry, valor_entry, tipo_pagamento_combobox, tecnicos_entry
     global saida_destino_entry, competencia_combobox, porcentagem_entry
-    global tipo_aquisicao_combobox, tipo_chave_pix_combobox
-    global chave_pix_entry, texto_solicitacao, switch_autocopia_var, contratos
-    global switch_gerar_excel_var, tipo_chave_pix_label, chave_pix_label
+    global tipo_aquisicao_combobox, tipo_chave_pix_combobox, chave_pix_entry
+    global texto_solicitacao, switch_autocopia_var, contratos, switch_gerar_excel_var
+    global tipo_chave_pix_label, chave_pix_label
     global competencia_label, porcentagem_label, motivo_label, saida_destino_label
     global tecnicos_label, prefixo_label, os_label, agencia_label, contrato_label
     global nome_benef_pix_label, nome_benef_pix_entry
     global tipo_aquisicao_label, gerar_button
+    global descricao_utilidades_label, descricao_utilidades_entry
+    global frame_caixa_itens_pagamento, frame_lista_itens_pagamento
+    global descricao_do_item_pagamento_label, descricao_do_item_pagamento_entry
+    global editando_item_pagamento, btn_adicionar_servico_pagamento
 
     # Widgets da aba E-MAIL
     global nome_usuario_entry_tab2, tipo_servico_combobox_tab2, prefixo_entry_tab2, agencia_entry_tab2
@@ -938,7 +1457,9 @@ def janela_principal():
     global prefixo_label_tab2, os_label_tab2, agencia_label_tab2, endereco_agencia_label_tab2, gerar_button_tab2
 
     # Widgets da aba AQUISIÇÃO
-    global nome_usuario_entry_tab3, tipo_aquisicao_combobox_tab3, contrato_combobox_tab3, descricao_entry_tab3
+    global nome_usuario_entry_tab3, tipo_aquisicao_combobox_tab3, contrato_combobox_tab3
+    global descricao_locacao_label_tab3, descricao_locacao_entry_tab3
+    global descricao_compra_label_tab3, descricao_compra_entry_tab3, btn_adicionar_servico
     global prazo_entry_tab3, data_entry_tab3, servico_entry_tab3, espessura_entry_tab3
     global periodo_locacao_combobox_tab3, quantidade_entry_tab3, link_entry_tab3, prefixo_entry_tab3
     global agencia_entry_tab3, os_entry_tab3, opcao_entrega_combobox_tab3, endereco_agencia_entry_tab3
@@ -947,13 +1468,16 @@ def janela_principal():
     global espessura_label_tab3, quantidade_label_tab3, link_label_tab3, prefixo_label_tab3, os_label_tab3
     global agencia_label_tab3, opcao_entrega_label_tab3, nome_responsavel_label_tab3, contato_responsavel_agencia_label_tab3
     global altura_label_tab3, altura_entry_tab3, largura_label_tab3, largura_entry_tab3, comprimento_label_tab3, comprimento_entry_tab3
-    global endereco_agencia_label_tab3, gerar_button_tab3
+    global endereco_agencia_label_tab3, gerar_button_tab3, btn_adicionar_servico, servicos_tab3, frame_lista_itens
+    global local_retirada_label_tab3, local_retirada_entry_tab3, observacoes_label_tab3, observacoes_entry_tab3
+    global frame_caixa_itens, editando_item, quantidade_locacao_label_tab3, quantidade_locacao_entry_tab3
 
     # Configuração da interface gráfica
     root = ctk.CTk()
     root.title("Modelo Solicitação de Pagamento")
-    root.geometry("520x600")
+    root.geometry("650x600")
     ctk.set_default_color_theme("green")
+    notification_manager = NotificationManager(root)  # passando a instância da janela principal
 
     ''' CRIAÇÃO DAS ABAS PARA SELEÇAO DOS TIPOS DE MODELOS DE TEXTO '''
     tabview = ctk.CTkTabview(master=root)
@@ -986,6 +1510,7 @@ def janela_principal():
         frame.pack(fill="both", expand=True, padx=2, pady=2)
 
         # Configurando a coluna do frame para expandir
+        frame.grid_rowconfigure(4, weight=1)  # Expande a linha
         frame.grid_rowconfigure(18, weight=1)  # Expande a linha
         frame.grid_columnconfigure(0, weight=1)  # Expande a coluna 0
         frame.grid_columnconfigure(1, weight=1)  # Expande a coluna 1
@@ -1031,21 +1556,23 @@ def janela_principal():
 
         ctk.CTkLabel(master=frame, text="TIPO DE SERVIÇO:").grid(row=1, column=0, sticky="w", padx=(10, 10))
         tipo_servico_combobox = CustomComboBox(master=frame, values=[
-            "ABASTECIMENTO",  
-            "AQUISIÇÃO COM OS",  
-            "AQUISIÇÃO SEM OS",  
-            "CARRETO",  
-            "COMPRA IN LOCO",  
+            "ABASTECIMENTO",
+            "ADIANTAMENTO/PAGAMENTO PARCEIRO",
+            "AQUISIÇÃO COM OS",
+            "AQUISIÇÃO SEM OS",
+            "CARRETO",
+            "COMPRA IN LOCO",
             "ENVIO DE MATERIAL",
             "ESTACIONAMENTO",
             "HOSPEDAGEM",
             "ORÇAMENTO APROVADO",
-            "PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA",  
-            "REEMBOLSO COM OS",  
-            "REEMBOLSO SEM OS",  
-            "REEMBOLSO UBER",  
-            "SOLICITAÇÃO COM OS",  
-            "SOLICITAÇÃO SEM OS",  
+            "PREST. SERVIÇO/MÃO DE OBRA",
+            "REEMBOLSO COM OS",
+            "REEMBOLSO SEM OS",
+            "REEMBOLSO UBER",
+            "RELATÓRIO EXTRA",
+            "SOLICITAÇÃO COM OS",
+            "SOLICITAÇÃO SEM OS",
             "TRANSPORTADORA"
         ], command=lambda choice: add_campos())
         tipo_servico_combobox.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
@@ -1059,18 +1586,47 @@ def janela_principal():
         #contrato_combobox.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
         #contrato_combobox.set("")
 
+        # -------------------------------
+        # Frame para os itens
+        # -------------------------------
+        frame_caixa_itens_pagamento = ctk.CTkFrame(master=frame, border_width=1)
+        
+        frame_caixa_itens_pagamento.grid_columnconfigure(0, weight=1)
+        frame_caixa_itens_pagamento.grid_columnconfigure(1, weight=1)
+        
+        frame_lista_itens_pagamento = ctk.CTkFrame(master=frame_caixa_itens_pagamento)
+
+        # Variável para controlar se um item está sendo editado
+        editando_item_pagamento = None
+
+        descricao_do_item_pagamento_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="DESCRIÇÃO DO ITEM:")
+        descricao_do_item_pagamento_entry = CustomEntry(master=frame_caixa_itens_pagamento)
+        descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
+        descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        # Botão para adicionar serviço
+        btn_adicionar_servico_pagamento = ctk.CTkButton(master=frame_caixa_itens_pagamento, text="Adicionar item", command=add_item_pagamento)
+        btn_adicionar_servico_pagamento.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=5)
+        # -------------------------------
+        # Fim do frame para os itens
+        # -------------------------------
+
         # Campo para MOTIVO
         motivo_label = ctk.CTkLabel(master=frame, text="MOTIVO:")
         motivo_entry = CustomEntry(master=frame)
         widgets_para_limpar.append(motivo_entry)
 
         tipo_aquisicao_label = ctk.CTkLabel(master=frame, text="TIPO DE AQUISIÇÃO:")
-        tipo_aquisicao_combobox = CustomComboBox(master=frame)
+        tipo_aquisicao_combobox = CustomComboBox(master=frame, command=lambda choice: campo_descricao_utilidades())
         tipo_aquisicao_combobox.set("")
         widgets_para_limpar.append(tipo_aquisicao_combobox)
         # Associa a função ao evento de exclusão manual (quando o campo perde o foco ou quando uma tecla é liberada)
         tipo_aquisicao_combobox.bind("<FocusOut>", restaurar_valores_tipo_aquisicao)  # Quando o campo perde o foco
         tipo_aquisicao_combobox.bind("<KeyRelease>", restaurar_valores_tipo_aquisicao)  # Quando o usuário digita algo
+
+        descricao_utilidades_label = ctk.CTkLabel(master=frame, text="DESCRIÇÃO DA SOLICITAÇÃO:")
+        descricao_utilidades_entry = CustomEntry(master=frame)
+        widgets_para_limpar.append(descricao_utilidades_entry)
 
         tecnicos_label = ctk.CTkLabel(master=frame, text="TÉCNICOS:")
         tecnicos_entry = CustomEntry(master=frame)
@@ -1099,7 +1655,7 @@ def janela_principal():
         widgets_para_limpar.append(valor_entry)
 
         ano_atual = datetime.now().strftime("%Y")
-        # Campos para PARCEIRO/PREST. SERVIÇO/MÃO DE OBRA
+
         competencia_label = ctk.CTkLabel(master=frame, text="COMPETÊNCIA:")
         competencia_combobox = CustomComboBox(master=frame, values=[f"JAN/{ano_atual}", f"FEV/{ano_atual}", f"MAR/{ano_atual}", 
                                                                 f"ABR/{ano_atual}", f"MAI/{ano_atual}", f"JUN/{ano_atual}", 
@@ -1128,8 +1684,8 @@ def janela_principal():
         chave_pix_entry = CustomEntry(master=frame)
         widgets_para_limpar.append(chave_pix_entry)
 
-        nome_benef_pix_label = ctk.CTkLabel(master=frame, text="NOME DO BENEF. DO PIX\n(SE APLICÁVEL):")
-        nome_benef_pix_entry = CustomEntry(master=frame)
+        nome_benef_pix_label = ctk.CTkLabel(master=frame, text="NOME DO BENEF. DO PIX:")
+        nome_benef_pix_entry = CustomEntry(master=frame, placeholder_text="Opcional")
         widgets_para_limpar.append(nome_benef_pix_entry)
 
         # Campo para SAÍDA X DESTINO (UBER)
@@ -1255,6 +1811,7 @@ def janela_principal():
 
         # Configurando a coluna do frame para expandir
         frame_tab3.grid_rowconfigure(20, weight=1)  # Expande a linha
+        frame_tab3.grid_rowconfigure(3, weight=1)  # Expande a linha
         frame_tab3.grid_columnconfigure(0, weight=1)  # Expande a coluna 0
         frame_tab3.grid_columnconfigure(1, weight=1)  # Expande a coluna 1
 
@@ -1273,41 +1830,94 @@ def janela_principal():
         tipo_aquisicao_combobox_tab3.set("")
 
         ctk.CTkLabel(master=frame_tab3, text="CONTRATO:").grid(row=2, column=0, sticky="w", padx=(10, 10))
-        contrato_combobox_tab3 = CustomComboBox(master=frame_tab3, values=contratos,
-                command=lambda choice: add_campos_tab3())
+        contrato_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
+            "ESCRITÓRIO", "C. O. BELO HORIZONTE - MG - 2054", "C. O. MANAUS - AM - 7649", "C. O. NITERÓI - RJ - 1380", 
+            "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
+            "C. O. RONDÔNIA - RD - S/N", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
+            "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
+            "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - S/N"
+        ], command=lambda choice: add_campos_tab3())
         contrato_combobox_tab3.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
         contrato_combobox_tab3.set("")
 
-        ctk.CTkLabel(master=frame_tab3, text="DESCRIÇÃO:").grid(row=3, column=0, sticky="w", padx=(10, 10))
-        descricao_entry_tab3 = CustomEntry(master=frame_tab3)
-        descricao_entry_tab3.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
-        widgets_para_limpar_tab3.append(descricao_entry_tab3)
+        # Criando os campos de entrada
+        descricao_locacao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DESCRIÇÃO:")
+        descricao_locacao_entry_tab3 = CustomEntry(master=frame_tab3)
 
-        #row = 4
-        prazo_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PRAZO:")
-        prazo_entry_tab3 = CTkDatePicker(master=frame_tab3)
-        prazo_entry_tab3.set_date_format("%d/%m/%Y")
-        prazo_entry_tab3.set_allow_manual_input(False)
+        # -------------------------------
+        # Frame para os itens
+        # -------------------------------
+        frame_caixa_itens = ctk.CTkFrame(master=frame_tab3, border_width=1)
+
+        frame_caixa_itens.grid_columnconfigure(0, weight=1)
+        frame_caixa_itens.grid_columnconfigure(1, weight=1)
+        
+        # Inicializando o frame antes de manipulá-lo
+        frame_lista_itens = ctk.CTkFrame(master=frame_caixa_itens)
+
+        # Variável para controlar se um item está sendo editado
+        editando_item = None  # Inicializa como None (nenhum item está sendo editado)
+
+        # Criando os campos de entrada
+        descricao_compra_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="DESCRIÇÃO DO ITEM:")
+        descricao_compra_entry_tab3 = CustomEntry(master=frame_caixa_itens)
+        descricao_compra_label_tab3.grid(row=3, column=0, sticky="w", padx=(10, 10))
+        descricao_compra_entry_tab3.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        quantidade_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="QUANTIDADE:")
+        quantidade_entry_tab3 = CustomEntry(master=frame_caixa_itens)
+        quantidade_label_tab3.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        quantidade_entry_tab3.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        altura_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text=f"ALTURA:", anchor="w", justify="left")
+        altura_entry_tab3 = CustomEntry(master=frame_caixa_itens, placeholder_text="Opcional")
+        altura_label_tab3.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        altura_entry_tab3.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        largura_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text=f"LARGURA:", anchor="w", justify="left")
+        largura_entry_tab3 = CustomEntry(master=frame_caixa_itens, placeholder_text="Opcional")
+        largura_label_tab3.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        largura_entry_tab3.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        comprimento_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text=f"COMPRIMENTO:                ", anchor="w", justify="left")
+        comprimento_entry_tab3 = CustomEntry(master=frame_caixa_itens, placeholder_text="Opcional")
+        comprimento_label_tab3.grid(row=7, column=0, sticky="w", padx=(10, 10))
+        comprimento_entry_tab3.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        espessura_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="ESPESSURA:")
+        espessura_entry_tab3 = CustomEntry(master=frame_caixa_itens, placeholder_text="Opcional")
+        espessura_label_tab3.grid(row=8, column=0, sticky="w", padx=(10, 10))
+        espessura_entry_tab3.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        link_label_tab3 = ctk.CTkLabel(master=frame_caixa_itens, text="LINK:")
+        link_entry_tab3 = CustomEntry(master=frame_caixa_itens, placeholder_text="Opcional")
+        link_label_tab3.grid(row=9, column=0, sticky="w", padx=(10, 10))
+        link_entry_tab3.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2) 
+
+        # Botão para adicionar serviço
+        btn_adicionar_servico = ctk.CTkButton(master=frame_caixa_itens, text="Adicionar item", command=adicionar_item_tab3)
+        # -------------------------------
+        # Fim do frame para os itens
+        # -------------------------------
 
         data_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DATA DA LOCAÇÃO:")
         data_entry_tab3 = CTkDatePicker(master=frame_tab3)
         data_entry_tab3.set_date_format("%d/%m/%Y")
         data_entry_tab3.set_allow_manual_input(False)
+        widgets_para_limpar_tab3.append(data_entry_tab3)
 
         #row = 5
-        altura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"ALTURA (SE APLICÁVEL):", anchor="w", justify="left")
-        altura_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(altura_entry_tab3)
+        prazo_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PRAZO:")
+        prazo_entry_tab3 = CTkDatePicker(master=frame_tab3)
+        prazo_entry_tab3.set_date_format("%d/%m/%Y")
+        prazo_entry_tab3.set_allow_manual_input(False)
+        widgets_para_limpar_tab3.append(prazo_entry_tab3)
 
         servico_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="SERVIÇO:")
         servico_entry_tab3 = CustomEntry(master=frame_tab3)
         widgets_para_limpar_tab3.append(servico_entry_tab3)
 
         #row = 6
-        largura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"LARGURA (SE APLICÁVEL):", anchor="w", justify="left")
-        largura_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(largura_entry_tab3)
-
         periodo_locacao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PERÍODO DE LOCAÇÃO:")
         periodo_locacao_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
             "DIÁRIA", "SEMANAL", "QUINZENAL", "MENSAL"
@@ -1316,24 +1926,15 @@ def janela_principal():
         widgets_para_limpar_tab3.append(periodo_locacao_combobox_tab3)
 
         #row = 7
-        comprimento_label_tab3 = ctk.CTkLabel(master=frame_tab3, text=f"COMPRIMENTO (SE APLICÁVEL):", anchor="w", justify="left")
-        comprimento_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(comprimento_entry_tab3)
+        quantidade_locacao_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="QUANTIDADE DE PERÍODOS:")
+        quantidade_locacao_entry_tab3 = CustomEntry(master=frame_tab3, placeholder_text="Apenas números")
+        widgets_para_limpar_tab3.append(quantidade_locacao_label_tab3)
 
         #row = 8
-        espessura_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ESPESSURA (SE APLICÁVEL):")
-        espessura_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(espessura_entry_tab3)
 
         #row = 9
-        quantidade_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="QUANTIDADE:")
-        quantidade_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(quantidade_entry_tab3)
 
         #row = 10
-        link_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="LINK (SE APLICÁVEL):")
-        link_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(link_entry_tab3)
 
         #row = 11
         prefixo_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PREFIXO:")
@@ -1350,11 +1951,6 @@ def janela_principal():
         os_entry_tab3 = CustomEntry(master=frame_tab3)
         widgets_para_limpar_tab3.append(os_entry_tab3)
 
-        endereco_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ENDEREÇO DE ENTREGA:")
-        endereco_agencia_entry_tab3 = CustomEntry(master=frame_tab3)
-        widgets_para_limpar_tab3.append(endereco_agencia_entry_tab3)
-
-        #row = 14
         opcao_entrega_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="OPÇÃO DE ENTREGA:")
         opcao_entrega_combobox_tab3 = CustomComboBox(master=frame_tab3, values=[
             "ENTREGA",
@@ -1362,6 +1958,15 @@ def janela_principal():
         ], command=lambda choice: add_campos_tab3())
         opcao_entrega_combobox_tab3.set("")
         widgets_para_limpar_tab3.append(opcao_entrega_combobox_tab3)
+
+        #row = 14
+        endereco_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="ENDEREÇO DE ENTREGA:")
+        endereco_agencia_entry_tab3 = CustomEntry(master=frame_tab3)
+        widgets_para_limpar_tab3.append(endereco_agencia_entry_tab3)
+
+        local_retirada_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="LOCAL DE RETIRADA:")
+        local_retirada_entry_tab3 = CustomEntry(master=frame_tab3, placeholder_text="Opcional")
+        widgets_para_limpar_tab3.append(local_retirada_entry_tab3)
 
         #row = 15
         nome_responsavel_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="NOME DO RESPONSÁVEL:")
@@ -1372,25 +1977,29 @@ def janela_principal():
         contato_responsavel_agencia_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="CONTATO DO RESPONSÁVEL:")
         contato_responsavel_entry_tab3 = CustomEntry(master=frame_tab3)
         widgets_para_limpar_tab3.append(contato_responsavel_entry_tab3)
+
+        observacoes_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="OBSERVAÇÕES:")
+        observacoes_entry_tab3 = CustomEntry(master=frame_tab3, placeholder_text="Opcional")
+        widgets_para_limpar_tab3.append(observacoes_entry_tab3)
         
         #row = 17
         gerar_button_tab3 = ctk.CTkButton(master=frame_tab3, text="GERAR", command=gerar_texto_aquisicao)
-        gerar_button_tab3.grid(row=18, column=0, sticky="ew", padx=(10, 10), pady=10)
+        gerar_button_tab3.grid(row=21, column=0, sticky="ew", padx=(10, 10), pady=10)
 
         root.bind("<Return>", on_return_press)
 
         limpar_button_tab3 = ctk.CTkButton(master=frame_tab3, text="LIMPAR", width=150, command=limpar_dados)
-        limpar_button_tab3.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=10)
+        limpar_button_tab3.grid(row=21, column=1, sticky="ew", padx=(0, 10), pady=10)
 
         #row = 18
         switch_autocopia_frame_tab3_var = tk.BooleanVar(value=True)
         switch_autocopia_frame_tab3 = ctk.CTkSwitch(master=frame_tab3, text="Auto-Cópia",
                                         variable=switch_autocopia_frame_tab3_var, onvalue=True, offvalue=False)
-        switch_autocopia_frame_tab3.grid(row=19, column=0, columnspan=2, sticky="n", padx=10, pady=10)
+        switch_autocopia_frame_tab3.grid(row=22, column=0, columnspan=2, sticky="n", padx=10, pady=10)
 
         #row = 19
         texto_aquisicao = ctk.CTkTextbox(master=frame_tab3)
-        texto_aquisicao.grid(row=20, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
+        texto_aquisicao.grid(row=23, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
         widgets_para_limpar_tab3.append(texto_aquisicao)
 
     root.mainloop()

@@ -7,15 +7,25 @@ def verificar_se_numero(texto):
     if not texto:
         return ""  # Valor padrão caso o campo esteja vazio
 
-    texto = texto.replace(" ", "")  # Remove todos os espaços
+    texto = texto.upper().replace("R$", "").replace(" ", "")  # Remove "R$", espaços
 
     try:
-        # Substitui ponto por nada (caso seja separador de milhar) e vírgula por ponto (separador decimal)
+        # Substitui ponto (separador de milhar) por nada e vírgula por ponto (separador decimal)
         numero = float(texto.replace(".", "").replace(",", "."))
         # Retorna número formatado no padrão brasileiro
         return f"{numero:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except ValueError:
         return ValueError  # Retorna um valor padrão caso a conversão falhe
+
+def valida_prefixo(prefixo_raw):
+    if re.fullmatch(r"\d{4}/\d{2}", prefixo_raw):
+        return prefixo_raw, "Formato válido", None
+    elif prefixo_raw.isdigit():
+        parte1 = prefixo_raw.zfill(4)
+        prefixo_formatado = f"{parte1}/00"
+        return prefixo_formatado, "Formato ajustado", None
+    else:
+        return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
 
 def valida_porcentagem(valor):
     if not valor:
@@ -55,3 +65,89 @@ def valida_os(texto: str):
         return texto
     else:
         return "OS_invalida"
+
+def validar_item_pagamento(texto, tipo_servico):
+    texto_corrigido = re.sub(r"\s*-\s*", " - ", texto)
+    partes = texto_corrigido.split(" - ")
+
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        if len(partes) != 4:
+            return None, None, "Formato inválido. Use: PREFIXO - AGÊNCIA - OS - % DO ADIANTAMENTO"
+
+        prefixo_raw, agencia, os_str, percentual_raw = [p.strip() for p in partes]
+
+        # --- VALIDAÇÃO DO PERCENTUAL ---
+        # Remove o símbolo % se houver
+        percentual_limpo = percentual_raw.replace("%", "").strip()
+
+        # Verifica se é numérico puro
+        if not percentual_limpo.isdigit():
+            return None, None, "Percentual inválido. Deve conter apenas números, com ou sem '%'."
+
+        percentual_valor = int(percentual_limpo)
+
+        if percentual_valor < 1 or percentual_valor > 100:
+            return None, None, "Percentual inválido. Deve estar entre 1 e 100."
+
+        # Reaplica o símbolo de % para exibir formatado
+        percentual = f"{percentual_valor}%"
+
+        valor_formatado = None
+        valor_com_rs = None
+
+    else:  # PADRÃO PARA PAGAMENTO EXTRA
+        if len(partes) != 4:
+            return None, None, "Formato inválido. Use: PREFIXO - AGÊNCIA - OS - VALOR"
+
+        prefixo_raw, agencia, os_str, valor_str = [p.strip() for p in partes]
+
+        if not valor_str:
+            return None, None, "Valor não pode estar vazio."
+
+        valor_limpo = valor_str.upper().replace("R$", "").strip()
+        valor_numerico = re.sub(r"[^\d,\.]", "", valor_limpo)
+        valor_formatado = verificar_se_numero(valor_numerico)
+
+        if not valor_formatado or isinstance(valor_formatado, Exception):
+            return None, None, "Valor inválido."
+
+        valor_com_rs = f"R$ {valor_formatado}"
+
+    # --- PREFIXO ---
+    if "/" in prefixo_raw:
+        try:
+            parte1, parte2 = prefixo_raw.split("/")
+            parte1 = parte1.zfill(4)
+            parte2 = parte2.zfill(2)
+            prefixo_formatado = f"{parte1}/{parte2}"
+            if not re.fullmatch(r"\d{4}/\d{2}", prefixo_formatado):
+                return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
+        except:
+            return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
+    elif prefixo_raw.isdigit():
+        parte1 = prefixo_raw.zfill(4)
+        prefixo_formatado = f"{parte1}/00"
+    else:
+        return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
+
+    # --- AGÊNCIA ---
+    if not agencia:
+        return None, None, "Agência não pode estar vazia."
+
+    # --- OS ---
+    os_str = valida_os(os_str)
+    if os_str == "OS_invalida":
+        return None, None, "OS inválida. Não deve conter textos."
+
+    if len(os_str) <= 4:
+        return None, None, "OS inválida. Deve conter mais de 4 dígitos numéricos."
+
+    # --- Descrição base e final ---
+    descricao_base = f"{prefixo_formatado} - {agencia} - {os_str}"
+
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        descricao_final = f"{descricao_base} - ADIANTAMENTO DE {percentual}"
+    else:
+        descricao_final = f"{descricao_base} - {valor_com_rs}"
+
+    return descricao_final, descricao_base, None
