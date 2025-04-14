@@ -39,7 +39,11 @@ def validacao_login():
 
     except sqlite3.Error as e:
         print(f"Erro na conexão com o banco de dados: {e}")
-        messagebox.showerror("Erro de conexão", f"Não foi possível conectar ao banco de dados: {e}")
+        messagebox.showerror(
+            "Erro de conexão",
+            f"Não foi possível conectar ao banco de dados: {e}\n"
+            "Certifique-se de que o Drive está conectado e de que há conexão com a internet."
+        )
 
 # Função para abrir a tela de alteração de senha
 def janela_alterar_senha():
