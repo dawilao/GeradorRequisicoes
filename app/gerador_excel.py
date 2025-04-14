@@ -5,39 +5,46 @@ from tkinter import filedialog, messagebox
 from datetime import datetime
 from openpyxl.worksheet.datavalidation import DataValidation
 from app.CTkFloatingNotifications import NotificationManager, NotifyType
+from app.definir_diretorio_por_contrato import salvar_arquivo_em_diretorio
+from app.definir_diretorio_por_contrato import *
+
 
 def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais, descricao_itens):
     """
-    Gera um arquivo Excel de requisição baseado em um modelo pré-definido.
+    Gera um arquivo Excel de requisição a partir de um modelo padrão, preenchendo-o com dados fornecidos e aplicando validações dinâmicas.
 
-    Esta função copia um arquivo modelo de ordem de compra, preenche com os dados fornecidos (como fornecedor, usuário, tipo de pagamento, contrato, OS, etc.), aplica validações de dados conforme o perfil do usuário e salva o arquivo em um diretório escolhido. Se o nome do arquivo já existir no local, cria uma nova versão com sufixo incremental (_Cópia 1, _Cópia 2...).
+    Esta função copia um modelo de ordem de compra, preenche automaticamente campos como fornecedor, contrato, usuário, tipo de pagamento, entre outros, e insere descrições específicas conforme o tipo de serviço. Dependendo do perfil do usuário, aplica diferentes validações de departamento. O arquivo é salvo com verificação de duplicidade no nome, e aberto automaticamente após a geração.
 
     Parâmetros:
     -----------
     root : Tk
-        Referência à janela principal da interface (para exibir notificações).
+        Janela principal da interface gráfica para exibição de mensagens ao usuário.
     nome_arquivo : str
-        Nome inicial desejado para o arquivo gerado (ex: 'Ordem_Compra.xlsx').
+        Nome desejado para o arquivo Excel gerado.
+    tipo_servico : str
+        Tipo de serviço solicitado (ex: "RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO").
     nome_fornecedor : str
-        Nome do fornecedor a ser inserido na planilha.
+        Nome do fornecedor a ser incluído na planilha.
     os_num : str or int
-        Número da OS (Ordem de Serviço). Pode ser vazio ou nulo.
+        Número da Ordem de Serviço (pode ser omitido).
     prefixo : str
-        Prefixo associado à OS, usado junto da agência.
+        Prefixo da OS, utilizado junto com a agência.
     agencia : str
         Agência vinculada à OS.
     contrato : str
-        Nome do contrato (ou "ESCRITÓRIO" se não informado).
+        Nome do contrato ou "ESCRITÓRIO" se não aplicável.
     nome_usuario : str
-        Nome do usuário responsável pela requisição.
+        Usuário responsável pela requisição.
     tipo_pagamento : str
-        Tipo de pagamento ("FATURAMENTO", "SEM CUSTO PARA ENTREGA", etc.).
+        Tipo de pagamento selecionado.
     departamento : str
-        Departamento ao qual a requisição pertence.
+        Departamento vinculado à requisição.
     usuarios_varios_departamentos : list[str]
-        Lista de usuários que têm acesso a múltiplos departamentos (com validação por lista).
+        Lista de usuários com permissão para escolher entre múltiplos departamentos.
     usuarios_gerais : list[str]
-        Lista de usuários com departamento fixo (sem múltipla escolha).
+        Lista de usuários com departamento fixo.
+    descricao_itens : str
+        Descrição detalhada dos itens/serviços, separados por quebra de linha.
 
     Retorno:
     --------
@@ -45,16 +52,16 @@ def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefi
 
     Efeitos colaterais:
     -------------------
-    - Exibe notificações gráficas ao usuário (sucesso, erro, alertas).
-    - Salva e abre o arquivo Excel gerado.
-    - Aplica validações de dados em células específicas da planilha.
-    - Cria automaticamente um novo nome se o arquivo já existir no destino.
+    - Exibe mensagens de sucesso, erro ou alerta.
+    - Salva e abre automaticamente o arquivo Excel gerado.
+    - Aplica validações de dados em campos específicos da planilha.
+    - Gera versões incrementais do arquivo se já existir no diretório.
 
     Exceções tratadas:
     ------------------
-    - Arquivo modelo não encontrado.
-    - Nenhum diretório selecionado.
-    - Erros gerais na manipulação do Excel ou no processo de geração.
+    - Arquivo modelo ausente.
+    - Falha ao selecionar diretório de destino.
+    - Erros na manipulação da planilha ou no processo de geração.
     """
     notification_manager = NotificationManager(root)
 
@@ -65,22 +72,25 @@ def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefi
             notification_manager.show_notification(f"Arquivo modelo não encontrado!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
             return
 
-        caminho_destino = filedialog.askdirectory()
+        try:
+            caminho_destino = salvar_arquivo_em_diretorio(contrato)
 
-        if not caminho_destino:
-            notification_manager.show_notification(f"Nenhum diretório selecionado!", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+            base_nome, extensao = os.path.splitext(nome_arquivo)
+            nome_arquivo_destino = os.path.join(caminho_destino, nome_arquivo)
+
+            contador = 1
+            while os.path.exists(nome_arquivo_destino):
+                novo_nome = f"{base_nome}_Cópia {contador}{extensao}"
+                nome_arquivo_destino = os.path.join(caminho_destino, novo_nome)
+                contador += 1
+
+            shutil.copy(caminho_modelo, nome_arquivo_destino)
+
+        except Exception as e:
+            notification_manager.show_notification(
+                f"Falha ao definir diretório: {e}", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF"
+            )
             return
-        
-        base_nome, extensao = os.path.splitext(nome_arquivo)
-        nome_arquivo_destino = os.path.join(caminho_destino, nome_arquivo)
-
-        contador = 1
-        while os.path.exists(nome_arquivo_destino):
-            novo_nome = f"{base_nome}_Cópia {contador}{extensao}"
-            nome_arquivo_destino = os.path.join(caminho_destino, novo_nome)
-            contador += 1
-
-        shutil.copy(caminho_modelo, nome_arquivo_destino)
 
         workbook = load_workbook(nome_arquivo_destino)
         sheet_principal = workbook["Planilha1"]
@@ -166,6 +176,8 @@ def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefi
         notification_manager.show_notification(f"Sucesso!\nArquivo salvo no local selecionado.\nAbrindo o arquivo...", NotifyType.SUCCESS, bg_color="#404040", text_color="#FFFFFF")
 
         try:
+            time.sleep(1.2)
+            abrir_explorer_se_necessario(caminho_destino)
             time.sleep(1.2)
             os.startfile(nome_arquivo_destino)
         except FileNotFoundError:

@@ -451,11 +451,11 @@ def gerar_solicitacao():
         "C. O. VOLTA REDONDA - RJ - 0215": "VR",
         "C. O. RONDÔNIA - RD - 0710": "RD",
         "ATA BB CURITIBA - 0232": "ATA PR",
-        "C. E. MANAUS - S/N": "BB AM",
+        "C. E. MANAUS - 1593": "BB AM",
         "CAIXA BAHIA - 4922.2024": "CAIXA BA",
         "CAIXA CURITIBA - 534.2025": "CAIXA PR",
         "CAIXA MANAUS - 4569.2024": "CAIXA AM",
-        "INFRA CURITIBA - S/N": "INFRA PR"
+        "INFRA CURITIBA - 1120": "INFRA PR"
     }
 
     sigla_contrato = dict_sigla_contrato.get(contrato, "Sigla não encontrada")
@@ -1498,8 +1498,8 @@ def janela_principal():
         "ESCRITÓRIO", "C. O. BELO HORIZONTE - BH - 2054", "C. O. MANAUS - AM - 7649", "C. O. NITERÓI - RJ - 1380", 
         "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
         "C. O. RONDÔNIA - RD - 0710", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
-        "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
-        "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - S/N"
+        "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - 1593", "CAIXA BAHIA - 4922.2024",
+        "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - 1120"
     ]
 
     if "PAGAMENTO" in abas_permitidas:
@@ -1834,8 +1834,8 @@ def janela_principal():
             "ESCRITÓRIO", "C. O. BELO HORIZONTE - MG - 2054", "C. O. MANAUS - AM - 7649", "C. O. NITERÓI - RJ - 1380", 
             "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
             "C. O. RONDÔNIA - RD - S/N", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
-            "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
-            "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - S/N"
+            "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - 1593", "CAIXA BAHIA - 4922.2024",
+            "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - 1120"
         ], command=lambda choice: add_campos_tab3())
         contrato_combobox_tab3.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
         contrato_combobox_tab3.set("")
