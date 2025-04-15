@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import messagebox
-from .utils import arrumar_texto, verificar_se_numero, valida_porcentagem, valida_os, validar_item_pagamento
+from .utils import *
 from .gerador_excel import gerar_excel
 from .CTkDatePicker import *
 from .CTkFloatingNotifications import *
@@ -398,7 +398,7 @@ def gerar_solicitacao():
     nome_usuario = arrumar_texto(nome_usuario_entry.get().upper())
     tipo_servico = arrumar_texto(tipo_servico_combobox.get().upper())
     nome_fornecedor = arrumar_texto(nome_fornecedor_entry.get().upper())
-    prefixo = arrumar_texto(prefixo_entry.get())
+    prefixo = valida_prefixo(prefixo_entry.get())
     agencia = arrumar_texto(agencia_entry.get().upper())
     os_num = valida_os(os_entry.get())
     contrato = arrumar_texto(contrato_combobox.get().upper())
@@ -546,6 +546,10 @@ def gerar_solicitacao():
         else:
             notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
             return
+
+    if prefixo == "Prefixo inválido":
+        notification_manager.show_notification("Campo PREFIXO\nPrefixo inválido. Use o padrão XXXX/XX.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return     
 
     if os_num == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -754,7 +758,7 @@ def gerar_texto_email():
     nome_fornecedor_tab2 = arrumar_texto(nome_fornecedor_entry_tab2.get().upper())
     prefixo_tab2 = arrumar_texto(prefixo_entry_tab2.get())
     agencia_tab2 = arrumar_texto(agencia_entry_tab2.get().upper())
-    os_num_tab2 = valida_os(os_entry_tab2.get())
+    os_num_tab2 = valida_prefixo(os_entry_tab2.get())
     endereco_tab2 = arrumar_texto(endereco_entry_tab2.get().upper())
     valor_tab2 = verificar_se_numero(valor_entry_tab2.get())
     tipo_pagamento_tab2 = arrumar_texto(tipo_pagamento_combobox_tab2.get().upper())
@@ -784,7 +788,10 @@ def gerar_texto_email():
     # Verificar campos vazios
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
 
-    notification_manager = NotificationManager(root) # passando a instância da janela principal
+    if prefixo_tab2 == "Prefixo inválido":
+        notification_manager.show_notification("Campo PREFIXO\nPrefixo inválido. Use o padrão XXXX/XX.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return  
+
     if valor_tab2 == ValueError:
         notification_manager.show_notification(f"Campo VALOR\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
@@ -1140,7 +1147,7 @@ def gerar_texto_aquisicao():
     servico_tab3 = arrumar_texto(servico_entry_tab3.get().upper())
     periodo_locacao_tab3 = arrumar_texto(periodo_locacao_combobox_tab3.get().upper())
     quantidade_periodo_locacao_tab3 = arrumar_texto(quantidade_locacao_entry_tab3.get().upper())
-    prefixo_tab3 = arrumar_texto(prefixo_entry_tab3.get())
+    prefixo_tab3 = valida_prefixo(prefixo_entry_tab3.get())
     agencia_tab3 = arrumar_texto(agencia_entry_tab3.get().upper())
     os_num_tab3 = valida_os(os_entry_tab3.get())
     opcao_entrega_tab3 = arrumar_texto(opcao_entrega_combobox_tab3.get().upper())
@@ -1196,7 +1203,6 @@ def gerar_texto_aquisicao():
     # Verificar campos vazios
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
 
-    notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
         if campos_vazios == ["DESCRIÇÃO E QUANTIDADE"]:
             notification_manager.show_notification("Item(ns) não adicionado(s)", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -1204,6 +1210,10 @@ def gerar_texto_aquisicao():
         else:
             notification_manager.show_notification("Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
             return
+
+    if prefixo_tab3 == "Prefixo inválido":
+        notification_manager.show_notification("Campo PREFIXO\nPrefixo inválido. Use o padrão XXXX/XX.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return  
 
     if os_num_tab3 == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
