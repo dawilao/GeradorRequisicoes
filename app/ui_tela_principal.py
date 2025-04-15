@@ -569,9 +569,9 @@ def gerar_solicitacao():
     data_atual = datetime.now().strftime("%d.%m.%Y")
     
     if os_num == "":
-        nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
+        nome_arquivo = f"{valor_tab1} - {data_atual} - OC {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
     else:
-        nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
+        nome_arquivo = f"{valor_tab1} - {data_atual} - OC {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
     
     nome_arquivo = re.sub(r'[<>:"/\\|?*\x00]', ".", nome_arquivo)
 
@@ -733,8 +733,8 @@ def gerar_solicitacao():
 
         gerar_excel(
             root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefixo, agencia,
-            contrato, nome_usuario, tipo_pagamento, departamento,
-            usuarios_varios_departamentos, usuarios_gerais,
+            contrato, nome_usuario, tipo_pagamento, departamento, valor_tab1, tecnicos,
+            usuarios_varios_departamentos, usuarios_gerais, motivo,
             descricao_itens=descricao_itens
         )
 

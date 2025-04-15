@@ -9,7 +9,11 @@ from app.definir_diretorio_por_contrato import salvar_arquivo_em_diretorio
 from app.definir_diretorio_por_contrato import *
 
 
-def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefixo, agencia, contrato, nome_usuario, tipo_pagamento, departamento, usuarios_varios_departamentos, usuarios_gerais, descricao_itens):
+def gerar_excel(
+        root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefixo, agencia,
+        contrato, nome_usuario, tipo_pagamento, departamento, valor, tecnicos,
+        usuarios_varios_departamentos, usuarios_gerais, motivo, descricao_itens
+    ):
     """
     Gera um arquivo Excel de requisição a partir de um modelo padrão, preenchendo-o com dados fornecidos e aplicando validações dinâmicas.
 
@@ -39,10 +43,14 @@ def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefi
         Tipo de pagamento selecionado.
     departamento : str
         Departamento vinculado à requisição.
+    valor : str
+        Valor do serviço solicitado.
     usuarios_varios_departamentos : list[str]
         Lista de usuários com permissão para escolher entre múltiplos departamentos.
     usuarios_gerais : list[str]
         Lista de usuários com departamento fixo.
+    motivo : str
+        Motivo da requisição.
     descricao_itens : str
         Descrição detalhada dos itens/serviços, separados por quebra de linha.
 
@@ -137,27 +145,54 @@ def gerar_excel(root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefi
             # Se o nome do usuário estiver na lista de 'usuarios_gerais' (mas não em 'usuarios_varios_departamentos'), atribui o valor diretamente
             sheet_principal["D13"] = departamento
 
-        if tipo_servico == "RELATÓRIO EXTRA":
+        linha_inicial = 19
+        limite_caracteres = 45
+        altura_por_linha = 15  # Altura padrão por linha
+        sheet_principal.column_dimensions["E"].width = 15
+        if tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM"}:
+            sheet_principal[f"C{linha_inicial}"].alignment = Alignment(
+                wrap_text=True, horizontal='center', vertical='center'
+            )
+
+            sheet_principal[f"B{linha_inicial}"] = "1"
+            sheet_principal[f"C{linha_inicial}"] = f"{tipo_servico}: {tecnicos}"
+
+            if len(f"{tipo_servico}: {tecnicos}") > limite_caracteres:
+                '''Dobra a altura da linha quando a quantidade de caracteres ultrapassa o especificado em limite_caracteres''' 
+                qtd_linhas = (len(f"{tipo_servico}: {tecnicos}") // limite_caracteres) + 1
+                sheet_principal.row_dimensions[linha_inicial].height = qtd_linhas * altura_por_linha
+            
+            sheet_principal[f"F{linha_inicial}"] = 1
+            sheet_principal[f"G{linha_inicial}"] = valor
+        elif tipo_servico == "RELATÓRIO EXTRA":
             descricao_lista = descricao_itens.split("\n")
-            sheet_principal.column_dimensions["E"].width = 15
-            linha_inicial = 19
 
             for i, descricao in enumerate(descricao_lista):
+                sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(
+                    wrap_text=False, horizontal='center', vertical='center'
+                )
                 sheet_principal[f"B{linha_inicial + i}"] = f"{i + 1}"
                 sheet_principal[f"C{linha_inicial + i}"] = descricao
-                sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(wrap_text=False, horizontal='center', vertical='center')
                 sheet_principal[f"F{linha_inicial + i}"] = 1
                 sheet_principal[f"G{linha_inicial + i}"] = "80,00"
+
+                if len(descricao) > limite_caracteres:
+                    qtd_linhas = (len(descricao) // limite_caracteres) + 1
+                    sheet_principal.row_dimensions[linha_inicial + i].height = qtd_linhas * altura_por_linha 
         elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
             descricao_lista = descricao_itens.split("\n")
-            sheet_principal.column_dimensions["E"].width = 15
-            linha_inicial = 19
-            
+
             for i, descricao in enumerate(descricao_lista):
+                sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(
+                    wrap_text=False, horizontal='center', vertical='center'
+                )
                 sheet_principal[f"B{linha_inicial + i}"] = f"{i + 1}"
                 sheet_principal[f"C{linha_inicial + i}"] = descricao
-                sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(wrap_text=False, horizontal='center', vertical='center')
                 sheet_principal[f"F{linha_inicial + i}"] = 1
+
+                if len(descricao) > limite_caracteres:
+                    qtd_linhas = (len(descricao) // limite_caracteres) + 1
+                    sheet_principal.row_dimensions[linha_inicial + i].height = qtd_linhas * altura_por_linha                    
 
         # Restaurando a Validação de Dados
         workbook.active = sheet_principal
