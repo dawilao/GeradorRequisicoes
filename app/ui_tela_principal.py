@@ -2,7 +2,7 @@ import customtkinter as ctk
 import tkinter as tk
 from tkinter import messagebox
 from .utils import *
-from .gerador_excel import gerar_excel
+from .gerador_excel import gerar_excel, DadosRequisicao
 from .CTkDatePicker import *
 from .CTkFloatingNotifications import *
 import pyperclip
@@ -692,7 +692,7 @@ def gerar_solicitacao():
         
         texto += "\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
-    elif contrato == "ESCRITÓRIO":
+    elif contrato == "ESCRITÓRIO" and tipo_aquisicao:
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
@@ -740,12 +740,28 @@ def gerar_solicitacao():
         if tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"} and itens_pagamento:
             descricao_itens = "\n".join(item["descricao_base"] for item in itens_pagamento)
 
-        gerar_excel(
-            root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefixo, agencia,
-            contrato, nome_usuario, tipo_pagamento, departamento, valor_tab1, tecnicos,
-            usuarios_varios_departamentos, usuarios_gerais, motivo,
+        # Criando uma instância do dataclass DadosRequisicao
+        dados = DadosRequisicao(
+            root=root,
+            nome_arquivo=nome_arquivo,
+            tipo_servico=tipo_servico,
+            nome_fornecedor=nome_fornecedor,
+            os_num=os_num,
+            prefixo=prefixo,
+            agencia=agencia,
+            contrato=contrato,
+            nome_usuario=nome_usuario,
+            tipo_pagamento=tipo_pagamento,
+            departamento=departamento,
+            valor=valor_tab1,
+            tecnicos=tecnicos,
+            usuarios_varios_departamentos=usuarios_varios_departamentos,
+            usuarios_gerais=usuarios_gerais,
+            motivo=motivo,
             descricao_itens=descricao_itens
         )
+
+        gerar_excel(dados)
 
 # -------------------------------
 # Fim das funções da aba "Pagamento"
