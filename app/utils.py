@@ -18,23 +18,26 @@ def verificar_se_numero(texto):
         return ValueError  # Retorna um valor padrão caso a conversão falhe
 
 def valida_prefixo(prefixo_raw):
-    if "/" in prefixo_raw:
-        try:
-            parte1, parte2 = prefixo_raw.split("/")
-            parte1 = parte1.zfill(4)
-            parte2 = parte2.zfill(2)
-            prefixo_formatado = f"{parte1}/{parte2}"
-            if not re.fullmatch(r"\d{4}/\d{2}", prefixo_formatado):
-                return "Prefixo inválido"
-        except:
-            return "Prefixo inválido"
-    elif prefixo_raw.isdigit():
-        parte1 = prefixo_raw.zfill(4)
-        prefixo_formatado = f"{parte1}/00"
+    if not prefixo_raw:
+        return ""
     else:
-        return "Prefixo inválido"
-    
-    return prefixo_formatado
+        if "/" in prefixo_raw:
+            try:
+                parte1, parte2 = prefixo_raw.split("/")
+                parte1 = parte1.zfill(4)
+                parte2 = parte2.zfill(2)
+                prefixo_formatado = f"{parte1}/{parte2}"
+                if not re.fullmatch(r"\d{4}/\d{2}", prefixo_formatado):
+                    return "Prefixo inválido"
+            except:
+                return "Prefixo inválido"
+        elif prefixo_raw.isdigit():
+            parte1 = prefixo_raw.zfill(4)
+            prefixo_formatado = f"{parte1}/00"
+        else:
+            return "Prefixo inválido"
+        
+        return prefixo_formatado
 
 def valida_porcentagem(valor):
     if not valor:
