@@ -719,7 +719,16 @@ def gerar_solicitacao():
         descricao_itens = ""
 
         if tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"} and itens_pagamento:
-            descricao_itens = "\n".join(item["descricao_base"] for item in itens_pagamento)
+            descricao_itens = "\n".join(item["descricao"] for item in itens_pagamento)
+
+            if len(itens_pagamento) == 1:
+                partes = [parte.strip() for parte in descricao_base.split('-')]
+
+                prefixo = partes[0]
+                agencia = partes[1]
+                os_num = partes[2]
+
+                print(f"Prefixo: {prefixo}, Agência: {agencia}, OS: {os_num}")
 
         # Criando uma instância do dataclass DadosRequisicao
         dados = DadosRequisicao(
