@@ -234,6 +234,8 @@ def janela_alterar_senha(root_login):
     botao_alterar_senha = ctk.CTkButton(master=frame, text="Alterar Senha", command=alterar_senha)
     botao_alterar_senha.grid(row=6, column=1, sticky="ew", pady=(15, 0))
 
+    janela_alterar.bind("<Return>", lambda enter: botao_alterar_senha.invoke())
+
     # Botão para voltar para a tela de login
     botao_voltar = ctk.CTkButton(
         master=frame,
