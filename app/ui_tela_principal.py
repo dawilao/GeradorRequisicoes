@@ -1,38 +1,19 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import messagebox
-from .utils import *
-from .gerador_excel import gerar_excel, DadosRequisicao
-from .CTkDatePicker import *
-from .CTkFloatingNotifications import *
 import pyperclip
 import re
 from os.path import splitext
 from datetime import datetime
 import locale
 
+from .utils import *
+from .gerador_excel import gerar_excel, DadosRequisicao
+from .CTkDatePicker import *
+from .CTkFloatingNotifications import *
+from .componentes import CustomEntry, CustomComboBox
+
 locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil')
-
-# Criar uma classe personalizada para o ComboBox
-class CustomComboBox(ctk.CTkComboBox):
-    def __init__(self, master, **kwargs):
-        super().__init__(
-            master,
-            border_width=1,
-            corner_radius=1,
-            state="readonly",
-            **kwargs  
-        )
-
-# Criar uma classe personalizada para Entry
-class CustomEntry(ctk.CTkEntry):
-    def __init__(self, master, **kwargs):
-        super().__init__(
-            master,
-            border_width=1,
-            corner_radius=1,
-            **kwargs
-        )
 
 def identifica_preenchimento_pref_os_age(prefixo, agencia, os_num):
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
@@ -1458,8 +1439,7 @@ def limpar_dados():
             notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a limpeza dos campos.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
             pass
 
-def janela_principal():
-    from .ui_tela_login import nome_completo_usuario, abas_permitidas
+def janela_principal(nome_completo_usuario, abas_permitidas):
 
     # Variáveis globais principais
     global root, tabview, frame, widgets_para_limpar, widgets_para_limpar_tab2, widgets_para_limpar_tab3
