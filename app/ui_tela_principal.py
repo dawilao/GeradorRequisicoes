@@ -366,7 +366,7 @@ def add_campos():
             entry.configure(text="")
 
         if tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
-            motivo_label.configure(text="MOTIVO:\t\t\t     ")
+            motivo_label.configure(text="MOTIVO:\t\t      ")
             valor_caixa_itens_label.configure(text="VALOR:")
         elif tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS"}:
             motivo_label.configure(text="MOTIVO:\t\t\t     ")
@@ -882,6 +882,13 @@ def gerar_solicitacao():
                 os_num = partes[2]
 
                 print(f"Prefixo: {prefixo}, Agência: {agencia}, OS: {os_num}")
+        
+        if tipo_servico in {
+            "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
+            "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS"
+        }:
+            descricao_itens = "\n".join(item["motivo"] for item in itens_pagamento)
+            valor_itens = "\n".join([item["valor"] for item in itens_pagamento])
 
         # Criando uma instância do dataclass DadosRequisicao
         dados = DadosRequisicao(
@@ -901,7 +908,8 @@ def gerar_solicitacao():
             usuarios_varios_departamentos=usuarios_varios_departamentos,
             usuarios_gerais=usuarios_gerais,
             motivo=motivo,
-            descricao_itens=descricao_itens
+            descricao_itens=descricao_itens,
+            valor_itens=valor_itens,
         )
 
         gerar_excel(dados)

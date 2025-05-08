@@ -48,6 +48,7 @@ class DadosRequisicao:
     usuarios_gerais: List[str]
     motivo: str
     descricao_itens: str
+    valor_itens: str
 
 def gerar_excel(dados: DadosRequisicao):
     """
@@ -94,6 +95,8 @@ def gerar_excel(dados: DadosRequisicao):
         Motivo da requisição.
     descricao_itens : str
         Descrição detalhada dos itens/serviços, separados por quebra de linha.
+    valor_itens : str
+        Valor dos itens/serviços, separados por quebra de linha.
 
     Retorno
     -------
@@ -260,7 +263,28 @@ def gerar_excel(dados: DadosRequisicao):
                     sheet_principal.row_dimensions[linha_inicial + i].height = (
                         qtd_linhas * altura_por_linha
                     )
+        elif dados.tipo_servico in {
+            "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
+            "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS"
+        }:
+            descricao_lista = dados.descricao_itens.split("\n")
+            valor_lista = dados.valor_itens.split("\n")
 
+            for i, (descricao, valor) in enumerate(zip(descricao_lista, valor_lista)):
+                sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(
+                    wrap_text=False, horizontal='center', vertical='center'
+                )
+                sheet_principal[f"B{linha_inicial + i}"] = f"{i + 1}"
+                sheet_principal[f"C{linha_inicial + i}"] = descricao
+                sheet_principal[f"F{linha_inicial + i}"] = 1
+                sheet_principal[f"G{linha_inicial + i}"] = valor
+
+                if len(descricao) > limite_caracteres:
+                    qtd_linhas = (len(descricao) // limite_caracteres) + 1
+                    sheet_principal.row_dimensions[linha_inicial + i].height = (
+                        qtd_linhas * altura_por_linha
+                    )
+                    
         # Restaurando a Validação de Dados
         workbook.active = sheet_principal
         dv = DataValidation(
@@ -282,7 +306,14 @@ def gerar_excel(dados: DadosRequisicao):
 
         try:
             time.sleep(1.2)
-            abrir_explorer_se_necessario(caminho_destino)
+
+            # Caminho da área de trabalho do usuário
+            desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+
+            # Verifica se o destino não é a área de trabalho
+            if os.path.normcase(os.path.normpath(caminho_destino)) != os.path.normcase(os.path.normpath(desktop_path)):
+                abrir_explorer_se_necessario(os.path.normpath(caminho_destino))
+
             time.sleep(1.2)
             os.startfile(nome_arquivo_destino)
         except FileNotFoundError:
