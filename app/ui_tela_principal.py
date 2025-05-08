@@ -70,7 +70,7 @@ def add_item_pagamento():
             "descricao_base": descricao_base
         }
 
-    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+    else:
         motivo = arrumar_texto(motivo_entry.get().upper().strip())
         valor = verificar_se_numero(valor_caixa_itens_entry.get())
 
@@ -107,7 +107,7 @@ def add_item_pagamento():
 
     if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
         descricao_do_item_pagamento_entry.delete(0, tk.END)
-    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+    else:
         valor_caixa_itens_entry.delete(0, tk.END)
         motivo_entry.delete(0, tk.END)
 
@@ -160,8 +160,8 @@ def editar_item_pagamento(index):
         descricao_do_item_pagamento_entry.delete(0, tk.END)
         descricao_do_item_pagamento_entry.insert(0, descricao_nova)
         descricao_do_item_pagamento_entry.focus()
-    
-    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+
+    else:
         motivo_entry.delete(0, tk.END)
         motivo_entry.insert(0, item.get("motivo", ""))
 
@@ -191,7 +191,7 @@ def salvar_edicao_pagamento(index):
             "descricao_base": descricao_base
         }
 
-    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+    else:
         motivo = arrumar_texto(motivo_entry.get().upper().strip())
         valor = verificar_se_numero(valor_caixa_itens_entry.get())
 
@@ -228,7 +228,7 @@ def salvar_edicao_pagamento(index):
 
     if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
         descricao_do_item_pagamento_entry.delete(0, tk.END)
-    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+    else:
         valor_caixa_itens_entry.delete(0, tk.END)
         motivo_entry.delete(0, tk.END)
 
@@ -250,7 +250,7 @@ def remover_item_pagamento(index):
         pass
 
 def add_campos():
-    global tipo_servico
+    global tipo_servico, aparece_lista_itens_aba_pagamentos
 
     tipo_servico = tipo_servico_combobox.get()
 
@@ -297,15 +297,17 @@ def add_campos():
     saida_destino_entry.delete(0, tk.END)
     tecnicos_entry.delete(0, tk.END)
 
+    aparece_lista_itens_aba_pagamentos = {
+        "RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO",
+        "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
+        "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+    }
+
     if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
         competencia_label.grid(row=9, column=0, sticky="w", padx=(10, 10))
         competencia_combobox.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
         porcentagem_label.grid(row=10, column=0, sticky="w", padx=(10, 10))
         porcentagem_entry.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-
-    elif tipo_servico in {"REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
-        motivo_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        motivo_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
     elif tipo_servico == "REEMBOLSO UBER":
         saida_destino_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
@@ -317,8 +319,11 @@ def add_campos():
         tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO", "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
-        frame_caixa_itens_pagamento.grid(row=5, column=0, columnspan=2, sticky="nsew", pady=5)
+    elif tipo_servico in aparece_lista_itens_aba_pagamentos:
+        if tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS"}:
+            frame_caixa_itens_pagamento.grid(row=9, column=0, columnspan=2, sticky="nsew", pady=5)
+        else:
+            frame_caixa_itens_pagamento.grid(row=5, column=0, columnspan=2, sticky="nsew", pady=5)
 
         if len(itens_pagamento) > 0:
             itens_pagamento.clear()
@@ -354,6 +359,18 @@ def add_campos():
             valor_caixa_itens_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
             valor_caixa_itens_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
             valor_caixa_itens_entry.configure(placeholder_text="Informe o valor")
+
+        # forçar o label a mover a coluna 0, de modo a
+        # padronizar o tamanho dos entrys
+        for entry in [motivo_label, valor_caixa_itens_label]:
+            entry.configure(text="")
+
+        if tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+            motivo_label.configure(text="MOTIVO:\t\t\t     ")
+            valor_caixa_itens_label.configure(text="VALOR:")
+        elif tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS"}:
+            motivo_label.configure(text="MOTIVO:\t\t\t     ")
+            valor_caixa_itens_label.configure(text="VALOR:")
 
     if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
         competencia_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
@@ -496,7 +513,10 @@ def gerar_solicitacao():
     contrato = arrumar_texto(contrato_combobox.get().upper())
     motivo = arrumar_texto(motivo_entry.get().upper())
     
-    if tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+    if tipo_servico in {
+        "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
+        "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+    }:
         total_valor = sum(float(str(item.get("valor", 0)).replace(".", "").replace(",", ".")) for item in itens_pagamento)
         valor_tab1 = verificar_se_numero(str(total_valor).replace(".", ","))
     else:
@@ -595,13 +615,6 @@ def gerar_solicitacao():
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])        
-    elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
-        campos_obrigatorios.extend([
-            (motivo, "MOTIVO"),
-            (prefixo, "PREFIXO"),
-            (agencia, "AGÊNCIA"),
-            (os_num, "OS")
-        ])
     elif tipo_servico == "REEMBOLSO UBER":
         campos_obrigatorios.extend([
             (saida_destino, "SAÍDA X DESTINO"),
@@ -613,13 +626,24 @@ def gerar_solicitacao():
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])
-    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO", "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+    elif tipo_servico in aparece_lista_itens_aba_pagamentos:
         campos_obrigatorios.append((itens_pagamento if itens_pagamento else None, "DESCRIÇÃO DO ITEM"))
+        
         if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
             campos_obrigatorios.append((competencia, "COMPETÊNCIA"))
-            
-        elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
-            campos_obrigatorios.remove((valor_tab1, "VALOR"))
+
+        if tipo_servico in {
+            "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
+            "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+        }:
+            campos_obrigatorios = [campo for campo in campos_obrigatorios if campo != (valor_tab1, "VALOR")]
+
+        if tipo_servico in {"REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
+            campos_obrigatorios.extend([
+                (prefixo, "PREFIXO"),
+                (agencia, "AGÊNCIA"),
+                (os_num, "OS")
+            ])
 
     if tipo_pagamento == "PIX" and tipo_chave_pix != "QR CODE":
         campos_obrigatorios.extend([
@@ -709,14 +733,22 @@ def gerar_solicitacao():
             texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
 
         texto += f"VALOR: R$ {valor_tab1}\n\n"
-    elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
+    elif tipo_servico in {"REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
         texto = (
             f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
             f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
-        )   
+        )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"MOTIVO: {motivo}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
+
+        if len(itens_pagamento) == 1:
+            item = itens_pagamento[0]
+            texto += f"MOTIVO: {item['motivo']}\n\n"
+            texto += f"*VALOR: R$ {valor_tab1}*\n\n"
+        else:
+            texto += "MOTIVOS:\n"
+            for idx, item in enumerate(itens_pagamento, start=1):
+                texto += f"{idx}. {item['motivo']} (R$ {item['valor']})\n"
+            texto += f"\n*VALOR TOTAL: R$ {valor_tab1}*\n\n"
     elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
@@ -1745,11 +1777,11 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         descricao_do_item_pagamento_entry = CustomEntry(master=frame_caixa_itens_pagamento)
 
         # Campo para MOTIVO
-        motivo_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="MOTIVO:                          ")
+        motivo_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento)
         motivo_entry = CustomEntry(master=frame_caixa_itens_pagamento)
 
         # Campo para valor
-        valor_caixa_itens_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="VALOR:                           ")
+        valor_caixa_itens_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento)
         valor_caixa_itens_entry = CustomEntry(master=frame_caixa_itens_pagamento)
 
         # Botão para adicionar serviço
