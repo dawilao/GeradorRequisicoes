@@ -986,6 +986,7 @@ def gerar_solicitacao():
 
     if switch_gerar_excel_var.get():
         descricao_itens = ""
+        valor_itens = ""
 
         if tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"} and itens_pagamento:
             descricao_itens = "\n".join(item["descricao"] for item in itens_pagamento)
