@@ -55,23 +55,61 @@ itens_pagamento = []
 def add_item_pagamento():
     global descricao_base
 
-    entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+    if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
 
-    descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
+        descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
 
-    if erro:
-        notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
-    
-    # Adiciona dicionário com dados completos
-    item = {
-        "descricao": descricao_formatada,
-        "descricao_base": descricao_base
-    }
+        if erro:
+            notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
+        
+        # Adiciona dicionário com dados completos
+        item = {
+            "descricao": descricao_formatada,
+            "descricao_base": descricao_base
+        }
+
+    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+        motivo = arrumar_texto(motivo_entry.get().upper().strip())
+        valor = verificar_se_numero(valor_caixa_itens_entry.get())
+
+        # Verificações de campos obrigatórios
+        if not motivo and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e MOTIVO não podem ser vazios!"
+        elif not motivo:
+            erro = "Campo MOTIVO não pode ser vazio!"
+        elif not valor:
+            erro = "Campo VALOR não pode ser vazio!"
+        elif valor is ValueError:
+            erro = "Campo VALOR\nPor favor, insira um número válido!"
+        else:
+            erro = None
+
+        # Exibição de erro, se houver
+        if erro:
+            notification_manager.show_notification(
+                erro, 
+                NotifyType.ERROR,
+                bg_color="#404040", 
+                text_color="#FFFFFF"
+            )
+            return
+
+        # Adiciona dicionário com dados completos
+        item = {
+            "motivo": motivo,
+            "valor": valor,
+            "descricao": f"{motivo} - R$ {valor}"
+        }
 
     itens_pagamento.append(item)
 
-    descricao_do_item_pagamento_entry.delete(0, tk.END)
+    if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        descricao_do_item_pagamento_entry.delete(0, tk.END)
+    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+        valor_caixa_itens_entry.delete(0, tk.END)
+        motivo_entry.delete(0, tk.END)
 
     atualizar_lista_itens_pagamento()
 
@@ -89,7 +127,7 @@ def atualizar_lista_itens_pagamento():
         row_frame_pagamento.grid(row=index, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
 
         label_itens_gerados_pagamento = ctk.CTkLabel(
-            row_frame_pagamento, 
+            row_frame_pagamento,
             text=item["descricao"],
             anchor="w", justify="left", wraplength=340
         )
@@ -115,13 +153,22 @@ def editar_item_pagamento(index):
     item = itens_pagamento[index]
     descricao_nova = item["descricao"]
 
-    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":  # para remover o texto "ADIANTAMENTO DE"
-        descricao_nova = descricao_nova.replace("ADIANTAMENTO DE ", "").strip()
+    if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":  # para remover o texto "ADIANTAMENTO DE"
+            descricao_nova = descricao_nova.replace("ADIANTAMENTO DE ", "").strip()
+        
+        descricao_do_item_pagamento_entry.delete(0, tk.END)
+        descricao_do_item_pagamento_entry.insert(0, descricao_nova)
+        descricao_do_item_pagamento_entry.focus()
+    
+    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+        motivo_entry.delete(0, tk.END)
+        motivo_entry.insert(0, item.get("motivo", ""))
 
-    descricao_do_item_pagamento_entry.delete(0, tk.END)
-    descricao_do_item_pagamento_entry.insert(0, descricao_nova)
+        valor_caixa_itens_entry.delete(0, tk.END)
+        valor_caixa_itens_entry.insert(0, str(item.get("valor", "")))
 
-    descricao_do_item_pagamento_entry.focus()
+        motivo_entry.focus()
 
     btn_adicionar_servico_pagamento.configure(text="Salvar", command=lambda: salvar_edicao_pagamento(index))
 
@@ -131,21 +178,59 @@ def salvar_edicao_pagamento(index):
     global editando_item_pagamento
     global descricao_base
 
-    entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
-    descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
+    if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+        descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
 
-    if erro:
-        notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
-    
-    item_editado = {
-        "descricao": descricao_formatada,
-        "descricao_base": descricao_base
-    }
+        if erro:
+            notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
+        
+        item_editado = {
+            "descricao": descricao_formatada,
+            "descricao_base": descricao_base
+        }
+
+    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+        motivo = arrumar_texto(motivo_entry.get().upper().strip())
+        valor = verificar_se_numero(valor_caixa_itens_entry.get())
+
+        # Verificações de campos obrigatórios
+        if not motivo and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e MOTIVO não podem ser vazios!"
+        elif not motivo:
+            erro = "Campo MOTIVO não pode ser vazio!"
+        elif not valor:
+            erro = "Campo VALOR não pode ser vazio!"
+        elif valor is ValueError:
+            erro = "Campo VALOR\nPor favor, insira um número válido!"
+        else:
+            erro = None
+
+        # Exibição de erro, se houver
+        if erro:
+            notification_manager.show_notification(
+                erro, 
+                NotifyType.ERROR, 
+                bg_color="#404040", 
+                text_color="#FFFFFF"
+            )
+            return
+
+        # Adiciona dicionário com dados completos
+        item_editado = {
+            "motivo": motivo,
+            "valor": valor,
+            "descricao": f"{motivo} - R$ {valor}"
+        } 
 
     itens_pagamento[index] = item_editado
 
-    descricao_do_item_pagamento_entry.delete(0, tk.END)
+    if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        descricao_do_item_pagamento_entry.delete(0, tk.END)
+    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+        valor_caixa_itens_entry.delete(0, tk.END)
+        motivo_entry.delete(0, tk.END)
 
     btn_adicionar_servico_pagamento.configure(text="Adicionar", command=add_item_pagamento)
 
@@ -190,6 +275,10 @@ def add_campos():
     nome_benef_pix_label.grid_forget()
     nome_benef_pix_entry.grid_forget()
 
+    # Deixa o campo valor como padrão para todos os tipos_servico
+    valor_label.grid(row=11, column=0, sticky="w", padx=(10, 10))
+    valor_entry.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
+
     # Oculta todos os campos por padrão
     for widget in [
         competencia_label, competencia_combobox,
@@ -214,7 +303,7 @@ def add_campos():
         porcentagem_label.grid(row=10, column=0, sticky="w", padx=(10, 10))
         porcentagem_entry.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS", "REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
+    elif tipo_servico in {"REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
         motivo_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         motivo_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
@@ -228,20 +317,43 @@ def add_campos():
         tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
-        frame_caixa_itens_pagamento.grid(row=4, column=0, columnspan=2, sticky="nsew", pady=5)
+    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO", "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+        frame_caixa_itens_pagamento.grid(row=5, column=0, columnspan=2, sticky="nsew", pady=5)
 
         if len(itens_pagamento) > 0:
             itens_pagamento.clear()
             atualizar_lista_itens_pagamento()
             add_campos()
 
+        for widget in [
+            descricao_do_item_pagamento_label, descricao_do_item_pagamento_entry,
+            motivo_label, motivo_entry,
+            valor_caixa_itens_label, valor_caixa_itens_entry,
+        ]:
+            widget.grid_forget()
+        
+        for entry in [descricao_do_item_pagamento_entry, motivo_entry]:
+            entry.delete(0, tk.END)
+
         if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+            descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
+            descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
             descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - PORCENTAGEM")
             root.focus()
-        else:
+        elif tipo_servico == "RELATÓRIO EXTRA":
+            descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
+            descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
             descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - VALOR")
             root.focus()
+        else:
+            valor_label.grid_forget()
+            valor_entry.grid_forget()
+            motivo_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
+            motivo_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+            motivo_entry.configure(placeholder_text="Informe o motivo")
+            valor_caixa_itens_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
+            valor_caixa_itens_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+            valor_caixa_itens_entry.configure(placeholder_text="Informe o valor")
 
     if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
         competencia_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
@@ -277,7 +389,6 @@ def add_campos():
         os_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
         os_entry.configure(placeholder_text="Opcional")
         os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
-    
     else:
         prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
         prefixo_entry.configure(placeholder_text="")
@@ -384,7 +495,13 @@ def gerar_solicitacao():
     os_num = valida_os(os_entry.get())
     contrato = arrumar_texto(contrato_combobox.get().upper())
     motivo = arrumar_texto(motivo_entry.get().upper())
-    valor_tab1 = verificar_se_numero(valor_entry.get())
+    
+    if tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+        total_valor = sum(float(str(item.get("valor", 0)).replace(".", "").replace(",", ".")) for item in itens_pagamento)
+        valor_tab1 = verificar_se_numero(str(total_valor).replace(".", ","))
+    else:
+        valor_tab1 = verificar_se_numero(valor_entry.get())
+
     tipo_pagamento = arrumar_texto(tipo_pagamento_combobox.get().upper())
     tecnicos = arrumar_texto(tecnicos_entry.get().upper())
     saida_destino = arrumar_texto(saida_destino_entry.get().upper())
@@ -485,8 +602,6 @@ def gerar_solicitacao():
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])
-    elif tipo_servico == "REEMBOLSO SEM OS" or tipo_servico == "SOLICITAÇÃO SEM OS":
-        campos_obrigatorios.append((motivo, "MOTIVO"))
     elif tipo_servico == "REEMBOLSO UBER":
         campos_obrigatorios.extend([
             (saida_destino, "SAÍDA X DESTINO"),
@@ -498,10 +613,13 @@ def gerar_solicitacao():
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])
-    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
+    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO", "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
         campos_obrigatorios.append((itens_pagamento if itens_pagamento else None, "DESCRIÇÃO DO ITEM"))
         if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
             campos_obrigatorios.append((competencia, "COMPETÊNCIA"))
+            
+        elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+            campos_obrigatorios.remove((valor_tab1, "VALOR"))
 
     if tipo_pagamento == "PIX" and tipo_chave_pix != "QR CODE":
         campos_obrigatorios.extend([
@@ -599,11 +717,19 @@ def gerar_solicitacao():
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"MOTIVO: {motivo}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
-    elif tipo_servico == "REEMBOLSO SEM OS":
-        texto = f"Solicito o pagamento ao {nome_fornecedor}, para {contrato}.\n\n"
+    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+        texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"MOTIVO: {motivo}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
+
+        if len(itens_pagamento) == 1:
+            item = itens_pagamento[0]
+            texto += f"MOTIVO: {item['motivo']}\n\n"
+            texto += f"*VALOR: R$ {valor_tab1}*\n\n"
+        else:
+            texto += "MOTIVOS:\n"
+            for idx, item in enumerate(itens_pagamento, start=1):
+                texto += f"{idx}. {item['motivo']} (R$ {item['valor']})\n"
+            texto += f"\n*VALOR TOTAL: R$ {valor_tab1}*\n\n"
     elif tipo_servico == "ABASTECIMENTO":
         texto = (
             f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao "
@@ -637,11 +763,6 @@ def gerar_solicitacao():
             f"para {contrato}.\n\n"
         )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
-    elif tipo_servico == "SOLICITAÇÃO SEM OS":
-        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, para {contrato}.\n\n"
-        texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"MOTIVO: {motivo}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ENVIO DE MATERIAL":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}.\n\n"
@@ -1456,7 +1577,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
 
     # Widgets da aba PAGAMENTO
     global nome_usuario_entry, tipo_servico_combobox, nome_fornecedor_entry, prefixo_entry, agencia_entry
-    global os_entry, contrato_combobox, motivo_entry, valor_entry, tipo_pagamento_combobox, tecnicos_entry
+    global os_entry, contrato_combobox, motivo_entry, valor_entry, valor_label, tipo_pagamento_combobox, tecnicos_entry
     global saida_destino_entry, competencia_combobox, porcentagem_entry
     global tipo_aquisicao_combobox, tipo_chave_pix_combobox, chave_pix_entry
     global texto_solicitacao, switch_autocopia_var, contratos, switch_gerar_excel_var
@@ -1469,6 +1590,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
     global frame_caixa_itens_pagamento, frame_lista_itens_pagamento
     global descricao_do_item_pagamento_label, descricao_do_item_pagamento_entry
     global editando_item_pagamento, btn_adicionar_servico_pagamento
+    global valor_caixa_itens_label, valor_caixa_itens_entry
 
     # Widgets da aba E-MAIL
     global nome_usuario_entry_tab2, tipo_servico_combobox_tab2, prefixo_entry_tab2, agencia_entry_tab2
@@ -1621,8 +1743,14 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
 
         descricao_do_item_pagamento_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="DESCRIÇÃO DO ITEM:")
         descricao_do_item_pagamento_entry = CustomEntry(master=frame_caixa_itens_pagamento)
-        descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
-        descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        # Campo para MOTIVO
+        motivo_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="MOTIVO:                          ")
+        motivo_entry = CustomEntry(master=frame_caixa_itens_pagamento)
+
+        # Campo para valor
+        valor_caixa_itens_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="VALOR:                           ")
+        valor_caixa_itens_entry = CustomEntry(master=frame_caixa_itens_pagamento)
 
         # Botão para adicionar serviço
         btn_adicionar_servico_pagamento = ctk.CTkButton(master=frame_caixa_itens_pagamento, text="Adicionar item", command=add_item_pagamento)
@@ -1630,11 +1758,6 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         # -------------------------------
         # Fim do frame para os itens
         # -------------------------------
-
-        # Campo para MOTIVO
-        motivo_label = ctk.CTkLabel(master=frame, text="MOTIVO:")
-        motivo_entry = CustomEntry(master=frame)
-        widgets_para_limpar.append(motivo_entry)
 
         tipo_aquisicao_label = ctk.CTkLabel(master=frame, text="TIPO DE AQUISIÇÃO:")
         tipo_aquisicao_combobox = CustomComboBox(master=frame, command=lambda choice: campo_descricao_utilidades())
@@ -1669,9 +1792,8 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         nome_fornecedor_entry.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
         widgets_para_limpar.append(nome_fornecedor_entry)
 
-        ctk.CTkLabel(master=frame, text="VALOR:").grid(row=11, column=0, sticky="w", padx=(10, 10))
+        valor_label = ctk.CTkLabel(master=frame, text="VALOR:")
         valor_entry = CustomEntry(master=frame)
-        valor_entry.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
         widgets_para_limpar.append(valor_entry)
 
         ano_atual = datetime.now().strftime("%Y")
