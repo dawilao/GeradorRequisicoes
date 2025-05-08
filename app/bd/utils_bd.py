@@ -1,10 +1,10 @@
 import sqlite3
 
 def conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
-        contrato, motivo, valor, tipo_pagamento, tecnicos, saida_destino, competencia,
+        contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
         porcentagem, tipo_aquisicao):
     def inserir_dados(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
-        contrato, motivo, valor, tipo_pagamento, tecnicos, saida_destino, competencia,
+        contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
         porcentagem, tipo_aquisicao):
         # Obtendo a data e hora atuais
         from datetime import datetime
@@ -14,11 +14,11 @@ def conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefix
         cursor.execute('''
         INSERT INTO registros (
             nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
-            contrato, motivo, valor, tipo_pagamento, tecnicos, saida_destino, competencia,
+            contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
             porcentagem, tipo_aquisicao, data_criacao, hora_criacao
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
-            contrato, motivo, valor, tipo_pagamento, tecnicos, saida_destino, competencia,
+            contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
             porcentagem, tipo_aquisicao, data_criacao, hora_criacao))
         
         conn.commit()
@@ -58,7 +58,7 @@ def conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefix
     ''')
 
     inserir_dados(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
-        contrato, motivo, valor, tipo_pagamento, tecnicos, saida_destino, competencia,
+        contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
         porcentagem, tipo_aquisicao)
 
     fechar_conexao()

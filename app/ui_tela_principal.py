@@ -69,7 +69,48 @@ def add_item_pagamento():
             "descricao": descricao_formatada,
             "descricao_base": descricao_base
         }
+    elif tipo_servico == "REEMBOLSO UBER":
+        saida_e_destino = arrumar_texto(saida_destino_entry.get().upper().strip())
+        motivo = arrumar_texto(motivo_entry.get().upper().strip())
+        valor = verificar_se_numero(valor_caixa_itens_entry.get())
 
+        # Verificações de campos obrigatórios
+        if not motivo and not valor and not saida_e_destino:
+            erro = "Campos DESCRIÇÃO DO ITEM, MOTIVO e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo and not saida_e_destino:
+            erro = "Campos MOTIVO e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e MOTIVO não podem ser vazios!"
+        elif not saida_e_destino and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo:
+            erro = "Campo MOTIVO não pode ser vazio!"
+        elif not valor:
+            erro = "Campo VALOR não pode ser vazio!"
+        elif not saida_e_destino:
+            erro = "Campo SAÍDA/DESTINO não pode ser vazio!"
+        elif valor is ValueError:
+            erro = "Campo VALOR\nPor favor, insira um número válido!"
+        else:
+            erro = None
+
+        # Exibição de erro, se houver
+        if erro:
+            notification_manager.show_notification(
+                erro, 
+                NotifyType.ERROR,
+                bg_color="#404040", 
+                text_color="#FFFFFF"
+            )
+            return
+
+        # Adiciona dicionário com dados completos
+        item = {
+            "saida_e_destino": saida_e_destino,
+            "motivo": motivo,
+            "valor": valor,
+            "descricao": f"{saida_e_destino} - {motivo} - R$ {valor}"
+        }
     else:
         motivo = arrumar_texto(motivo_entry.get().upper().strip())
         valor = verificar_se_numero(valor_caixa_itens_entry.get())
@@ -107,7 +148,10 @@ def add_item_pagamento():
 
     if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
         descricao_do_item_pagamento_entry.delete(0, tk.END)
-    else:
+
+    if tipo_servico not in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        if tipo_servico == "REEMBOLSO UBER":
+            saida_destino_entry.delete(0, tk.END)
         valor_caixa_itens_entry.delete(0, tk.END)
         motivo_entry.delete(0, tk.END)
 
@@ -159,8 +203,19 @@ def editar_item_pagamento(index):
         
         descricao_do_item_pagamento_entry.delete(0, tk.END)
         descricao_do_item_pagamento_entry.insert(0, descricao_nova)
+        
         descricao_do_item_pagamento_entry.focus()
+    elif tipo_servico == "REEMBOLSO UBER":
+        saida_destino_entry.delete(0, tk.END)
+        saida_destino_entry.insert(0, item.get("saida_e_destino", ""))
 
+        motivo_entry.delete(0, tk.END)
+        motivo_entry.insert(0, item.get("motivo", ""))
+
+        valor_caixa_itens_entry.delete(0, tk.END)
+        valor_caixa_itens_entry.insert(0, str(item.get("valor", "")))
+
+        saida_destino_entry.focus()
     else:
         motivo_entry.delete(0, tk.END)
         motivo_entry.insert(0, item.get("motivo", ""))
@@ -191,6 +246,48 @@ def salvar_edicao_pagamento(index):
             "descricao_base": descricao_base
         }
 
+    elif tipo_servico == "REEMBOLSO UBER":
+        saida_e_destino = arrumar_texto(saida_destino_entry.get().upper().strip())
+        motivo = arrumar_texto(motivo_entry.get().upper().strip())
+        valor = verificar_se_numero(valor_caixa_itens_entry.get())
+
+        # Verificações de campos obrigatórios
+        if not motivo and not valor and not saida_e_destino:
+            erro = "Campos DESCRIÇÃO DO ITEM, MOTIVO e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo and not saida_e_destino:
+            erro = "Campos MOTIVO e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e MOTIVO não podem ser vazios!"
+        elif not saida_e_destino and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo:
+            erro = "Campo MOTIVO não pode ser vazio!"
+        elif not valor:
+            erro = "Campo VALOR não pode ser vazio!"
+        elif not saida_e_destino:
+            erro = "Campo SAÍDA/DESTINO não pode ser vazio!"
+        elif valor is ValueError:
+            erro = "Campo VALOR\nPor favor, insira um número válido!"
+        else:
+            erro = None
+
+        # Exibição de erro, se houver
+        if erro:
+            notification_manager.show_notification(
+                erro, 
+                NotifyType.ERROR,
+                bg_color="#404040", 
+                text_color="#FFFFFF"
+            )
+            return
+
+        # Adiciona dicionário com dados completos
+        item_editado = {
+            "saida_e_destino": saida_e_destino,
+            "motivo": motivo,
+            "valor": valor,
+            "descricao": f"{saida_e_destino} - {motivo} - R$ {valor}"
+        }
     else:
         motivo = arrumar_texto(motivo_entry.get().upper().strip())
         valor = verificar_se_numero(valor_caixa_itens_entry.get())
@@ -228,7 +325,10 @@ def salvar_edicao_pagamento(index):
 
     if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
         descricao_do_item_pagamento_entry.delete(0, tk.END)
-    else:
+
+    if tipo_servico not in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        if tipo_servico == "REEMBOLSO UBER":
+            saida_destino_entry.delete(0, tk.END)
         valor_caixa_itens_entry.delete(0, tk.END)
         motivo_entry.delete(0, tk.END)
 
@@ -301,6 +401,7 @@ def add_campos():
         "RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO",
         "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
         "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+        "REEMBOLSO UBER",
     }
 
     if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
@@ -309,18 +410,12 @@ def add_campos():
         porcentagem_label.grid(row=10, column=0, sticky="w", padx=(10, 10))
         porcentagem_entry.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    elif tipo_servico == "REEMBOLSO UBER":
-        saida_destino_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        saida_destino_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
-        motivo_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        motivo_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-
     elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM"}:
         tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
     elif tipo_servico in aparece_lista_itens_aba_pagamentos:
-        if tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS"}:
+        if tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS", "REEMBOLSO UBER"}:
             frame_caixa_itens_pagamento.grid(row=9, column=0, columnspan=2, sticky="nsew", pady=5)
         else:
             frame_caixa_itens_pagamento.grid(row=5, column=0, columnspan=2, sticky="nsew", pady=5)
@@ -334,6 +429,7 @@ def add_campos():
             descricao_do_item_pagamento_label, descricao_do_item_pagamento_entry,
             motivo_label, motivo_entry,
             valor_caixa_itens_label, valor_caixa_itens_entry,
+            saida_destino_label, saida_destino_entry,
         ]:
             widget.grid_forget()
         
@@ -353,11 +449,17 @@ def add_campos():
         else:
             valor_label.grid_forget()
             valor_entry.grid_forget()
-            motivo_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
-            motivo_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+            if tipo_servico == "REEMBOLSO UBER":
+                saida_destino_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
+                saida_destino_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+                saida_destino_entry.configure(placeholder_text="Informe a saída e o destino")
+
+            motivo_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
+            motivo_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
             motivo_entry.configure(placeholder_text="Informe o motivo")
-            valor_caixa_itens_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
-            valor_caixa_itens_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+            valor_caixa_itens_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
+            valor_caixa_itens_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
             valor_caixa_itens_entry.configure(placeholder_text="Informe o valor")
 
         # forçar o label a mover a coluna 0, de modo a
@@ -369,6 +471,10 @@ def add_campos():
             motivo_label.configure(text="MOTIVO:\t\t      ")
             valor_caixa_itens_label.configure(text="VALOR:")
         elif tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS"}:
+            motivo_label.configure(text="MOTIVO:\t\t\t     ")
+            valor_caixa_itens_label.configure(text="VALOR:")
+        elif tipo_servico == "REEMBOLSO UBER":
+            saida_destino_label.configure(text="SAÍDA X DESTINO:\t\t")
             motivo_label.configure(text="MOTIVO:\t\t\t     ")
             valor_caixa_itens_label.configure(text="VALOR:")
 
@@ -516,6 +622,7 @@ def gerar_solicitacao():
     if tipo_servico in {
         "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
         "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+        "REEMBOLSO UBER",
     }:
         total_valor = sum(float(str(item.get("valor", 0)).replace(".", "").replace(",", ".")) for item in itens_pagamento)
         valor_tab1 = verificar_se_numero(str(total_valor).replace(".", ","))
@@ -524,7 +631,6 @@ def gerar_solicitacao():
 
     tipo_pagamento = arrumar_texto(tipo_pagamento_combobox.get().upper())
     tecnicos = arrumar_texto(tecnicos_entry.get().upper())
-    saida_destino = arrumar_texto(saida_destino_entry.get().upper())
     competencia = arrumar_texto(competencia_combobox.get().upper())
     porcentagem = valida_porcentagem(porcentagem_entry.get().upper())
     tipo_aquisicao = arrumar_texto(tipo_aquisicao_combobox.get().upper())
@@ -615,11 +721,6 @@ def gerar_solicitacao():
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])        
-    elif tipo_servico == "REEMBOLSO UBER":
-        campos_obrigatorios.extend([
-            (saida_destino, "SAÍDA X DESTINO"),
-            (motivo, "MOTIVO")
-        ])
     elif tipo_servico in {"CARRETO", "ORÇAMENTO APROVADO", "TRANSPORTADORA"}:
         campos_obrigatorios.extend([
             (prefixo, "PREFIXO"),
@@ -635,6 +736,7 @@ def gerar_solicitacao():
         if tipo_servico in {
             "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
             "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+            "REEMBOLSO UBER"
         }:
             campos_obrigatorios = [campo for campo in campos_obrigatorios if campo != (valor_tab1, "VALOR")]
 
@@ -778,16 +880,30 @@ def gerar_solicitacao():
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO UBER":
-        texto = (
-            f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {saida_destino}, "
-            f"referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
-            if prefixo
-            else f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {saida_destino}, "
-            f"para {contrato}.\n\n"
-        )
-        texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"MOTIVO: {motivo}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
+        if len(itens_pagamento) == 1:
+            item = itens_pagamento[0]
+            texto = (
+                f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {item['saida_e_destino']}, "
+                f"referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+                if prefixo
+                else f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {item['saida_e_destino']}, "
+                f"para {contrato}.\n\n"
+            )
+            texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"MOTIVO: {item['motivo']}\n\n"
+            texto += f"*VALOR: R$ {valor_tab1}*\n\n"
+        else:
+            texto = (
+                f"Solicito reembolso referente ao deslocamento de {nome_fornecedor} "
+                f"referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+                if prefixo
+                else f"Solicito reembolso referente ao deslocamento de {nome_fornecedor} para {contrato}.\n\n"
+            )
+            texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += "DESLOCAMENTOS:\n"
+            for idx, item in enumerate(itens_pagamento, start=1):
+                texto += f"{idx}. {item['saida_e_destino']} - {item['motivo']} (R$ {item['valor']})\n"
+            texto += f"\n*VALOR TOTAL: R$ {valor_tab1}*\n\n"
     elif tipo_servico == "HOSPEDAGEM":
         texto = (
             f"Solicito o pagamento ao fornecedor {nome_fornecedor} pela hospedagem dos "
@@ -861,7 +977,7 @@ def gerar_solicitacao():
     # Insere os dados no BD
     from .bd import conecta_banco_pagamentos
     conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
-        contrato, motivo, valor_tab1, tipo_pagamento, tecnicos, saida_destino, competencia,
+        contrato, motivo, valor_tab1, tipo_pagamento, tecnicos, competencia,
         porcentagem, tipo_aquisicao)
 
     # Copiar automaticamente o texto gerado caso o switch esteja ativo
@@ -885,10 +1001,16 @@ def gerar_solicitacao():
         
         if tipo_servico in {
             "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
-            "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS"
+            "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS", "REEMBOLSO UBER"
         }:
-            descricao_itens = "\n".join(item["motivo"] for item in itens_pagamento)
-            valor_itens = "\n".join([item["valor"] for item in itens_pagamento])
+            if tipo_servico == "REEMBOLSO UBER":
+                descricao_itens = "\n".join(
+                    f"{item['saida_e_destino']} - {item['motivo']}" for item in itens_pagamento
+                )
+            else:
+                descricao_itens = "\n".join(item["motivo"] for item in itens_pagamento)
+
+            valor_itens = "\n".join(str(item["valor"]) for item in itens_pagamento)
 
         # Criando uma instância do dataclass DadosRequisicao
         dados = DadosRequisicao(
@@ -1784,6 +1906,10 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         descricao_do_item_pagamento_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="DESCRIÇÃO DO ITEM:")
         descricao_do_item_pagamento_entry = CustomEntry(master=frame_caixa_itens_pagamento)
 
+        # Campo para SAÍDA X DESTINO (UBER)
+        saida_destino_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento)
+        saida_destino_entry = CustomEntry(master=frame_caixa_itens_pagamento)
+
         # Campo para MOTIVO
         motivo_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento)
         motivo_entry = CustomEntry(master=frame_caixa_itens_pagamento)
@@ -1869,11 +1995,6 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         nome_benef_pix_label = ctk.CTkLabel(master=frame, text="NOME DO BENEF. DO PIX:")
         nome_benef_pix_entry = CustomEntry(master=frame, placeholder_text="Opcional")
         widgets_para_limpar.append(nome_benef_pix_entry)
-
-        # Campo para SAÍDA X DESTINO (UBER)
-        saida_destino_label = ctk.CTkLabel(master=frame, text="SAÍDA X DESTINO:")
-        saida_destino_entry = CustomEntry(master=frame)
-        widgets_para_limpar.append(saida_destino_entry)
 
         # Botão GERAR
         gerar_button = ctk.CTkButton(master=frame, text="GERAR", command=gerar_solicitacao)

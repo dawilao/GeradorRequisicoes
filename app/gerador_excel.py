@@ -265,7 +265,8 @@ def gerar_excel(dados: DadosRequisicao):
                     )
         elif dados.tipo_servico in {
             "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
-            "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS"
+            "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+            "REEMBOLSO UBER",
         }:
             descricao_lista = dados.descricao_itens.split("\n")
             valor_lista = dados.valor_itens.split("\n")
