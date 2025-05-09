@@ -57,8 +57,9 @@ def add_item_pagamento():
 
     if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
         entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+        possui_os = opcao_os_parceiro_combobox.get()
 
-        descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
+        descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico, possui_os)
 
         if erro:
             notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -235,7 +236,9 @@ def salvar_edicao_pagamento(index):
 
     if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
         entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
-        descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
+        possui_os = opcao_os_parceiro_combobox.get()
+
+        descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico, possui_os)
 
         if erro:
             notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -386,12 +389,14 @@ def add_campos():
         motivo_label, motivo_entry,
         saida_destino_label, saida_destino_entry,
         tecnicos_label, tecnicos_entry, descricao_utilidades_label, 
-        descricao_utilidades_entry, frame_caixa_itens_pagamento
+        descricao_utilidades_entry, frame_caixa_itens_pagamento,
+        opcao_os_parceiro_label, opcao_os_parceiro_combobox,
     ]:
         widget.grid_forget()
 
     # Limpa os campos de entrada por padrão
     competencia_combobox.set("")
+    opcao_os_parceiro_combobox.set("")
     porcentagem_entry.delete(0, tk.END)
     motivo_entry.delete(0, tk.END)
     saida_destino_entry.delete(0, tk.END)
@@ -417,8 +422,12 @@ def add_campos():
     elif tipo_servico in aparece_lista_itens_aba_pagamentos:
         if tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS", "REEMBOLSO UBER"}:
             frame_caixa_itens_pagamento.grid(row=9, column=0, columnspan=2, sticky="nsew", pady=5)
-        else:
-            frame_caixa_itens_pagamento.grid(row=5, column=0, columnspan=2, sticky="nsew", pady=5)
+        elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+            # opções relacionadas ao opcao_os_parceiro_combobox estão na função atualizar_exibicao_frame_caixa_itens()
+            opcao_os_parceiro_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
+            opcao_os_parceiro_combobox.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+        else:    
+            frame_caixa_itens_pagamento.grid(row=6, column=0, columnspan=2, sticky="nsew", pady=5)
 
         if len(itens_pagamento) > 0:
             itens_pagamento.clear()
@@ -439,7 +448,6 @@ def add_campos():
         if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
             descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
             descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
-            descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - PORCENTAGEM")
             root.focus()
         elif tipo_servico == "RELATÓRIO EXTRA":
             descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
@@ -558,6 +566,20 @@ def add_campos():
     else:
         tipo_aquisicao_label.grid_forget()
         tipo_aquisicao_combobox.grid_forget()
+
+def atualizar_exibicao_frame_caixa_itens():
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        if opcao_os_parceiro_combobox.get() in {"SIM", "NÃO"}:
+            frame_caixa_itens_pagamento.grid(row=6, column=0, columnspan=2, sticky="nsew", pady=5)
+            root.focus()
+        else:
+            frame_caixa_itens_pagamento.grid_forget()
+
+        # Atualizar o placeholder do campo de descrição
+        if opcao_os_parceiro_combobox.get() == "SIM":
+            descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - PORCENTAGEM")
+        else:
+            descricao_do_item_pagamento_entry.configure(placeholder_text="MOTIVO - PORCENTAGEM")
 
 def adiciona_campo_pix():
     tipo_pagamento = tipo_pagamento_combobox.get()
@@ -926,22 +948,33 @@ def gerar_solicitacao():
         texto += "\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
-        if len(itens_pagamento) == 1:
-            texto = (
-                f"Solicito o pagamento para {nome_fornecedor}, referente à obra listada abaixo, para {contrato}:\n\n"
-            )
+        if opcao_os_parceiro_combobox.get() == "SIM":
+            if len(itens_pagamento) == 1:
+                texto = (
+                    f"Solicito o pagamento para {nome_fornecedor}, referente à obra listada abaixo, para {contrato}:\n\n"
+                )
+            else:
+                texto = (
+                    f"Solicito o pagamento para {nome_fornecedor}, referente as obras listadas abaixo, para {contrato}:\n\n"
+                )
+            texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"COMPETÊNCIA: {competencia}\n\n"
+            
+            for item in itens_pagamento:
+                texto += f"{item["descricao"]}\n"
+            
+            texto += f"\nVALOR: R$ {valor_tab1}\n\n"
         else:
             texto = (
-                f"Solicito o pagamento para {nome_fornecedor}, referente as obras listadas abaixo, para {contrato}:\n\n"
+                f"Solicito o pagamento para {nome_fornecedor}, referente ao listado abaixo, para {contrato}:\n\n"
             )
-        texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"COMPETÊNCIA: {competencia}\n\n"
-        
-        for item in itens_pagamento:
-            texto += f"{item["descricao"]}\n"
-        
-        texto += "\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
+            texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"COMPETÊNCIA: {competencia}\n\n"
+
+            for item in itens_pagamento:
+                texto += f"{item["descricao"]}\n"
+
+            texto += f"\nVALOR: R$ {valor_tab1}\n\n"
     elif contrato == "ESCRITÓRIO" and tipo_aquisicao:
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
@@ -991,7 +1024,7 @@ def gerar_solicitacao():
         if tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"} and itens_pagamento:
             descricao_itens = "\n".join(item["descricao"] for item in itens_pagamento)
 
-            if len(itens_pagamento) == 1:
+            if opcao_os_parceiro_combobox.get() == "SIM" and len(itens_pagamento) == 1:
                 partes = [parte.strip() for parte in descricao_base.split('-')]
 
                 prefixo = partes[0]
@@ -1744,7 +1777,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
     global saida_destino_entry, competencia_combobox, porcentagem_entry
     global tipo_aquisicao_combobox, tipo_chave_pix_combobox, chave_pix_entry
     global texto_solicitacao, switch_autocopia_var, contratos, switch_gerar_excel_var
-    global tipo_chave_pix_label, chave_pix_label
+    global tipo_chave_pix_label, chave_pix_label, opcao_os_parceiro_label, opcao_os_parceiro_combobox
     global competencia_label, porcentagem_label, motivo_label, saida_destino_label
     global tecnicos_label, prefixo_label, os_label, agencia_label, contrato_label
     global nome_benef_pix_label, nome_benef_pix_entry
@@ -1890,6 +1923,9 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         contrato_combobox = CustomComboBox(master=frame, values=[])
         #contrato_combobox.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
         #contrato_combobox.set("")
+
+        opcao_os_parceiro_label = ctk.CTkLabel(master=frame, text="POSSUI OS?")
+        opcao_os_parceiro_combobox = CustomComboBox(master=frame, values=["SIM", "NÃO"], command=lambda choice: atualizar_exibicao_frame_caixa_itens())
 
         # -------------------------------
         # Frame para os itens
