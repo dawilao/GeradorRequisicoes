@@ -353,9 +353,23 @@ def remover_item_pagamento(index):
         pass
 
 def add_campos():
-    global tipo_servico, aparece_lista_itens_aba_pagamentos
+    global tipo_servico, aparece_lista_itens_aba_pagamentos, valor_atual_combobox
+
+    # Verificar se há um item em edição
+    if editando_item_pagamento is not None:
+        notification_manager.show_notification(
+            "Item em edição!\nSalve-o para alterar o tipo de serviço.",
+            NotifyType.WARNING,
+            bg_color="#404040",
+            text_color="#FFFFFF"
+        )
+        tipo_servico_combobox.set(valor_atual_combobox)
+        return
 
     tipo_servico = tipo_servico_combobox.get()
+
+    # Salvar o valor atual do combobox
+    valor_atual_combobox = tipo_servico
 
     prefixo_label.configure(text="PREFIXO:")
     agencia_label.configure(text="AGÊNCIA:")
@@ -578,8 +592,12 @@ def atualizar_exibicao_frame_caixa_itens():
         # Atualizar o placeholder do campo de descrição
         if opcao_os_parceiro_combobox.get() == "SIM":
             descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - PORCENTAGEM")
+            itens_pagamento.clear()
+            atualizar_lista_itens_pagamento()
         else:
             descricao_do_item_pagamento_entry.configure(placeholder_text="MOTIVO - PORCENTAGEM")
+            itens_pagamento.clear()
+            atualizar_lista_itens_pagamento()
 
 def adiciona_campo_pix():
     tipo_pagamento = tipo_pagamento_combobox.get()
@@ -1914,7 +1932,6 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
             "TRANSPORTADORA"
         ], command=lambda choice: add_campos())
         tipo_servico_combobox.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
-        tipo_servico_combobox.set("")
 
         contrato_label = ctk.CTkLabel(master=frame, text="CONTRATO:")#.grid(row=6, column=0, sticky="w", padx=(10, 10))
         '''Label e Combobox de Contrato apenas aparecem após a seleção do tipo_serviço.
@@ -1940,7 +1957,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         # Variável para controlar se um item está sendo editado
         editando_item_pagamento = None
 
-        descricao_do_item_pagamento_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="DESCRIÇÃO DO ITEM:")
+        descricao_do_item_pagamento_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="DESCRIÇÃO DO ITEM: ")
         descricao_do_item_pagamento_entry = CustomEntry(master=frame_caixa_itens_pagamento)
 
         # Campo para SAÍDA X DESTINO (UBER)
