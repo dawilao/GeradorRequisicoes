@@ -201,7 +201,7 @@ def gerar_excel(dados: DadosRequisicao):
             sheet_principal["D13"] = dados.departamento
 
         linha_inicial = 19
-        limite_caracteres = 45
+        limite_caracteres = 43
         altura_por_linha = 15  # Altura padrão por linha
         sheet_principal.column_dimensions["E"].width = 15
 

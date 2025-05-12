@@ -149,12 +149,17 @@ def add_item_pagamento():
 
     if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
         descricao_do_item_pagamento_entry.delete(0, tk.END)
+        descricao_do_item_pagamento_entry.focus()
 
     if tipo_servico not in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        motivo_entry.delete(0, tk.END)
+        valor_caixa_itens_entry.delete(0, tk.END)
+            
         if tipo_servico == "REEMBOLSO UBER":
             saida_destino_entry.delete(0, tk.END)
-        valor_caixa_itens_entry.delete(0, tk.END)
-        motivo_entry.delete(0, tk.END)
+            saida_destino_entry.focus()
+        else:
+            motivo_entry.focus()
 
     atualizar_lista_itens_pagamento()
 
@@ -387,6 +392,7 @@ def add_campos():
     tipo_pagamento_combobox.set("")
     tipo_chave_pix_label.grid_forget()
     tipo_chave_pix_combobox.grid_forget()
+    tipo_chave_pix_combobox.set("")
     chave_pix_label.grid_forget()
     chave_pix_entry.grid_forget()
     nome_benef_pix_label.grid_forget()
@@ -515,6 +521,9 @@ def add_campos():
         "ADIANTAMENTO/PAGAMENTO PARCEIRO"
     }
 
+    prefixo_entry.delete(0, tk.END)
+    agencia_entry.delete(0, tk.END)
+    os_entry.delete(0, tk.END)
     if tipo_servico in esconde_pref_age_os:
         prefixo_label.grid_forget()
         prefixo_entry.grid_forget()
@@ -923,10 +932,10 @@ def gerar_solicitacao():
         if len(itens_pagamento) == 1:
             item = itens_pagamento[0]
             texto = (
-                f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {item['saida_e_destino']}, "
+                f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, para {item['saida_e_destino']}, "
                 f"referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
                 if prefixo
-                else f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {item['saida_e_destino']}, "
+                else f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, para {item['saida_e_destino']}, "
                 f"para {contrato}.\n\n"
             )
             texto += f"SERVIÇO: {tipo_servico}\n\n"
@@ -1673,17 +1682,19 @@ def add_campos_tab2():
     if tipo_servico_tab2 in {"COMPRAS EM GERAL - COM OS", "LOCAÇÃO"}:
         prefixo_label_tab2.grid(row=4, column=0, sticky="w", padx=(10, 10))
         prefixo_entry_tab2.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab2.grid(row=5, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab2.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab2.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab2.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_label_tab2.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab2.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_label_tab2.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab2.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
     else:
-        prefixo_label_tab2.grid_forget()
-        prefixo_entry_tab2.grid_forget()
-        os_label_tab2.grid_forget()
-        os_entry_tab2.grid_forget()
-        agencia_label_tab2.grid_forget()
-        agencia_entry_tab2.grid_forget()
+        oculta_campos = [
+            prefixo_label_tab2, prefixo_entry_tab2,
+            os_label_tab2, os_entry_tab2,
+            agencia_label_tab2, agencia_entry_tab2
+        ]
+
+        for widget in oculta_campos:
+            widget.grid_forget()
 
     if tipo_servico_tab2 == "LOCAÇÃO":
         endereco_agencia_label_tab2.grid(row=7, column=0, sticky="w", padx=(10, 10))

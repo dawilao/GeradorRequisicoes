@@ -32,6 +32,8 @@ def valida_prefixo(prefixo_raw):
             except:
                 return "Prefixo inválido"
         elif prefixo_raw.isdigit():
+            if len(prefixo_raw) > 4:
+                return "Prefixo inválido"
             parte1 = prefixo_raw.zfill(4)
             prefixo_formatado = f"{parte1}/00"
         else:
@@ -168,6 +170,8 @@ def validar_item_pagamento(texto, tipo_servico, possui_os):
         except:
             return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
     elif prefixo_raw.isdigit():
+        if len(prefixo_raw) > 4:
+            return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
         parte1 = prefixo_raw.zfill(4)
         prefixo_formatado = f"{parte1}/00"
     else:
