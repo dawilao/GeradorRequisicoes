@@ -1106,9 +1106,9 @@ def gerar_texto_email():
     nome_usuario_tab2 = arrumar_texto(nome_usuario_entry_tab2.get().upper())
     tipo_servico_tab2 = arrumar_texto(tipo_servico_combobox_tab2.get().upper())
     nome_fornecedor_tab2 = arrumar_texto(nome_fornecedor_entry_tab2.get().upper())
-    prefixo_tab2 = arrumar_texto(prefixo_entry_tab2.get())
+    prefixo_tab2 = valida_prefixo(prefixo_entry_tab2.get())
     agencia_tab2 = arrumar_texto(agencia_entry_tab2.get().upper())
-    os_num_tab2 = valida_prefixo(os_entry_tab2.get())
+    os_num_tab2 = valida_os(os_entry_tab2.get())
     endereco_tab2 = arrumar_texto(endereco_entry_tab2.get().upper())
     valor_tab2 = verificar_se_numero(valor_entry_tab2.get())
     tipo_pagamento_tab2 = arrumar_texto(tipo_pagamento_combobox_tab2.get().upper())
@@ -1144,6 +1144,10 @@ def gerar_texto_email():
 
     if valor_tab2 == ValueError:
         notification_manager.show_notification(f"Campo VALOR\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return
+
+    if os_num_tab2 == "OS_invalida":
+        notification_manager.show_notification(f"Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
 
     if campos_vazios:
@@ -2117,15 +2121,15 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         prefixo_entry_tab2 = CustomEntry(master=frame_tab2)
         widgets_para_limpar_tab2.append(prefixo_entry_tab2)
 
-        os_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="OS:")
-        os_entry_tab2 = CustomEntry(master=frame_tab2)
-        widgets_para_limpar_tab2.append(os_entry_tab2)
-
         agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="AGÊNCIA:")
         agencia_entry_tab2 = CustomEntry(master=frame_tab2)
         widgets_para_limpar_tab2.append(agencia_entry_tab2)
 
-        endereco_agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="ENDEREÇO DA AGÊNCIA:")
+        os_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="OS:")
+        os_entry_tab2 = CustomEntry(master=frame_tab2)
+        widgets_para_limpar_tab2.append(os_entry_tab2)
+
+        endereco_agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="ENDEREÇO DE ENTREGA:")
         endereco_entry_tab2 = CustomEntry(master=frame_tab2)
         widgets_para_limpar_tab2.append(endereco_entry_tab2)
 
@@ -2148,7 +2152,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         widgets_para_limpar_tab2.append(tipo_pagamento_combobox_tab2)
 
         num_orcamento_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="Nº ORÇAM./PEDIDO (SE APLICÁVEL):").grid(row=11, column=0, sticky="w", padx=(10, 10))
-        num_orcamento_entry_tab2 = CustomEntry(master=frame_tab2)
+        num_orcamento_entry_tab2 = CustomEntry(master=frame_tab2, placeholder_text="Opcional")
         num_orcamento_entry_tab2.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
         widgets_para_limpar_tab2.append(num_orcamento_entry_tab2)
 
