@@ -114,3 +114,55 @@ def acessa_bd_contratos(contrato: str = None):
             return sorted(contratos)
         else:
             return ("", "Sigla não encontrada")
+
+def acessa_bd_usuarios():
+    """
+    Retorna uma lista de todos os usuários cadastrados no banco de dados.
+
+    Retornos:
+        - Lista de usuários.
+    """
+    try:
+        try:
+            conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\login.db')
+        except sqlite3.Error:
+            conn = sqlite3.connect(
+                r'app\bd\login.db'
+            )
+
+        cursor = conn.cursor()
+        cursor.execute("SELECT nome_completo FROM dados_login")
+        resultados = cursor.fetchall()
+        conn.close()
+
+        return sorted([row[0] for row in resultados])
+
+    except Exception as e:
+        print(f"Erro ao acessar o banco de dados: {e}")
+        return ['ADRIANA BARRETO',
+                'AMANDA SAMPAIO',
+                'CARLOS ALBERTO',
+                'DANIEL ROMUALDO',
+                'DAWISON NASCIMENTO',
+                'FELIPE COSTA',
+                'FELIPE MOTA',
+                'GABRIEL BARBOSA',
+                'GUILHERME ANDRADE',
+                'HENRIQUE CARDOSO',
+                'IGOR ALBERT',
+                'IURE OLIVEIRA',
+                'JOÃO GABRIEL',
+                'LUCAS MACIEL',
+                'LUCAS HEBERT',
+                'MATEUS SILVA',
+                'TÁCIO BARBOSA',
+                'TAIANE MARQUES',
+                'VINICIUS CRUZ',
+                'LUCAS CALAIS',
+                'KALIL',
+                'GABRIEL LOURENÇO',
+                'LUCAS BORGES',
+                'MARILIZA MACHADO',
+                'ROSANA SILVA',
+                'GUILHERME VICTORIO'
+                ]

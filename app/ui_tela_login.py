@@ -38,11 +38,11 @@ def validacao_login(root_login, entry_usuario, entry_senha):
 
     try:
         try:
-            conn = sqlite3.connect(r'app\bd\login.db')
+            conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\login.db')
         except sqlite3.Error:
             try:
                 conn = sqlite3.connect(
-                    r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\login.db'
+                    r'app\bd\login.db'
                 )
             except sqlite3.Error as e_remoto_validacao_login:
                 print(
@@ -145,12 +145,14 @@ def janela_alterar_senha(root_login):
 
         try:
             try:
-                conn = sqlite3.connect(r'app\bd\login.db')
+                conn = sqlite3.connect(
+                    r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\\'
+                    r'bd\login.db'
+                )
             except sqlite3.Error:
                 try:
                     conn = sqlite3.connect(
-                        r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\\'
-                        r'bd\login.db'
+                        r'app\bd\login.db'
                     )
                 except sqlite3.Error as e_remoto_altera_senha:
                     print(

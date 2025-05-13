@@ -9,7 +9,7 @@ import locale
 
 from .utils import *
 from .gerador_excel import gerar_excel, DadosRequisicao
-from .bd.utils_bd import acessa_bd_contratos
+from .bd.utils_bd import acessa_bd_contratos, acessa_bd_usuarios
 from .CTkDatePicker import *
 from .CTkFloatingNotifications import *
 from .componentes import CustomEntry, CustomComboBox
@@ -1849,25 +1849,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         widgets_para_limpar_tab2 = []
         widgets_para_limpar_tab3 = []
 
-        usuarios_gerais = ["AMANDA SAMPAIO",
-            "CARLOS ALBERTO",
-            "DANIEL ROMUALDO",
-            "DAWISON NASCIMENTO",
-            "FELIPE COSTA",
-            "FELIPE MOTA",
-            "GABRIEL BARBOSA",
-            "GUILHERME GOMES",
-            "HENRIQUE CARDOSO",
-            "IGOR SAMPAIO",
-            "IURE OLIVEIRA",
-            "JOÃO GABRIEL",
-            "LUCAS ASSUNÇÃO",
-            "LUCAS HEBERT",
-            "MATEUS SILVA",
-            "TÁCIO BARBOSA",
-            "TAIANE MARQUES",
-            "VINICIUS CRUZ"
-        ]
+        usuarios_gerais = acessa_bd_usuarios()
 
         usuarios_varios_departamentos = ["AMANDA SAMPAIO",
             "DAWISON NASCIMENTO",
