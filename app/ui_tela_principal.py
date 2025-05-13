@@ -9,6 +9,7 @@ import locale
 
 from .utils import *
 from .gerador_excel import gerar_excel, DadosRequisicao
+from .bd.utils_bd import acessa_bd_contratos
 from .CTkDatePicker import *
 from .CTkFloatingNotifications import *
 from .componentes import CustomEntry, CustomComboBox
@@ -693,45 +694,8 @@ def gerar_solicitacao():
     # Facilitar a identificação do erro pelo nome de usuário
     # logging.info(f"Aplicação iniciada. User: {nome_usuario}")
 
-    # Dicionário que mapeia contratos para departamentos
-    contrato_departamentos = {
-        "ESCRITÓRIO": "ESCRITÓRIO",
-        "C. O. SALVADOR - BA - 2877": "CONTRATO BA",
-        "C. O. SANTA CATARINA - SC - 5023": "CONTRATO SC",
-        "C. O. RIO GRANDE DO SUL - RS - 5525": "CONTRATO RS",
-        "C. O. RIO DE JANEIRO - RJ - 0494": "CONTRATO RJ",
-        "C. O. NITERÓI - RJ - 1380": "CONTRATO NIT",
-        "C. O. BELO HORIZONTE - BH - 2054": "CONTRATO BH",
-        "C. O. RECIFE - PE - 5254": "CONTRATO PE",
-        "C. O. VOLTA REDONDA - RJ - 0215": "CONTRATO VOLTA REDONDA",
-        "C. O. RONDÔNIA - RD - 0710": "CONTRATO RONDÔNIA",
-        "C. O. MANAUS - AM - 7649": "CONTRATO AM"
-    } 
-    
-    departamento = contrato_departamentos.get(contrato, "")
-
-    dict_sigla_contrato = {
-        "ESCRITÓRIO": "ESCRITÓRIO",
-        "": "ESCRITÓRIO",
-        "C. O. SALVADOR - BA - 2877": "SSA",
-        "C. O. SANTA CATARINA - SC - 5023": "SC",
-        "C. O. RIO GRANDE DO SUL - RS - 5525": "RS",
-        "C. O. RIO DE JANEIRO - RJ - 0494": "RJ",
-        "C. O. NITERÓI - RJ - 1380": "NIT",
-        "C. O. BELO HORIZONTE - BH - 2054": "BH",
-        "C. O. RECIFE - PE - 5254": "PE",
-        "C. O. MANAUS - AM - 7649": "AM",
-        "C. O. VOLTA REDONDA - RJ - 0215": "VR",
-        "C. O. RONDÔNIA - RD - 0710": "RD",
-        "ATA BB CURITIBA - 0232": "ATA PR",
-        "C. E. MANAUS - 1593": "BB AM",
-        "CAIXA BAHIA - 4922.2024": "CAIXA BA",
-        "CAIXA CURITIBA - 534.2025": "CAIXA PR",
-        "CAIXA MANAUS - 4569.2024": "CAIXA AM",
-        "INFRA CURITIBA - 1120": "INFRA PR"
-    }
-
-    sigla_contrato = dict_sigla_contrato.get(contrato, "Sigla não encontrada")
+    departamento, sigla_contrato = acessa_bd_contratos(contrato)
+    print(f"Departamento: {departamento}, Sigla: {sigla_contrato}")
 
     # Verificar se algum campo obrigatório está vazio
     campos_obrigatorios = [
@@ -1864,14 +1828,8 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
 
     print("Abas permitidas:", abas_permitidas)
 
-    # Lista única de contratos
-    contratos = [
-        "ESCRITÓRIO", "C. O. BELO HORIZONTE - BH - 2054", "C. O. MANAUS - AM - 7649", "C. O. NITERÓI - RJ - 1380", 
-        "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
-        "C. O. RONDÔNIA - RD - 0710", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
-        "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - 1593", "CAIXA BAHIA - 4922.2024",
-        "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - 1120"
-    ]
+    # pegar todos os contratos do banco de dados
+    contratos = acessa_bd_contratos()
 
     if "PAGAMENTO" in abas_permitidas:
         # -------------------------------

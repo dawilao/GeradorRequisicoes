@@ -63,18 +63,64 @@ CONTRATOS = {
     )
 }
 
+# Dicionário de departamentos por contrato
+contrato_departamentos = {
+    "ESCRITÓRIO": "ESCRITÓRIO",
+    "C. O. SALVADOR - BA - 2877": "CONTRATO BA",
+    "C. O. SANTA CATARINA - SC - 5023": "CONTRATO SC",
+    "C. O. RIO GRANDE DO SUL - RS - 5525": "CONTRATO RS",
+    "C. O. RIO DE JANEIRO - RJ - 0494": "CONTRATO RJ",
+    "C. O. NITERÓI - RJ - 1380": "CONTRATO NIT",
+    "C. O. BELO HORIZONTE - BH - 2054": "CONTRATO BH",
+    "C. O. RECIFE - PE - 5254": "CONTRATO PE",
+    "C. O. VOLTA REDONDA - RJ - 0215": "CONTRATO VOLTA REDONDA",
+    "C. O. RONDÔNIA - RD - 0710": "CONTRATO RONDÔNIA",
+    "C. O. MANAUS - AM - 7649": "CONTRATO AM"
+}
+
+# Dicionário de siglas por contrato
+dict_sigla_contrato = {
+    "ESCRITÓRIO": "ESCRITÓRIO",
+    "": "ESCRITÓRIO",
+    "C. O. SALVADOR - BA - 2877": "SSA",
+    "C. O. SANTA CATARINA - SC - 5023": "SC",
+    "C. O. RIO GRANDE DO SUL - RS - 5525": "RS",
+    "C. O. RIO DE JANEIRO - RJ - 0494": "RJ",
+    "C. O. NITERÓI - RJ - 1380": "NIT",
+    "C. O. BELO HORIZONTE - BH - 2054": "BH",
+    "C. O. RECIFE - PE - 5254": "PE",
+    "C. O. MANAUS - AM - 7649": "AM",
+    "C. O. VOLTA REDONDA - RJ - 0215": "VR",
+    "C. O. RONDÔNIA - RD - 0710": "RD",
+    "ATA BB CURITIBA - 0232": "ATA PR",
+    "C. E. MANAUS - 1593": "BB AM",
+    "CAIXA BAHIA - 4922.2024": "CAIXA BA",
+    "CAIXA CURITIBA - 534.2025": "CAIXA PR",
+    "CAIXA MANAUS - 4569.2024": "CAIXA AM",
+    "INFRA CURITIBA - 1120": "INFRA PR"
+}
+
 conn = sqlite3.connect(r'app\bd\contratos.db')
 cursor = conn.cursor()
 
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS contratos (
     nome TEXT PRIMARY KEY,
-    caminho TEXT NOT NULL
+    caminho TEXT NOT NULL,
+    departamento TEXT,
+    sigla TEXT
 )
 ''')
 
+# Inserção dos dados
 for nome, caminho in CONTRATOS.items():
-    cursor.execute("INSERT OR REPLACE INTO contratos (nome, caminho) VALUES (?, ?)", (nome, caminho))
+    departamento = contrato_departamentos.get(nome, "")
+    sigla = dict_sigla_contrato.get(nome, "")
+
+    cursor.execute('''
+        INSERT OR REPLACE INTO contratos (nome, caminho, departamento, sigla)
+        VALUES (?, ?, ?, ?)
+    ''', (nome, caminho, departamento, sigla))
 
 conn.commit()
 conn.close()
