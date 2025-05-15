@@ -235,7 +235,7 @@ def gerar_excel(dados: DadosRequisicao):
 
             for i, descricao in enumerate(descricao_lista):
                 sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(
-                    wrap_text=False, horizontal='center', vertical='center'
+                    wrap_text=True, horizontal='center', vertical='center'
                 )
                 sheet_principal[f"B{linha_inicial + i}"] = f"{i + 1}"
                 sheet_principal[f"C{linha_inicial + i}"] = descricao
@@ -252,7 +252,7 @@ def gerar_excel(dados: DadosRequisicao):
 
             for i, descricao in enumerate(descricao_lista):
                 sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(
-                    wrap_text=False, horizontal='center', vertical='center'
+                    wrap_text=True, horizontal='center', vertical='center'
                 )
                 sheet_principal[f"B{linha_inicial + i}"] = f"{i + 1}"
                 sheet_principal[f"C{linha_inicial + i}"] = descricao
@@ -273,7 +273,7 @@ def gerar_excel(dados: DadosRequisicao):
 
             for i, (descricao, valor) in enumerate(zip(descricao_lista, valor_lista)):
                 sheet_principal[f"C{linha_inicial + i}"].alignment = Alignment(
-                    wrap_text=False, horizontal='center', vertical='center'
+                    wrap_text=True, horizontal='center', vertical='center'
                 )
                 sheet_principal[f"B{linha_inicial + i}"] = f"{i + 1}"
                 sheet_principal[f"C{linha_inicial + i}"] = descricao

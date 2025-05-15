@@ -601,7 +601,7 @@ def atualizar_exibicao_frame_caixa_itens():
 
         # Atualizar o placeholder do campo de descrição
         if opcao_os_parceiro_combobox.get() == "SIM":
-            descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - PORCENTAGEM")
+            descricao_do_item_pagamento_entry.configure(placeholder_text="OS - PREFIXO - AGÊNCIA - PORCENTAGEM")
             itens_pagamento.clear()
             atualizar_lista_itens_pagamento()
         else:
@@ -1018,9 +1018,9 @@ def gerar_solicitacao():
             if opcao_os_parceiro_combobox.get() == "SIM" and len(itens_pagamento) == 1:
                 partes = [parte.strip() for parte in descricao_base.split('-')]
 
-                prefixo = partes[0]
-                agencia = partes[1]
-                os_num = partes[2]
+                os_num = partes[0]
+                prefixo = partes[1]
+                agencia = partes[2]
 
                 print(f"Prefixo: {prefixo}, Agência: {agencia}, OS: {os_num}")
         

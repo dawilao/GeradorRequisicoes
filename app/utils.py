@@ -83,18 +83,18 @@ def valida_os(texto: str):
 def validar_item_pagamento(texto, tipo_servico, possui_os):
     """
     Valida e formata o texto de entrada para o tipo de serviço "ADIANTAMENTO/PAGAMENTO PARCEIRO".
-    - Se possui_os == "SIM", o padrão esperado é "PREFIXO - AGENCIA - OS - PORCENTAGEM".
+    - Se possui_os == "SIM", o padrão esperado é "OS - PREFIXO - AGÊNCIA - PORCENTAGEM".
     - Se possui_os == "NÃO", o padrão esperado é "MOTIVO - PORCENTAGEM".
     """
     texto_corrigido = re.sub(r"\s*-\s*", " - ", texto)
     partes = texto_corrigido.split(" - ")
 
     if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
-        if possui_os == "SIM": # Padrão "PREFIXO - AGENCIA - OS - PORCENTAGEM"
+        if possui_os == "SIM": # Padrão "OS - PREFIXO - AGÊNCIA - PORCENTAGEM"
             if len(partes) != 4:
-                return None, None, "Formato inválido. Use: PREFIXO - AGÊNCIA - OS - % DO ADIANTAMENTO"
+                return None, None, "Formato inválido. Use: OS - PREFIXO - AGÊNCIA - % DO ADIANTAMENTO"
 
-            prefixo_raw, agencia, os_str, percentual_raw = [p.strip() for p in partes]
+            os_str, prefixo_raw, agencia, percentual_raw = [p.strip() for p in partes]
 
             # --- VALIDAÇÃO DO PERCENTUAL ---
             # Remove o símbolo % se houver
@@ -190,7 +190,10 @@ def validar_item_pagamento(texto, tipo_servico, possui_os):
         return None, None, "OS inválida. Deve conter mais de 4 dígitos numéricos."
 
     # --- Descrição base e final ---
-    descricao_base = f"{prefixo_formatado} - {agencia} - {os_str}"
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        descricao_base = f"{os_str} - {prefixo_formatado} - {agencia}"
+    else:
+        descricao_base = f"{prefixo_formatado} - {agencia} - {os_str}"
 
     if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
         descricao_final = f"{descricao_base} - ADIANTAMENTO DE {percentual}"
