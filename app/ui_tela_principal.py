@@ -436,11 +436,11 @@ def add_campos():
         porcentagem_label.grid(row=10, column=0, sticky="w", padx=(10, 10))
         porcentagem_entry.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM"}:
+    elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM", "SOLICITAÇÃO COM OS", "SOLICITAÇÃO SEM OS"}:
         tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    elif tipo_servico in aparece_lista_itens_aba_pagamentos:
+    if tipo_servico in aparece_lista_itens_aba_pagamentos:
         if tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS", "REEMBOLSO UBER"}:
             frame_caixa_itens_pagamento.grid(row=9, column=0, columnspan=2, sticky="nsew", pady=5)
         elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
@@ -759,6 +759,9 @@ def gerar_solicitacao():
                 (agencia, "AGÊNCIA"),
                 (os_num, "OS")
             ])
+        
+        if tipo_servico in {"SOLICITAÇÃO SEM OS", "SOLICITAÇÃO COM OS"}:
+            campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
 
     if tipo_pagamento == "PIX" and tipo_chave_pix != "QR CODE":
         campos_obrigatorios.extend([
@@ -855,6 +858,9 @@ def gerar_solicitacao():
         )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
 
+        if tecnicos:
+            texto += f"TÉCNICOS: {tecnicos}\n\n"
+
         if len(itens_pagamento) == 1:
             item = itens_pagamento[0]
             texto += f"MOTIVO: {item['motivo']}\n\n"
@@ -867,6 +873,9 @@ def gerar_solicitacao():
     elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
+
+        if tecnicos:
+            texto += f"TÉCNICOS: {tecnicos}\n\n"
 
         if len(itens_pagamento) == 1:
             item = itens_pagamento[0]
@@ -1031,6 +1040,10 @@ def gerar_solicitacao():
             if tipo_servico == "REEMBOLSO UBER":
                 descricao_itens = "\n".join(
                     f"{item['saida_e_destino']} - {item['motivo']}" for item in itens_pagamento
+                )
+            elif tipo_servico in {"SOLICITAÇÃO SEM OS", "SOLICITAÇÃO COM OS"}:
+                descricao_itens = "\n".join(
+                    f"{item['motivo']} - TÉCNICOS: {tecnicos}" for item in itens_pagamento
                 )
             else:
                 descricao_itens = "\n".join(item["motivo"] for item in itens_pagamento)
