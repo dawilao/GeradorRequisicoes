@@ -1823,7 +1823,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
     # Configuração da interface gráfica
     root = ctk.CTk()
     root.title("Modelo Solicitação de Pagamento")
-    root.geometry("650x600")
+    root.geometry("680x600")
     ctk.set_default_color_theme("green")
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
 
@@ -2226,14 +2226,14 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         # -------------------------------
 
         data_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DATA DA LOCAÇÃO:")
-        data_entry_tab3 = CTkDatePicker(master=frame_tab3)
+        data_entry_tab3 = CTkDatePicker(master=frame_tab3, tabview="AQUISIÇÃO")
         data_entry_tab3.set_date_format("%d/%m/%Y")
         data_entry_tab3.set_allow_manual_input(False)
         widgets_para_limpar_tab3.append(data_entry_tab3)
 
         #row = 5
         prazo_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PRAZO:")
-        prazo_entry_tab3 = CTkDatePicker(master=frame_tab3)
+        prazo_entry_tab3 = CTkDatePicker(master=frame_tab3, tabview="AQUISIÇÃO")
         prazo_entry_tab3.set_date_format("%d/%m/%Y")
         prazo_entry_tab3.set_allow_manual_input(False)
         widgets_para_limpar_tab3.append(prazo_entry_tab3)
@@ -2326,5 +2326,16 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         texto_aquisicao = ctk.CTkTextbox(master=frame_tab3)
         texto_aquisicao.grid(row=23, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
         widgets_para_limpar_tab3.append(texto_aquisicao)
+
+    if "DADOS PAGAMENTOS" in abas_permitidas:
+        # -------------------------------
+        # Aba "DADOS PAGAMENTOS"
+        # -------------------------------
+        from app.ui_aba_dados_pagamentos import AbaDadosPagamentos
+
+        frame_tab4 = ctk.CTkScrollableFrame(master=tabview.tab("DADOS PAGAMENTOS"))
+        frame_tab4.pack(fill="both", expand=True, padx=2, pady=2)
+
+        aba_dados_pagamentos = AbaDadosPagamentos(master=frame_tab4)
 
     root.mainloop()

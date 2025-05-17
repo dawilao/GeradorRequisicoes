@@ -4,7 +4,7 @@ from datetime import datetime
 import calendar
 
 class CTkDatePicker(ctk.CTkFrame):
-    def __init__(self, master=None, **kwargs):
+    def __init__(self, master=None, tabview=None, **kwargs):
         """
         Initialize the CTkDatePicker instance.
         
@@ -15,6 +15,7 @@ class CTkDatePicker(ctk.CTkFrame):
         Initializes the date entry, calendar button, popup, and other related components.
         """
         super().__init__(master)
+        self.tabview = tabview
 
         self.frame_externo = ctk.CTkFrame(self)
         self.frame_externo.grid(row=0, column=0, padx=0, pady=0, sticky="ew")
@@ -126,7 +127,7 @@ class CTkDatePicker(ctk.CTkFrame):
                     current_day = day
                     current_date = datetime(self.current_year, self.current_month, current_day).date()
 
-                    if current_date < today:
+                    if self.tabview == "AQUISIÇÃO" and current_date < today:
                         btn = ctk.CTkButton(self.calendar_frame, text=str(current_day), width=3,
                                             state="disabled", fg_color="transparent", text_color="#A0A0A0")
                     elif current_date == today:
