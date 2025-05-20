@@ -1,38 +1,20 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import messagebox
-from .utils import arrumar_texto, verificar_se_numero, valida_porcentagem, valida_os, validar_item_pagamento
-from .gerador_excel import gerar_excel
-from .CTkDatePicker import *
-from .CTkFloatingNotifications import *
 import pyperclip
 import re
 from os.path import splitext
 from datetime import datetime
 import locale
 
+from .utils import *
+from .gerador_excel import gerar_excel, DadosRequisicao
+from .bd.utils_bd import acessa_bd_contratos, acessa_bd_usuarios
+from .CTkDatePicker import *
+from .CTkFloatingNotifications import *
+from .componentes import CustomEntry, CustomComboBox
+
 locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil')
-
-# Criar uma classe personalizada para o ComboBox
-class CustomComboBox(ctk.CTkComboBox):
-    def __init__(self, master, **kwargs):
-        super().__init__(
-            master,
-            border_width=1,
-            corner_radius=1,
-            state="readonly",
-            **kwargs  
-        )
-
-# Criar uma classe personalizada para Entry
-class CustomEntry(ctk.CTkEntry):
-    def __init__(self, master, **kwargs):
-        super().__init__(
-            master,
-            border_width=1,
-            corner_radius=1,
-            **kwargs
-        )
 
 def identifica_preenchimento_pref_os_age(prefixo, agencia, os_num):
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
@@ -74,23 +56,111 @@ itens_pagamento = []
 def add_item_pagamento():
     global descricao_base
 
-    entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+    if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+        possui_os = opcao_os_parceiro_combobox.get()
 
-    descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
+        descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico, possui_os)
 
-    if erro:
-        notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
-    
-    # Adiciona dicionário com dados completos
-    item = {
-        "descricao": descricao_formatada,
-        "descricao_base": descricao_base
-    }
+        if erro:
+            notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
+        
+        # Adiciona dicionário com dados completos
+        item = {
+            "descricao": descricao_formatada,
+            "descricao_base": descricao_base
+        }
+    elif tipo_servico == "REEMBOLSO UBER":
+        saida_e_destino = arrumar_texto(saida_destino_entry.get().upper().strip())
+        motivo = arrumar_texto(motivo_entry.get().upper().strip())
+        valor = verificar_se_numero(valor_caixa_itens_entry.get())
+
+        # Verificações de campos obrigatórios
+        if not motivo and not valor and not saida_e_destino:
+            erro = "Campos DESCRIÇÃO DO ITEM, MOTIVO e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo and not saida_e_destino:
+            erro = "Campos MOTIVO e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e MOTIVO não podem ser vazios!"
+        elif not saida_e_destino and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo:
+            erro = "Campo MOTIVO não pode ser vazio!"
+        elif not valor:
+            erro = "Campo VALOR não pode ser vazio!"
+        elif not saida_e_destino:
+            erro = "Campo SAÍDA/DESTINO não pode ser vazio!"
+        elif valor is ValueError:
+            erro = "Campo VALOR\nPor favor, insira um número válido!"
+        else:
+            erro = None
+
+        # Exibição de erro, se houver
+        if erro:
+            notification_manager.show_notification(
+                erro, 
+                NotifyType.ERROR,
+                bg_color="#404040", 
+                text_color="#FFFFFF"
+            )
+            return
+
+        # Adiciona dicionário com dados completos
+        item = {
+            "saida_e_destino": saida_e_destino,
+            "motivo": motivo,
+            "valor": valor,
+            "descricao": f"{saida_e_destino} - {motivo} - R$ {valor}"
+        }
+    else:
+        motivo = arrumar_texto(motivo_entry.get().upper().strip())
+        valor = verificar_se_numero(valor_caixa_itens_entry.get())
+
+        # Verificações de campos obrigatórios
+        if not motivo and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e MOTIVO não podem ser vazios!"
+        elif not motivo:
+            erro = "Campo MOTIVO não pode ser vazio!"
+        elif not valor:
+            erro = "Campo VALOR não pode ser vazio!"
+        elif valor is ValueError:
+            erro = "Campo VALOR\nPor favor, insira um número válido!"
+        else:
+            erro = None
+
+        # Exibição de erro, se houver
+        if erro:
+            notification_manager.show_notification(
+                erro, 
+                NotifyType.ERROR,
+                bg_color="#404040", 
+                text_color="#FFFFFF"
+            )
+            return
+
+        # Adiciona dicionário com dados completos
+        item = {
+            "motivo": motivo,
+            "valor": valor,
+            "descricao": f"{motivo} - R$ {valor}"
+        }
 
     itens_pagamento.append(item)
 
-    descricao_do_item_pagamento_entry.delete(0, tk.END)
+    if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        descricao_do_item_pagamento_entry.delete(0, tk.END)
+        descricao_do_item_pagamento_entry.focus()
+
+    if tipo_servico not in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        motivo_entry.delete(0, tk.END)
+        valor_caixa_itens_entry.delete(0, tk.END)
+            
+        if tipo_servico == "REEMBOLSO UBER":
+            saida_destino_entry.delete(0, tk.END)
+            saida_destino_entry.focus()
+        else:
+            motivo_entry.focus()
 
     atualizar_lista_itens_pagamento()
 
@@ -108,7 +178,7 @@ def atualizar_lista_itens_pagamento():
         row_frame_pagamento.grid(row=index, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
 
         label_itens_gerados_pagamento = ctk.CTkLabel(
-            row_frame_pagamento, 
+            row_frame_pagamento,
             text=item["descricao"],
             anchor="w", justify="left", wraplength=340
         )
@@ -134,13 +204,33 @@ def editar_item_pagamento(index):
     item = itens_pagamento[index]
     descricao_nova = item["descricao"]
 
-    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":  # para remover o texto "ADIANTAMENTO DE"
-        descricao_nova = descricao_nova.replace("ADIANTAMENTO DE ", "").strip()
+    if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":  # para remover o texto "ADIANTAMENTO DE"
+            descricao_nova = descricao_nova.replace("ADIANTAMENTO DE ", "").strip()
+        
+        descricao_do_item_pagamento_entry.delete(0, tk.END)
+        descricao_do_item_pagamento_entry.insert(0, descricao_nova)
+        
+        descricao_do_item_pagamento_entry.focus()
+    elif tipo_servico == "REEMBOLSO UBER":
+        saida_destino_entry.delete(0, tk.END)
+        saida_destino_entry.insert(0, item.get("saida_e_destino", ""))
 
-    descricao_do_item_pagamento_entry.delete(0, tk.END)
-    descricao_do_item_pagamento_entry.insert(0, descricao_nova)
+        motivo_entry.delete(0, tk.END)
+        motivo_entry.insert(0, item.get("motivo", ""))
 
-    descricao_do_item_pagamento_entry.focus()
+        valor_caixa_itens_entry.delete(0, tk.END)
+        valor_caixa_itens_entry.insert(0, str(item.get("valor", "")))
+
+        saida_destino_entry.focus()
+    else:
+        motivo_entry.delete(0, tk.END)
+        motivo_entry.insert(0, item.get("motivo", ""))
+
+        valor_caixa_itens_entry.delete(0, tk.END)
+        valor_caixa_itens_entry.insert(0, str(item.get("valor", "")))
+
+        motivo_entry.focus()
 
     btn_adicionar_servico_pagamento.configure(text="Salvar", command=lambda: salvar_edicao_pagamento(index))
 
@@ -150,21 +240,106 @@ def salvar_edicao_pagamento(index):
     global editando_item_pagamento
     global descricao_base
 
-    entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
-    descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico)
+    if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        entrada = arrumar_texto(descricao_do_item_pagamento_entry.get().upper().strip())
+        possui_os = opcao_os_parceiro_combobox.get()
 
-    if erro:
-        notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
-    
-    item_editado = {
-        "descricao": descricao_formatada,
-        "descricao_base": descricao_base
-    }
+        descricao_formatada, descricao_base, erro = validar_item_pagamento(entrada, tipo_servico, possui_os)
+
+        if erro:
+            notification_manager.show_notification(f"Campo DESCRIÇÃO DO ITEM\n{erro}", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+            return
+        
+        item_editado = {
+            "descricao": descricao_formatada,
+            "descricao_base": descricao_base
+        }
+
+    elif tipo_servico == "REEMBOLSO UBER":
+        saida_e_destino = arrumar_texto(saida_destino_entry.get().upper().strip())
+        motivo = arrumar_texto(motivo_entry.get().upper().strip())
+        valor = verificar_se_numero(valor_caixa_itens_entry.get())
+
+        # Verificações de campos obrigatórios
+        if not motivo and not valor and not saida_e_destino:
+            erro = "Campos DESCRIÇÃO DO ITEM, MOTIVO e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo and not saida_e_destino:
+            erro = "Campos MOTIVO e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e MOTIVO não podem ser vazios!"
+        elif not saida_e_destino and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e SAÍDA/DESTINO não podem ser vazios!"
+        elif not motivo:
+            erro = "Campo MOTIVO não pode ser vazio!"
+        elif not valor:
+            erro = "Campo VALOR não pode ser vazio!"
+        elif not saida_e_destino:
+            erro = "Campo SAÍDA/DESTINO não pode ser vazio!"
+        elif valor is ValueError:
+            erro = "Campo VALOR\nPor favor, insira um número válido!"
+        else:
+            erro = None
+
+        # Exibição de erro, se houver
+        if erro:
+            notification_manager.show_notification(
+                erro, 
+                NotifyType.ERROR,
+                bg_color="#404040", 
+                text_color="#FFFFFF"
+            )
+            return
+
+        # Adiciona dicionário com dados completos
+        item_editado = {
+            "saida_e_destino": saida_e_destino,
+            "motivo": motivo,
+            "valor": valor,
+            "descricao": f"{saida_e_destino} - {motivo} - R$ {valor}"
+        }
+    else:
+        motivo = arrumar_texto(motivo_entry.get().upper().strip())
+        valor = verificar_se_numero(valor_caixa_itens_entry.get())
+
+        # Verificações de campos obrigatórios
+        if not motivo and not valor:
+            erro = "Campos DESCRIÇÃO DO ITEM e MOTIVO não podem ser vazios!"
+        elif not motivo:
+            erro = "Campo MOTIVO não pode ser vazio!"
+        elif not valor:
+            erro = "Campo VALOR não pode ser vazio!"
+        elif valor is ValueError:
+            erro = "Campo VALOR\nPor favor, insira um número válido!"
+        else:
+            erro = None
+
+        # Exibição de erro, se houver
+        if erro:
+            notification_manager.show_notification(
+                erro, 
+                NotifyType.ERROR, 
+                bg_color="#404040", 
+                text_color="#FFFFFF"
+            )
+            return
+
+        # Adiciona dicionário com dados completos
+        item_editado = {
+            "motivo": motivo,
+            "valor": valor,
+            "descricao": f"{motivo} - R$ {valor}"
+        } 
 
     itens_pagamento[index] = item_editado
 
-    descricao_do_item_pagamento_entry.delete(0, tk.END)
+    if tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        descricao_do_item_pagamento_entry.delete(0, tk.END)
+
+    if tipo_servico not in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "RELATÓRIO EXTRA"}:
+        if tipo_servico == "REEMBOLSO UBER":
+            saida_destino_entry.delete(0, tk.END)
+        valor_caixa_itens_entry.delete(0, tk.END)
+        motivo_entry.delete(0, tk.END)
 
     btn_adicionar_servico_pagamento.configure(text="Adicionar", command=add_item_pagamento)
 
@@ -184,9 +359,23 @@ def remover_item_pagamento(index):
         pass
 
 def add_campos():
-    global tipo_servico
+    global tipo_servico, aparece_lista_itens_aba_pagamentos, valor_atual_combobox
+
+    # Verificar se há um item em edição
+    if editando_item_pagamento is not None:
+        notification_manager.show_notification(
+            "Item em edição!\nSalve-o para alterar o tipo de serviço.",
+            NotifyType.WARNING,
+            bg_color="#404040",
+            text_color="#FFFFFF"
+        )
+        tipo_servico_combobox.set(valor_atual_combobox)
+        return
 
     tipo_servico = tipo_servico_combobox.get()
+
+    # Salvar o valor atual do combobox
+    valor_atual_combobox = tipo_servico
 
     prefixo_label.configure(text="PREFIXO:")
     agencia_label.configure(text="AGÊNCIA:")
@@ -204,10 +393,15 @@ def add_campos():
     tipo_pagamento_combobox.set("")
     tipo_chave_pix_label.grid_forget()
     tipo_chave_pix_combobox.grid_forget()
+    tipo_chave_pix_combobox.set("")
     chave_pix_label.grid_forget()
     chave_pix_entry.grid_forget()
     nome_benef_pix_label.grid_forget()
     nome_benef_pix_entry.grid_forget()
+
+    # Deixa o campo valor como padrão para todos os tipos_servico
+    valor_label.grid(row=11, column=0, sticky="w", padx=(10, 10))
+    valor_entry.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
 
     # Oculta todos os campos por padrão
     for widget in [
@@ -216,16 +410,25 @@ def add_campos():
         motivo_label, motivo_entry,
         saida_destino_label, saida_destino_entry,
         tecnicos_label, tecnicos_entry, descricao_utilidades_label, 
-        descricao_utilidades_entry, frame_caixa_itens_pagamento
+        descricao_utilidades_entry, frame_caixa_itens_pagamento,
+        opcao_os_parceiro_label, opcao_os_parceiro_combobox,
     ]:
         widget.grid_forget()
 
     # Limpa os campos de entrada por padrão
     competencia_combobox.set("")
+    opcao_os_parceiro_combobox.set("")
     porcentagem_entry.delete(0, tk.END)
     motivo_entry.delete(0, tk.END)
     saida_destino_entry.delete(0, tk.END)
     tecnicos_entry.delete(0, tk.END)
+
+    aparece_lista_itens_aba_pagamentos = {
+        "RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO",
+        "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
+        "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+        "REEMBOLSO UBER",
+    }
 
     if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
         competencia_label.grid(row=9, column=0, sticky="w", padx=(10, 10))
@@ -233,34 +436,76 @@ def add_campos():
         porcentagem_label.grid(row=10, column=0, sticky="w", padx=(10, 10))
         porcentagem_entry.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS", "REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
-        motivo_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        motivo_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
-
-    elif tipo_servico == "REEMBOLSO UBER":
-        saida_destino_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        saida_destino_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
-        motivo_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        motivo_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-
-    elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM"}:
+    elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM", "SOLICITAÇÃO COM OS", "SOLICITAÇÃO SEM OS"}:
         tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
-        frame_caixa_itens_pagamento.grid(row=4, column=0, columnspan=2, sticky="nsew", pady=5)
+    if tipo_servico in aparece_lista_itens_aba_pagamentos:
+        if tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS", "REEMBOLSO UBER"}:
+            frame_caixa_itens_pagamento.grid(row=9, column=0, columnspan=2, sticky="nsew", pady=5)
+        elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+            # opções relacionadas ao opcao_os_parceiro_combobox estão na função atualizar_exibicao_frame_caixa_itens()
+            opcao_os_parceiro_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
+            opcao_os_parceiro_combobox.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+        else:    
+            frame_caixa_itens_pagamento.grid(row=6, column=0, columnspan=2, sticky="nsew", pady=5)
 
         if len(itens_pagamento) > 0:
             itens_pagamento.clear()
             atualizar_lista_itens_pagamento()
             add_campos()
 
+        for widget in [
+            descricao_do_item_pagamento_label, descricao_do_item_pagamento_entry,
+            motivo_label, motivo_entry,
+            valor_caixa_itens_label, valor_caixa_itens_entry,
+            saida_destino_label, saida_destino_entry,
+        ]:
+            widget.grid_forget()
+        
+        for entry in [descricao_do_item_pagamento_entry, motivo_entry]:
+            entry.delete(0, tk.END)
+
         if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
-            descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - PORCENTAGEM")
+            descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
+            descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
             root.focus()
-        else:
+        elif tipo_servico == "RELATÓRIO EXTRA":
+            descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
+            descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
             descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - VALOR")
             root.focus()
+        else:
+            valor_label.grid_forget()
+            valor_entry.grid_forget()
+
+            if tipo_servico == "REEMBOLSO UBER":
+                saida_destino_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
+                saida_destino_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+                saida_destino_entry.configure(placeholder_text="Informe a saída e o destino")
+
+            motivo_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
+            motivo_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+            motivo_entry.configure(placeholder_text="Informe o motivo")
+            valor_caixa_itens_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
+            valor_caixa_itens_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+            valor_caixa_itens_entry.configure(placeholder_text="Informe o valor")
+
+        # forçar o label a mover a coluna 0, de modo a
+        # padronizar o tamanho dos entrys
+        for entry in [motivo_label, valor_caixa_itens_label]:
+            entry.configure(text="")
+
+        if tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+            motivo_label.configure(text="MOTIVO:\t\t      ")
+            valor_caixa_itens_label.configure(text="VALOR:")
+        elif tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS"}:
+            motivo_label.configure(text="MOTIVO:\t\t\t     ")
+            valor_caixa_itens_label.configure(text="VALOR:")
+        elif tipo_servico == "REEMBOLSO UBER":
+            saida_destino_label.configure(text="SAÍDA X DESTINO:\t\t")
+            motivo_label.configure(text="MOTIVO:\t\t\t     ")
+            valor_caixa_itens_label.configure(text="VALOR:")
 
     if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
         competencia_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
@@ -277,6 +522,9 @@ def add_campos():
         "ADIANTAMENTO/PAGAMENTO PARCEIRO"
     }
 
+    prefixo_entry.delete(0, tk.END)
+    agencia_entry.delete(0, tk.END)
+    os_entry.delete(0, tk.END)
     if tipo_servico in esconde_pref_age_os:
         prefixo_label.grid_forget()
         prefixo_entry.grid_forget()
@@ -296,7 +544,6 @@ def add_campos():
         os_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
         os_entry.configure(placeholder_text="Opcional")
         os_entry.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
-    
     else:
         prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
         prefixo_entry.configure(placeholder_text="")
@@ -343,6 +590,24 @@ def add_campos():
     else:
         tipo_aquisicao_label.grid_forget()
         tipo_aquisicao_combobox.grid_forget()
+
+def atualizar_exibicao_frame_caixa_itens():
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        if opcao_os_parceiro_combobox.get() in {"SIM", "NÃO"}:
+            frame_caixa_itens_pagamento.grid(row=6, column=0, columnspan=2, sticky="nsew", pady=5)
+            root.focus()
+        else:
+            frame_caixa_itens_pagamento.grid_forget()
+
+        # Atualizar o placeholder do campo de descrição
+        if opcao_os_parceiro_combobox.get() == "SIM":
+            descricao_do_item_pagamento_entry.configure(placeholder_text="OS - PREFIXO - AGÊNCIA - PORCENTAGEM")
+            itens_pagamento.clear()
+            atualizar_lista_itens_pagamento()
+        else:
+            descricao_do_item_pagamento_entry.configure(placeholder_text="MOTIVO - PORCENTAGEM")
+            itens_pagamento.clear()
+            atualizar_lista_itens_pagamento()
 
 def adiciona_campo_pix():
     tipo_pagamento = tipo_pagamento_combobox.get()
@@ -398,15 +663,24 @@ def gerar_solicitacao():
     nome_usuario = arrumar_texto(nome_usuario_entry.get().upper())
     tipo_servico = arrumar_texto(tipo_servico_combobox.get().upper())
     nome_fornecedor = arrumar_texto(nome_fornecedor_entry.get().upper())
-    prefixo = arrumar_texto(prefixo_entry.get())
+    prefixo = valida_prefixo(prefixo_entry.get())
     agencia = arrumar_texto(agencia_entry.get().upper())
     os_num = valida_os(os_entry.get())
     contrato = arrumar_texto(contrato_combobox.get().upper())
     motivo = arrumar_texto(motivo_entry.get().upper())
-    valor_tab1 = verificar_se_numero(valor_entry.get())
+    
+    if tipo_servico in {
+        "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
+        "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+        "REEMBOLSO UBER",
+    }:
+        total_valor = sum(float(str(item.get("valor", 0)).replace(".", "").replace(",", ".")) for item in itens_pagamento)
+        valor_tab1 = verificar_se_numero(str(total_valor).replace(".", ","))
+    else:
+        valor_tab1 = verificar_se_numero(valor_entry.get())
+
     tipo_pagamento = arrumar_texto(tipo_pagamento_combobox.get().upper())
     tecnicos = arrumar_texto(tecnicos_entry.get().upper())
-    saida_destino = arrumar_texto(saida_destino_entry.get().upper())
     competencia = arrumar_texto(competencia_combobox.get().upper())
     porcentagem = valida_porcentagem(porcentagem_entry.get().upper())
     tipo_aquisicao = arrumar_texto(tipo_aquisicao_combobox.get().upper())
@@ -420,45 +694,8 @@ def gerar_solicitacao():
     # Facilitar a identificação do erro pelo nome de usuário
     # logging.info(f"Aplicação iniciada. User: {nome_usuario}")
 
-    # Dicionário que mapeia contratos para departamentos
-    contrato_departamentos = {
-        "ESCRITÓRIO": "ESCRITÓRIO",
-        "C. O. SALVADOR - BA - 2877": "CONTRATO BA",
-        "C. O. SANTA CATARINA - SC - 5023": "CONTRATO SC",
-        "C. O. RIO GRANDE DO SUL - RS - 5525": "CONTRATO RS",
-        "C. O. RIO DE JANEIRO - RJ - 0494": "CONTRATO RJ",
-        "C. O. NITERÓI - RJ - 1380": "CONTRATO NIT",
-        "C. O. BELO HORIZONTE - BH - 2054": "CONTRATO BH",
-        "C. O. RECIFE - PE - 5254": "CONTRATO PE",
-        "C. O. VOLTA REDONDA - RJ - 0215": "CONTRATO VOLTA REDONDA",
-        "C. O. RONDÔNIA - RD - 0710": "CONTRATO RONDÔNIA",
-        "C. O. MANAUS - AM - 7649": "CONTRATO AM"
-    } 
-    
-    departamento = contrato_departamentos.get(contrato, "")
-
-    dict_sigla_contrato = {
-        "ESCRITÓRIO": "ESCRITÓRIO",
-        "": "ESCRITÓRIO",
-        "C. O. SALVADOR - BA - 2877": "SSA",
-        "C. O. SANTA CATARINA - SC - 5023": "SC",
-        "C. O. RIO GRANDE DO SUL - RS - 5525": "RS",
-        "C. O. RIO DE JANEIRO - RJ - 0494": "RJ",
-        "C. O. NITERÓI - RJ - 1380": "NIT",
-        "C. O. BELO HORIZONTE - BH - 2054": "BH",
-        "C. O. RECIFE - PE - 5254": "PE",
-        "C. O. MANAUS - AM - 7649": "AM",
-        "C. O. VOLTA REDONDA - RJ - 0215": "VR",
-        "C. O. RONDÔNIA - RD - 0710": "RD",
-        "ATA BB CURITIBA - 0232": "ATA PR",
-        "C. E. MANAUS - S/N": "BB AM",
-        "CAIXA BAHIA - 4922.2024": "CAIXA BA",
-        "CAIXA CURITIBA - 534.2025": "CAIXA PR",
-        "CAIXA MANAUS - 4569.2024": "CAIXA AM",
-        "INFRA CURITIBA - S/N": "INFRA PR"
-    }
-
-    sigla_contrato = dict_sigla_contrato.get(contrato, "Sigla não encontrada")
+    departamento, sigla_contrato = acessa_bd_contratos(contrato)
+    print(f"Departamento: {departamento}, Sigla: {sigla_contrato}")
 
     # Verificar se algum campo obrigatório está vazio
     campos_obrigatorios = [
@@ -497,30 +734,34 @@ def gerar_solicitacao():
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])        
-    elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
-        campos_obrigatorios.extend([
-            (motivo, "MOTIVO"),
-            (prefixo, "PREFIXO"),
-            (agencia, "AGÊNCIA"),
-            (os_num, "OS")
-        ])
-    elif tipo_servico == "REEMBOLSO SEM OS" or tipo_servico == "SOLICITAÇÃO SEM OS":
-        campos_obrigatorios.append((motivo, "MOTIVO"))
-    elif tipo_servico == "REEMBOLSO UBER":
-        campos_obrigatorios.extend([
-            (saida_destino, "SAÍDA X DESTINO"),
-            (motivo, "MOTIVO")
-        ])
     elif tipo_servico in {"CARRETO", "ORÇAMENTO APROVADO", "TRANSPORTADORA"}:
         campos_obrigatorios.extend([
             (prefixo, "PREFIXO"),
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])
-    elif tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
+    elif tipo_servico in aparece_lista_itens_aba_pagamentos:
         campos_obrigatorios.append((itens_pagamento if itens_pagamento else None, "DESCRIÇÃO DO ITEM"))
+        
         if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
             campos_obrigatorios.append((competencia, "COMPETÊNCIA"))
+
+        if tipo_servico in {
+            "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
+            "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+            "REEMBOLSO UBER"
+        }:
+            campos_obrigatorios = [campo for campo in campos_obrigatorios if campo != (valor_tab1, "VALOR")]
+
+        if tipo_servico in {"REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
+            campos_obrigatorios.extend([
+                (prefixo, "PREFIXO"),
+                (agencia, "AGÊNCIA"),
+                (os_num, "OS")
+            ])
+        
+        if tipo_servico in {"SOLICITAÇÃO SEM OS", "SOLICITAÇÃO COM OS"}:
+            campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
 
     if tipo_pagamento == "PIX" and tipo_chave_pix != "QR CODE":
         campos_obrigatorios.extend([
@@ -547,6 +788,10 @@ def gerar_solicitacao():
             notification_manager.show_notification("Preencha os campos em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
             return
 
+    if prefixo == "Prefixo inválido":
+        notification_manager.show_notification("Campo PREFIXO\nPrefixo inválido. Use o padrão XXXX/XX.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return     
+
     if os_num == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
@@ -569,9 +814,9 @@ def gerar_solicitacao():
     data_atual = datetime.now().strftime("%d.%m.%Y")
     
     if os_num == "":
-        nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
+        nome_arquivo = f"{valor_tab1} - {data_atual} - OC {nome_fornecedor} - {tipo_servico} - {sigla_contrato}.xlsx"
     else:
-        nome_arquivo = f"{valor_tab1} - {data_atual} - ORDEM DE COMPRA {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
+        nome_arquivo = f"{valor_tab1} - {data_atual} - OC {nome_fornecedor} - {os_num} - {agencia} - {prefixo} - {tipo_servico} - {sigla_contrato}.xlsx"    
     
     nome_arquivo = re.sub(r'[<>:"/\\|?*\x00]', ".", nome_arquivo)
 
@@ -599,21 +844,48 @@ def gerar_solicitacao():
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "AQUISIÇÃO SEM OS":
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
-        texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}: {descricao_utilidades}\n\n"
+        
+        if descricao_utilidades:
+            texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}: {descricao_utilidades}\n\n"
+        else:
+            texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+
         texto += f"VALOR: R$ {valor_tab1}\n\n"
-    elif tipo_servico == "REEMBOLSO COM OS" or tipo_servico == "SOLICITAÇÃO COM OS":
+    elif tipo_servico in {"REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
         texto = (
             f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
             f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
-        )   
+        )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"MOTIVO: {motivo}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
-    elif tipo_servico == "REEMBOLSO SEM OS":
-        texto = f"Solicito o pagamento ao {nome_fornecedor}, para {contrato}.\n\n"
+
+        if tecnicos:
+            texto += f"TÉCNICOS: {tecnicos}\n\n"
+
+        if len(itens_pagamento) == 1:
+            item = itens_pagamento[0]
+            texto += f"MOTIVO: {item['motivo']}\n\n"
+            texto += f"*VALOR: R$ {valor_tab1}*\n\n"
+        else:
+            texto += "MOTIVOS:\n"
+            for idx, item in enumerate(itens_pagamento, start=1):
+                texto += f"{idx}. {item['motivo']} (R$ {item['valor']})\n"
+            texto += f"\n*VALOR TOTAL: R$ {valor_tab1}*\n\n"
+    elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
+        texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"MOTIVO: {motivo}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
+
+        if tecnicos:
+            texto += f"TÉCNICOS: {tecnicos}\n\n"
+
+        if len(itens_pagamento) == 1:
+            item = itens_pagamento[0]
+            texto += f"MOTIVO: {item['motivo']}\n\n"
+            texto += f"*VALOR: R$ {valor_tab1}*\n\n"
+        else:
+            texto += "MOTIVOS:\n"
+            for idx, item in enumerate(itens_pagamento, start=1):
+                texto += f"{idx}. {item['motivo']} (R$ {item['valor']})\n"
+            texto += f"\n*VALOR TOTAL: R$ {valor_tab1}*\n\n"
     elif tipo_servico == "ABASTECIMENTO":
         texto = (
             f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao "
@@ -630,16 +902,30 @@ def gerar_solicitacao():
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "REEMBOLSO UBER":
-        texto = (
-            f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {saida_destino}, "
-            f"referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
-            if prefixo
-            else f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, com {saida_destino}, "
-            f"para {contrato}.\n\n"
-        )
-        texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"MOTIVO: {motivo}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
+        if len(itens_pagamento) == 1:
+            item = itens_pagamento[0]
+            texto = (
+                f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, para {item['saida_e_destino']}, "
+                f"referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+                if prefixo
+                else f"Solicito reembolso referente ao deslocamento de {nome_fornecedor}, para {item['saida_e_destino']}, "
+                f"para {contrato}.\n\n"
+            )
+            texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"MOTIVO: {item['motivo']}\n\n"
+            texto += f"*VALOR: R$ {valor_tab1}*\n\n"
+        else:
+            texto = (
+                f"Solicito reembolso referente ao deslocamento de {nome_fornecedor} "
+                f"referente à obra: {prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+                if prefixo
+                else f"Solicito reembolso referente ao deslocamento de {nome_fornecedor} para {contrato}.\n\n"
+            )
+            texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += "DESLOCAMENTOS:\n"
+            for idx, item in enumerate(itens_pagamento, start=1):
+                texto += f"{idx}. {item['saida_e_destino']} - {item['motivo']} (R$ {item['valor']})\n"
+            texto += f"\n*VALOR TOTAL: R$ {valor_tab1}*\n\n"
     elif tipo_servico == "HOSPEDAGEM":
         texto = (
             f"Solicito o pagamento ao fornecedor {nome_fornecedor} pela hospedagem dos "
@@ -647,11 +933,6 @@ def gerar_solicitacao():
             f"para {contrato}.\n\n"
         )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
-    elif tipo_servico == "SOLICITAÇÃO SEM OS":
-        texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}, para {contrato}.\n\n"
-        texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"MOTIVO: {motivo}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ENVIO DE MATERIAL":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}.\n\n"
@@ -667,23 +948,34 @@ def gerar_solicitacao():
         texto += "\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
     elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
-        if len(itens_pagamento) == 1:
-            texto = (
-                f"Solicito o pagamento para {nome_fornecedor}, referente à obra listada abaixo, para {contrato}:\n\n"
-            )
+        if opcao_os_parceiro_combobox.get() == "SIM":
+            if len(itens_pagamento) == 1:
+                texto = (
+                    f"Solicito o pagamento para {nome_fornecedor}, referente à obra listada abaixo, para {contrato}:\n\n"
+                )
+            else:
+                texto = (
+                    f"Solicito o pagamento para {nome_fornecedor}, referente as obras listadas abaixo, para {contrato}:\n\n"
+                )
+            texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"COMPETÊNCIA: {competencia}\n\n"
+            
+            for item in itens_pagamento:
+                texto += f"{item["descricao"]}\n"
+            
+            texto += f"\nVALOR: R$ {valor_tab1}\n\n"
         else:
             texto = (
-                f"Solicito o pagamento para {nome_fornecedor}, referente as obras listadas abaixo, para {contrato}:\n\n"
+                f"Solicito o pagamento para {nome_fornecedor}, referente ao listado abaixo, para {contrato}:\n\n"
             )
-        texto += f"SERVIÇO: {tipo_servico}\n\n"
-        texto += f"COMPETÊNCIA: {competencia}\n\n"
-        
-        for item in itens_pagamento:
-            texto += f"{item["descricao"]}\n"
-        
-        texto += "\n"
-        texto += f"VALOR: R$ {valor_tab1}\n\n"
-    elif contrato == "ESCRITÓRIO":
+            texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"COMPETÊNCIA: {competencia}\n\n"
+
+            for item in itens_pagamento:
+                texto += f"{item["descricao"]}\n"
+
+            texto += f"\nVALOR: R$ {valor_tab1}\n\n"
+    elif contrato == "ESCRITÓRIO" and tipo_aquisicao:
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
@@ -718,7 +1010,7 @@ def gerar_solicitacao():
     # Insere os dados no BD
     from .bd import conecta_banco_pagamentos
     conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
-        contrato, motivo, valor_tab1, tipo_pagamento, tecnicos, saida_destino, competencia,
+        contrato, motivo, valor_tab1, tipo_pagamento, tecnicos, competencia,
         porcentagem, tipo_aquisicao)
 
     # Copiar automaticamente o texto gerado caso o switch esteja ativo
@@ -727,16 +1019,60 @@ def gerar_solicitacao():
 
     if switch_gerar_excel_var.get():
         descricao_itens = ""
+        valor_itens = ""
 
         if tipo_servico in {"RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO"} and itens_pagamento:
-            descricao_itens = "\n".join(item["descricao_base"] for item in itens_pagamento)
+            descricao_itens = "\n".join(item["descricao"] for item in itens_pagamento)
 
-        gerar_excel(
-            root, nome_arquivo, tipo_servico, nome_fornecedor, os_num, prefixo, agencia,
-            contrato, nome_usuario, tipo_pagamento, departamento,
-            usuarios_varios_departamentos, usuarios_gerais,
-            descricao_itens=descricao_itens
+            if opcao_os_parceiro_combobox.get() == "SIM" and len(itens_pagamento) == 1:
+                partes = [parte.strip() for parte in descricao_base.split('-')]
+
+                os_num = partes[0]
+                prefixo = partes[1]
+                agencia = partes[2]
+
+                print(f"Prefixo: {prefixo}, Agência: {agencia}, OS: {os_num}")
+        
+        if tipo_servico in {
+            "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
+            "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS", "REEMBOLSO UBER"
+        }:
+            if tipo_servico == "REEMBOLSO UBER":
+                descricao_itens = "\n".join(
+                    f"{item['saida_e_destino']} - {item['motivo']}" for item in itens_pagamento
+                )
+            elif tipo_servico in {"SOLICITAÇÃO SEM OS", "SOLICITAÇÃO COM OS"}:
+                descricao_itens = "\n".join(
+                    f"{item['motivo']} - TÉCNICOS: {tecnicos}" for item in itens_pagamento
+                )
+            else:
+                descricao_itens = "\n".join(item["motivo"] for item in itens_pagamento)
+
+            valor_itens = "\n".join(str(item["valor"]) for item in itens_pagamento)
+
+        # Criando uma instância do dataclass DadosRequisicao
+        dados = DadosRequisicao(
+            root=root,
+            nome_arquivo=nome_arquivo,
+            tipo_servico=tipo_servico,
+            nome_fornecedor=nome_fornecedor,
+            os_num=os_num,
+            prefixo=prefixo,
+            agencia=agencia,
+            contrato=contrato,
+            nome_usuario=nome_usuario,
+            tipo_pagamento=tipo_pagamento,
+            departamento=departamento,
+            valor=valor_tab1,
+            tecnicos=tecnicos,
+            usuarios_varios_departamentos=usuarios_varios_departamentos,
+            usuarios_gerais=usuarios_gerais,
+            motivo=motivo,
+            descricao_itens=descricao_itens,
+            valor_itens=valor_itens,
         )
+
+        gerar_excel(dados)
 
 # -------------------------------
 # Fim das funções da aba "Pagamento"
@@ -747,7 +1083,7 @@ def gerar_texto_email():
     nome_usuario_tab2 = arrumar_texto(nome_usuario_entry_tab2.get().upper())
     tipo_servico_tab2 = arrumar_texto(tipo_servico_combobox_tab2.get().upper())
     nome_fornecedor_tab2 = arrumar_texto(nome_fornecedor_entry_tab2.get().upper())
-    prefixo_tab2 = arrumar_texto(prefixo_entry_tab2.get())
+    prefixo_tab2 = valida_prefixo(prefixo_entry_tab2.get())
     agencia_tab2 = arrumar_texto(agencia_entry_tab2.get().upper())
     os_num_tab2 = valida_os(os_entry_tab2.get())
     endereco_tab2 = arrumar_texto(endereco_entry_tab2.get().upper())
@@ -779,9 +1115,16 @@ def gerar_texto_email():
     # Verificar campos vazios
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
 
-    notification_manager = NotificationManager(root) # passando a instância da janela principal
+    if prefixo_tab2 == "Prefixo inválido":
+        notification_manager.show_notification("Campo PREFIXO\nPrefixo inválido. Use o padrão XXXX/XX.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return  
+
     if valor_tab2 == ValueError:
         notification_manager.show_notification(f"Campo VALOR\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return
+
+    if os_num_tab2 == "OS_invalida":
+        notification_manager.show_notification(f"Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
         return
 
     if campos_vazios:
@@ -1135,7 +1478,7 @@ def gerar_texto_aquisicao():
     servico_tab3 = arrumar_texto(servico_entry_tab3.get().upper())
     periodo_locacao_tab3 = arrumar_texto(periodo_locacao_combobox_tab3.get().upper())
     quantidade_periodo_locacao_tab3 = arrumar_texto(quantidade_locacao_entry_tab3.get().upper())
-    prefixo_tab3 = arrumar_texto(prefixo_entry_tab3.get())
+    prefixo_tab3 = valida_prefixo(prefixo_entry_tab3.get())
     agencia_tab3 = arrumar_texto(agencia_entry_tab3.get().upper())
     os_num_tab3 = valida_os(os_entry_tab3.get())
     opcao_entrega_tab3 = arrumar_texto(opcao_entrega_combobox_tab3.get().upper())
@@ -1191,7 +1534,6 @@ def gerar_texto_aquisicao():
     # Verificar campos vazios
     campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
 
-    notification_manager = NotificationManager(root)  # passando a instância da janela principal
     if campos_vazios:
         if campos_vazios == ["DESCRIÇÃO E QUANTIDADE"]:
             notification_manager.show_notification("Item(ns) não adicionado(s)", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -1199,6 +1541,10 @@ def gerar_texto_aquisicao():
         else:
             notification_manager.show_notification("Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
             return
+
+    if prefixo_tab3 == "Prefixo inválido":
+        notification_manager.show_notification("Campo PREFIXO\nPrefixo inválido. Use o padrão XXXX/XX.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
+        return  
 
     if os_num_tab3 == "OS_invalida":
         notification_manager.show_notification("Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
@@ -1317,17 +1663,19 @@ def add_campos_tab2():
     if tipo_servico_tab2 in {"COMPRAS EM GERAL - COM OS", "LOCAÇÃO"}:
         prefixo_label_tab2.grid(row=4, column=0, sticky="w", padx=(10, 10))
         prefixo_entry_tab2.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab2.grid(row=5, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab2.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab2.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab2.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
+        agencia_label_tab2.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        agencia_entry_tab2.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+        os_label_tab2.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        os_entry_tab2.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
     else:
-        prefixo_label_tab2.grid_forget()
-        prefixo_entry_tab2.grid_forget()
-        os_label_tab2.grid_forget()
-        os_entry_tab2.grid_forget()
-        agencia_label_tab2.grid_forget()
-        agencia_entry_tab2.grid_forget()
+        oculta_campos = [
+            prefixo_label_tab2, prefixo_entry_tab2,
+            os_label_tab2, os_entry_tab2,
+            agencia_label_tab2, agencia_entry_tab2
+        ]
+
+        for widget in oculta_campos:
+            widget.grid_forget()
 
     if tipo_servico_tab2 == "LOCAÇÃO":
         endereco_agencia_label_tab2.grid(row=7, column=0, sticky="w", padx=(10, 10))
@@ -1427,8 +1775,7 @@ def limpar_dados():
             notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a limpeza dos campos.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
             pass
 
-def janela_principal():
-    from .ui_tela_login import nome_completo_usuario, abas_permitidas
+def janela_principal(nome_completo_usuario, abas_permitidas):
 
     # Variáveis globais principais
     global root, tabview, frame, widgets_para_limpar, widgets_para_limpar_tab2, widgets_para_limpar_tab3
@@ -1436,11 +1783,11 @@ def janela_principal():
 
     # Widgets da aba PAGAMENTO
     global nome_usuario_entry, tipo_servico_combobox, nome_fornecedor_entry, prefixo_entry, agencia_entry
-    global os_entry, contrato_combobox, motivo_entry, valor_entry, tipo_pagamento_combobox, tecnicos_entry
+    global os_entry, contrato_combobox, motivo_entry, valor_entry, valor_label, tipo_pagamento_combobox, tecnicos_entry
     global saida_destino_entry, competencia_combobox, porcentagem_entry
     global tipo_aquisicao_combobox, tipo_chave_pix_combobox, chave_pix_entry
     global texto_solicitacao, switch_autocopia_var, contratos, switch_gerar_excel_var
-    global tipo_chave_pix_label, chave_pix_label
+    global tipo_chave_pix_label, chave_pix_label, opcao_os_parceiro_label, opcao_os_parceiro_combobox
     global competencia_label, porcentagem_label, motivo_label, saida_destino_label
     global tecnicos_label, prefixo_label, os_label, agencia_label, contrato_label
     global nome_benef_pix_label, nome_benef_pix_entry
@@ -1449,6 +1796,7 @@ def janela_principal():
     global frame_caixa_itens_pagamento, frame_lista_itens_pagamento
     global descricao_do_item_pagamento_label, descricao_do_item_pagamento_entry
     global editando_item_pagamento, btn_adicionar_servico_pagamento
+    global valor_caixa_itens_label, valor_caixa_itens_entry
 
     # Widgets da aba E-MAIL
     global nome_usuario_entry_tab2, tipo_servico_combobox_tab2, prefixo_entry_tab2, agencia_entry_tab2
@@ -1475,7 +1823,7 @@ def janela_principal():
     # Configuração da interface gráfica
     root = ctk.CTk()
     root.title("Modelo Solicitação de Pagamento")
-    root.geometry("650x600")
+    root.geometry("680x600")
     ctk.set_default_color_theme("green")
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
 
@@ -1493,14 +1841,8 @@ def janela_principal():
 
     print("Abas permitidas:", abas_permitidas)
 
-    # Lista única de contratos
-    contratos = [
-        "ESCRITÓRIO", "C. O. BELO HORIZONTE - BH - 2054", "C. O. MANAUS - AM - 7649", "C. O. NITERÓI - RJ - 1380", 
-        "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
-        "C. O. RONDÔNIA - RD - 0710", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
-        "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
-        "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - S/N"
-    ]
+    # pegar todos os contratos do banco de dados
+    contratos = acessa_bd_contratos()
 
     if "PAGAMENTO" in abas_permitidas:
         # -------------------------------
@@ -1520,25 +1862,7 @@ def janela_principal():
         widgets_para_limpar_tab2 = []
         widgets_para_limpar_tab3 = []
 
-        usuarios_gerais = ["AMANDA SAMPAIO",
-            "CARLOS ALBERTO",
-            "DANIEL ROMUALDO",
-            "DAWISON NASCIMENTO",
-            "FELIPE COSTA",
-            "FELIPE MOTA",
-            "GABRIEL BARBOSA",
-            "GUILHERME GOMES",
-            "HENRIQUE CARDOSO",
-            "IGOR SAMPAIO",
-            "IURE OLIVEIRA",
-            "JOÃO GABRIEL",
-            "LUCAS ASSUNÇÃO",
-            "LUCAS HEBERT",
-            "MATEUS SILVA",
-            "TÁCIO BARBOSA",
-            "TAIANE MARQUES",
-            "VINICIUS CRUZ"
-        ]
+        usuarios_gerais = acessa_bd_usuarios()
 
         usuarios_varios_departamentos = ["AMANDA SAMPAIO",
             "DAWISON NASCIMENTO",
@@ -1576,7 +1900,6 @@ def janela_principal():
             "TRANSPORTADORA"
         ], command=lambda choice: add_campos())
         tipo_servico_combobox.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
-        tipo_servico_combobox.set("")
 
         contrato_label = ctk.CTkLabel(master=frame, text="CONTRATO:")#.grid(row=6, column=0, sticky="w", padx=(10, 10))
         '''Label e Combobox de Contrato apenas aparecem após a seleção do tipo_serviço.
@@ -1585,6 +1908,9 @@ def janela_principal():
         contrato_combobox = CustomComboBox(master=frame, values=[])
         #contrato_combobox.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
         #contrato_combobox.set("")
+
+        opcao_os_parceiro_label = ctk.CTkLabel(master=frame, text="POSSUI OS?")
+        opcao_os_parceiro_combobox = CustomComboBox(master=frame, values=["SIM", "NÃO"], command=lambda choice: atualizar_exibicao_frame_caixa_itens())
 
         # -------------------------------
         # Frame para os itens
@@ -1599,10 +1925,20 @@ def janela_principal():
         # Variável para controlar se um item está sendo editado
         editando_item_pagamento = None
 
-        descricao_do_item_pagamento_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="DESCRIÇÃO DO ITEM:")
+        descricao_do_item_pagamento_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento, text="DESCRIÇÃO DO ITEM: ")
         descricao_do_item_pagamento_entry = CustomEntry(master=frame_caixa_itens_pagamento)
-        descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
-        descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+
+        # Campo para SAÍDA X DESTINO (UBER)
+        saida_destino_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento)
+        saida_destino_entry = CustomEntry(master=frame_caixa_itens_pagamento)
+
+        # Campo para MOTIVO
+        motivo_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento)
+        motivo_entry = CustomEntry(master=frame_caixa_itens_pagamento)
+
+        # Campo para valor
+        valor_caixa_itens_label = ctk.CTkLabel(master=frame_caixa_itens_pagamento)
+        valor_caixa_itens_entry = CustomEntry(master=frame_caixa_itens_pagamento)
 
         # Botão para adicionar serviço
         btn_adicionar_servico_pagamento = ctk.CTkButton(master=frame_caixa_itens_pagamento, text="Adicionar item", command=add_item_pagamento)
@@ -1610,11 +1946,6 @@ def janela_principal():
         # -------------------------------
         # Fim do frame para os itens
         # -------------------------------
-
-        # Campo para MOTIVO
-        motivo_label = ctk.CTkLabel(master=frame, text="MOTIVO:")
-        motivo_entry = CustomEntry(master=frame)
-        widgets_para_limpar.append(motivo_entry)
 
         tipo_aquisicao_label = ctk.CTkLabel(master=frame, text="TIPO DE AQUISIÇÃO:")
         tipo_aquisicao_combobox = CustomComboBox(master=frame, command=lambda choice: campo_descricao_utilidades())
@@ -1649,9 +1980,8 @@ def janela_principal():
         nome_fornecedor_entry.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
         widgets_para_limpar.append(nome_fornecedor_entry)
 
-        ctk.CTkLabel(master=frame, text="VALOR:").grid(row=11, column=0, sticky="w", padx=(10, 10))
+        valor_label = ctk.CTkLabel(master=frame, text="VALOR:")
         valor_entry = CustomEntry(master=frame)
-        valor_entry.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
         widgets_para_limpar.append(valor_entry)
 
         ano_atual = datetime.now().strftime("%Y")
@@ -1687,11 +2017,6 @@ def janela_principal():
         nome_benef_pix_label = ctk.CTkLabel(master=frame, text="NOME DO BENEF. DO PIX:")
         nome_benef_pix_entry = CustomEntry(master=frame, placeholder_text="Opcional")
         widgets_para_limpar.append(nome_benef_pix_entry)
-
-        # Campo para SAÍDA X DESTINO (UBER)
-        saida_destino_label = ctk.CTkLabel(master=frame, text="SAÍDA X DESTINO:")
-        saida_destino_entry = CustomEntry(master=frame)
-        widgets_para_limpar.append(saida_destino_entry)
 
         # Botão GERAR
         gerar_button = ctk.CTkButton(master=frame, text="GERAR", command=gerar_solicitacao)
@@ -1749,15 +2074,15 @@ def janela_principal():
         prefixo_entry_tab2 = CustomEntry(master=frame_tab2)
         widgets_para_limpar_tab2.append(prefixo_entry_tab2)
 
-        os_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="OS:")
-        os_entry_tab2 = CustomEntry(master=frame_tab2)
-        widgets_para_limpar_tab2.append(os_entry_tab2)
-
         agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="AGÊNCIA:")
         agencia_entry_tab2 = CustomEntry(master=frame_tab2)
         widgets_para_limpar_tab2.append(agencia_entry_tab2)
 
-        endereco_agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="ENDEREÇO DA AGÊNCIA:")
+        os_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="OS:")
+        os_entry_tab2 = CustomEntry(master=frame_tab2)
+        widgets_para_limpar_tab2.append(os_entry_tab2)
+
+        endereco_agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="ENDEREÇO DE ENTREGA:")
         endereco_entry_tab2 = CustomEntry(master=frame_tab2)
         widgets_para_limpar_tab2.append(endereco_entry_tab2)
 
@@ -1780,7 +2105,7 @@ def janela_principal():
         widgets_para_limpar_tab2.append(tipo_pagamento_combobox_tab2)
 
         num_orcamento_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="Nº ORÇAM./PEDIDO (SE APLICÁVEL):").grid(row=11, column=0, sticky="w", padx=(10, 10))
-        num_orcamento_entry_tab2 = CustomEntry(master=frame_tab2)
+        num_orcamento_entry_tab2 = CustomEntry(master=frame_tab2, placeholder_text="Opcional")
         num_orcamento_entry_tab2.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
         widgets_para_limpar_tab2.append(num_orcamento_entry_tab2)
 
@@ -1834,8 +2159,8 @@ def janela_principal():
             "ESCRITÓRIO", "C. O. BELO HORIZONTE - MG - 2054", "C. O. MANAUS - AM - 7649", "C. O. NITERÓI - RJ - 1380", 
             "C. O. RECIFE - PE - 5254", "C. O. RIO DE JANEIRO - RJ - 0494", "C. O. RIO GRANDE DO SUL - RS - 5525", 
             "C. O. RONDÔNIA - RD - S/N", "C. O. SALVADOR - BA - 2877", "C. O. SANTA CATARINA - SC - 5023", 
-            "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - S/N", "CAIXA BAHIA - 4922.2024",
-            "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - S/N"
+            "C. O. VOLTA REDONDA - RJ - 0215", "ATA BB CURITIBA - 0232", "C. E. MANAUS - 1593", "CAIXA BAHIA - 4922.2024",
+            "CAIXA CURITIBA - 534.2025", "CAIXA MANAUS - 4569.2024", "INFRA CURITIBA - 1120"
         ], command=lambda choice: add_campos_tab3())
         contrato_combobox_tab3.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
         contrato_combobox_tab3.set("")
@@ -1901,14 +2226,14 @@ def janela_principal():
         # -------------------------------
 
         data_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="DATA DA LOCAÇÃO:")
-        data_entry_tab3 = CTkDatePicker(master=frame_tab3)
+        data_entry_tab3 = CTkDatePicker(master=frame_tab3, tabview="AQUISIÇÃO")
         data_entry_tab3.set_date_format("%d/%m/%Y")
         data_entry_tab3.set_allow_manual_input(False)
         widgets_para_limpar_tab3.append(data_entry_tab3)
 
         #row = 5
         prazo_label_tab3 = ctk.CTkLabel(master=frame_tab3, text="PRAZO:")
-        prazo_entry_tab3 = CTkDatePicker(master=frame_tab3)
+        prazo_entry_tab3 = CTkDatePicker(master=frame_tab3, tabview="AQUISIÇÃO")
         prazo_entry_tab3.set_date_format("%d/%m/%Y")
         prazo_entry_tab3.set_allow_manual_input(False)
         widgets_para_limpar_tab3.append(prazo_entry_tab3)
@@ -2001,5 +2326,16 @@ def janela_principal():
         texto_aquisicao = ctk.CTkTextbox(master=frame_tab3)
         texto_aquisicao.grid(row=23, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
         widgets_para_limpar_tab3.append(texto_aquisicao)
+
+    if "DADOS PAGAMENTOS" in abas_permitidas:
+        # -------------------------------
+        # Aba "DADOS PAGAMENTOS"
+        # -------------------------------
+        from app.ui_aba_dados_pagamentos import AbaDadosPagamentos
+
+        frame_tab4 = ctk.CTkScrollableFrame(master=tabview.tab("DADOS PAGAMENTOS"))
+        frame_tab4.pack(fill="both", expand=True, padx=2, pady=2)
+
+        aba_dados_pagamentos = AbaDadosPagamentos(master=frame_tab4)
 
     root.mainloop()

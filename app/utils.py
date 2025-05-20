@@ -18,14 +18,28 @@ def verificar_se_numero(texto):
         return ValueError  # Retorna um valor padrão caso a conversão falhe
 
 def valida_prefixo(prefixo_raw):
-    if re.fullmatch(r"\d{4}/\d{2}", prefixo_raw):
-        return prefixo_raw, "Formato válido", None
-    elif prefixo_raw.isdigit():
-        parte1 = prefixo_raw.zfill(4)
-        prefixo_formatado = f"{parte1}/00"
-        return prefixo_formatado, "Formato ajustado", None
+    if not prefixo_raw:
+        return ""
     else:
-        return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
+        if "/" in prefixo_raw:
+            try:
+                parte1, parte2 = prefixo_raw.split("/")
+                parte1 = parte1.zfill(4)
+                parte2 = parte2.zfill(2)
+                prefixo_formatado = f"{parte1}/{parte2}"
+                if not re.fullmatch(r"\d{4}/\d{2}", prefixo_formatado):
+                    return "Prefixo inválido"
+            except:
+                return "Prefixo inválido"
+        elif prefixo_raw.isdigit():
+            if len(prefixo_raw) > 4:
+                return "Prefixo inválido"
+            parte1 = prefixo_raw.zfill(4)
+            prefixo_formatado = f"{parte1}/00"
+        else:
+            return "Prefixo inválido"
+        
+        return prefixo_formatado
 
 def valida_porcentagem(valor):
     if not valor:
@@ -66,34 +80,65 @@ def valida_os(texto: str):
     else:
         return "OS_invalida"
 
-def validar_item_pagamento(texto, tipo_servico):
+def validar_item_pagamento(texto, tipo_servico, possui_os):
+    """
+    Valida e formata o texto de entrada para o tipo de serviço "ADIANTAMENTO/PAGAMENTO PARCEIRO".
+    - Se possui_os == "SIM", o padrão esperado é "OS - PREFIXO - AGÊNCIA - PORCENTAGEM".
+    - Se possui_os == "NÃO", o padrão esperado é "MOTIVO - PORCENTAGEM".
+    """
     texto_corrigido = re.sub(r"\s*-\s*", " - ", texto)
     partes = texto_corrigido.split(" - ")
 
     if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
-        if len(partes) != 4:
-            return None, None, "Formato inválido. Use: PREFIXO - AGÊNCIA - OS - % DO ADIANTAMENTO"
+        if possui_os == "SIM": # Padrão "OS - PREFIXO - AGÊNCIA - PORCENTAGEM"
+            if len(partes) != 4:
+                return None, None, "Formato inválido. Use: OS - PREFIXO - AGÊNCIA - % DO ADIANTAMENTO"
 
-        prefixo_raw, agencia, os_str, percentual_raw = [p.strip() for p in partes]
+            os_str, prefixo_raw, agencia, percentual_raw = [p.strip() for p in partes]
 
-        # --- VALIDAÇÃO DO PERCENTUAL ---
-        # Remove o símbolo % se houver
-        percentual_limpo = percentual_raw.replace("%", "").strip()
+            # --- VALIDAÇÃO DO PERCENTUAL ---
+            # Remove o símbolo % se houver
+            percentual_limpo = percentual_raw.replace("%", "").strip()
 
-        # Verifica se é numérico puro
-        if not percentual_limpo.isdigit():
-            return None, None, "Percentual inválido. Deve conter apenas números, com ou sem '%'."
+            # Verifica se é numérico puro
+            if not percentual_limpo.isdigit():
+                return None, None, "Percentual inválido. Deve conter apenas números, com ou sem '%'."
 
-        percentual_valor = int(percentual_limpo)
+            percentual_valor = int(percentual_limpo)
 
-        if percentual_valor < 1 or percentual_valor > 100:
-            return None, None, "Percentual inválido. Deve estar entre 1 e 100."
+            if percentual_valor < 1 or percentual_valor > 100:
+                return None, None, "Percentual inválido. Deve estar entre 1 e 100."
 
-        # Reaplica o símbolo de % para exibir formatado
-        percentual = f"{percentual_valor}%"
+            # Reaplica o símbolo de % para exibir formatado
+            percentual = f"{percentual_valor}%"
 
-        valor_formatado = None
-        valor_com_rs = None
+            valor_formatado = None
+            valor_com_rs = None
+        else:  # Padrão "MOTIVO - PORCENTAGEM"
+            if len(partes) != 2:
+                return None, None, "Formato inválido. Use: MOTIVO - % DO ADIANTAMENTO"
+
+            motivo, percentual_raw = [p.strip() for p in partes]
+
+            # --- VALIDAÇÃO DO PERCENTUAL ---
+            percentual_limpo = percentual_raw.replace("%", "").strip()
+            if not percentual_limpo.isdigit():
+                return None, None, "Percentual inválido. Deve conter apenas números, com ou sem '%'."
+
+            percentual_valor = int(percentual_limpo)
+            if percentual_valor < 1 or percentual_valor > 100:
+                return None, None, "Percentual inválido. Deve estar entre 1 e 100."
+
+            percentual = f"{percentual_valor}%"
+
+            # --- MOTIVO ---
+            if not motivo:
+                return None, None, "Motivo não pode estar vazio."
+
+            # --- Descrição final ---
+            descricao_final = f"{motivo} - ADIANTAMENTO DE {percentual}"
+
+            return descricao_final, None, None
 
     else:  # PADRÃO PARA PAGAMENTO EXTRA
         if len(partes) != 4:
@@ -125,6 +170,8 @@ def validar_item_pagamento(texto, tipo_servico):
         except:
             return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
     elif prefixo_raw.isdigit():
+        if len(prefixo_raw) > 4:
+            return None, None, "Prefixo inválido. Use o padrão XXXX/XX."
         parte1 = prefixo_raw.zfill(4)
         prefixo_formatado = f"{parte1}/00"
     else:
@@ -143,7 +190,10 @@ def validar_item_pagamento(texto, tipo_servico):
         return None, None, "OS inválida. Deve conter mais de 4 dígitos numéricos."
 
     # --- Descrição base e final ---
-    descricao_base = f"{prefixo_formatado} - {agencia} - {os_str}"
+    if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
+        descricao_base = f"{os_str} - {prefixo_formatado} - {agencia}"
+    else:
+        descricao_base = f"{prefixo_formatado} - {agencia} - {os_str}"
 
     if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
         descricao_final = f"{descricao_base} - ADIANTAMENTO DE {percentual}"

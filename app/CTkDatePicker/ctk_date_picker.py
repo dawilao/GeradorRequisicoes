@@ -4,7 +4,7 @@ from datetime import datetime
 import calendar
 
 class CTkDatePicker(ctk.CTkFrame):
-    def __init__(self, master=None, **kwargs):
+    def __init__(self, master=None, tabview=None, **kwargs):
         """
         Initialize the CTkDatePicker instance.
         
@@ -15,6 +15,7 @@ class CTkDatePicker(ctk.CTkFrame):
         Initializes the date entry, calendar button, popup, and other related components.
         """
         super().__init__(master)
+        self.tabview = tabview
 
         self.frame_externo = ctk.CTkFrame(self)
         self.frame_externo.grid(row=0, column=0, padx=0, pady=0, sticky="ew")
@@ -57,12 +58,13 @@ class CTkDatePicker(ctk.CTkFrame):
         
         if self.popup is not None:
             self.popup.destroy()
+
         self.popup = ctk.CTkToplevel(self)
-        self.popup.title("Select Date")
+        self.popup.title("Selecione a data")
         self.popup.geometry("+%d+%d" % (self.winfo_rootx(), self.winfo_rooty() + self.winfo_height()))
         self._set_appearance_mode("system")
         self.popup.resizable(False, False)
-        
+
         self.popup.after(500, lambda: self.popup.focus())
         
         self.current_year = datetime.now().year
@@ -84,6 +86,8 @@ class CTkDatePicker(ctk.CTkFrame):
         self.calendar_frame.grid(row=0, column=0)
         self._set_appearance_mode("system")
 
+        today = datetime.today().date()
+
         meses_pt = {
             1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril",
             5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
@@ -101,15 +105,16 @@ class CTkDatePicker(ctk.CTkFrame):
         next_month_button.grid(row=0, column=6)
 
         # Days of the week header
-        days = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+        days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
         for i, day in enumerate(days):
             lbl = ctk.CTkLabel(self.calendar_frame, text=day)
             lbl.grid(row=1, column=i)
 
         # Days in month
         month_days = calendar.monthrange(self.current_year, self.current_month)[1]
-        start_day = calendar.monthrange(self.current_year, self.current_month)[0]
+        start_day = (calendar.monthrange(self.current_year, self.current_month)[0] + 1) % 7
         day = 1
+
         for week in range(2, 8):
             for day_col in range(7):
                 if week == 2 and day_col < start_day:
@@ -119,7 +124,21 @@ class CTkDatePicker(ctk.CTkFrame):
                     lbl = ctk.CTkLabel(self.calendar_frame, text="", text_color=("black", "white"))
                     lbl.grid(row=week, column=day_col)
                 else:
-                    btn = ctk.CTkButton(self.calendar_frame, text=str(day), width=3, command=lambda day=day: self.select_date(day), fg_color="transparent", text_color=("black", "white"))
+                    current_day = day
+                    current_date = datetime(self.current_year, self.current_month, current_day).date()
+
+                    if self.tabview == "AQUISIÇÃO" and current_date < today:
+                        btn = ctk.CTkButton(self.calendar_frame, text=str(current_day), width=3,
+                                            state="disabled", fg_color="transparent", text_color="#A0A0A0")
+                    elif current_date == today:
+                        btn = ctk.CTkButton(self.calendar_frame, text=str(current_day), width=3,
+                                            command=lambda day=current_day: self.select_date(day),
+                                            fg_color="#3a7bd5", text_color="white")
+                    else:
+                        btn = ctk.CTkButton(self.calendar_frame, text=str(current_day), width=3,
+                                            command=lambda day=current_day: self.select_date(day),
+                                            fg_color="transparent", text_color=("black", "white"))
+
                     btn.grid(row=week, column=day_col)
                     day += 1
 
