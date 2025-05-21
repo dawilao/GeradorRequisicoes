@@ -22,6 +22,7 @@ from app.definir_diretorio_por_contrato import (
     salvar_arquivo_em_diretorio,
     abrir_explorer_se_necessario,
 )
+from app.salva_erros import salvar_erro
 
 @dataclass # pylint: disable=too-many-instance-attributes
 class DadosRequisicao:
@@ -324,8 +325,19 @@ def gerar_excel(dados: DadosRequisicao):
             )
             print(FileNotFoundError)
 
-    except Exception as e: # Captura genérica usada como fallback para evitar crash na interface
+    except Exception as e:  # Captura genérica usada como fallback para evitar crash na interface
         notification_manager.show_notification(
             f"Erro ao gerar o arquivo Excel: {e}",
             NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
         )
+        resultado_salvamento = salvar_erro(dados.root, dados.nome_usuario, e)
+        if resultado_salvamento is True:
+            notification_manager.show_notification(
+                "Arquivo de erro salvo na pasta de erros.",
+                NotifyType.WARNING, bg_color="#404040", text_color="#FFFF00"
+            )
+        else:
+            notification_manager.show_notification(
+                f"Falha ao salvar arquivo de erro:\n{resultado_salvamento}",
+                NotifyType.ERROR, bg_color="#404040", text_color="#FF0000"
+            )
