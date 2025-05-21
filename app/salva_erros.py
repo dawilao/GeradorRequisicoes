@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 import traceback
 
-def salvar_erro(root, usuario, e):
+def salvar_erro(usuario, e):
     agora = datetime.now()
     data_hora_str = agora.strftime("%Y-%m-%d_%H-%M-%S")
     data_hora_legivel = agora.strftime("%d/%m/%Y %H:%M:%S")
