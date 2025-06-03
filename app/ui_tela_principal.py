@@ -525,6 +525,7 @@ def add_campos():
     prefixo_entry.delete(0, tk.END)
     agencia_entry.delete(0, tk.END)
     os_entry.delete(0, tk.END)
+
     if tipo_servico in esconde_pref_age_os:
         prefixo_label.grid_forget()
         prefixo_entry.grid_forget()
@@ -532,7 +533,7 @@ def add_campos():
         os_entry.grid_forget()
         agencia_label.grid_forget()
         agencia_entry.grid_forget()
-    elif tipo_servico in {"REEMBOLSO UBER", "PREST. SERVIÇO/MÃO DE OBRA"}:
+    elif tipo_servico in {"REEMBOLSO UBER", "PREST. SERVIÇO/MÃO DE OBRA", "CARRETO", "TRANSPORTADORA"}:
         prefixo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
         prefixo_entry.configure(placeholder_text="Opcional")
         prefixo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
@@ -734,7 +735,7 @@ def gerar_solicitacao():
             (agencia, "AGÊNCIA"),
             (os_num, "OS")
         ])        
-    elif tipo_servico in {"CARRETO", "ORÇAMENTO APROVADO", "TRANSPORTADORA"}:
+    elif tipo_servico in {"ORÇAMENTO APROVADO"}:
         campos_obrigatorios.extend([
             (prefixo, "PREFIXO"),
             (agencia, "AGÊNCIA"),
@@ -842,6 +843,7 @@ def gerar_solicitacao():
         )
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    
     elif tipo_servico == "AQUISIÇÃO SEM OS":
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         
@@ -851,6 +853,7 @@ def gerar_solicitacao():
             texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
 
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    
     elif tipo_servico in {"REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
         texto = (
             f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
@@ -870,6 +873,7 @@ def gerar_solicitacao():
             for idx, item in enumerate(itens_pagamento, start=1):
                 texto += f"{idx}. {item['motivo']} (R$ {item['valor']})\n"
             texto += f"\n*VALOR TOTAL: R$ {valor_tab1}*\n\n"
+    
     elif tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
@@ -886,6 +890,7 @@ def gerar_solicitacao():
             for idx, item in enumerate(itens_pagamento, start=1):
                 texto += f"{idx}. {item['motivo']} (R$ {item['valor']})\n"
             texto += f"\n*VALOR TOTAL: R$ {valor_tab1}*\n\n"
+    
     elif tipo_servico == "ABASTECIMENTO":
         texto = (
             f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao "
@@ -893,6 +898,7 @@ def gerar_solicitacao():
         )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    
     elif tipo_servico == "ESTACIONAMENTO":
         texto = (
             f"Solicito o pagamento ao fornecedor {nome_fornecedor}, pelo estacionamento "
@@ -901,6 +907,7 @@ def gerar_solicitacao():
         )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    
     elif tipo_servico == "REEMBOLSO UBER":
         if len(itens_pagamento) == 1:
             item = itens_pagamento[0]
@@ -926,6 +933,7 @@ def gerar_solicitacao():
             for idx, item in enumerate(itens_pagamento, start=1):
                 texto += f"{idx}. {item['saida_e_destino']} - {item['motivo']} (R$ {item['valor']})\n"
             texto += f"\n*VALOR TOTAL: R$ {valor_tab1}*\n\n"
+    
     elif tipo_servico == "HOSPEDAGEM":
         texto = (
             f"Solicito o pagamento ao fornecedor {nome_fornecedor} pela hospedagem dos "
@@ -934,10 +942,12 @@ def gerar_solicitacao():
         )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    
     elif tipo_servico == "ENVIO DE MATERIAL":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}.\n\n"
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    
     elif tipo_servico == "RELATÓRIO EXTRA":
         texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor} pela confecção de relatório(s) técnico(s) relacionado(s) abaixo, para o {contrato}:\n\n"
         texto += f"SERVIÇO: CONFECÇÃO DE {tipo_servico}\n\n"
@@ -947,6 +957,7 @@ def gerar_solicitacao():
 
         texto += "\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    
     elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
         if opcao_os_parceiro_combobox.get() == "SIM":
             if len(itens_pagamento) == 1:
@@ -975,14 +986,18 @@ def gerar_solicitacao():
                 texto += f"{item["descricao"]}\n"
 
             texto += f"\nVALOR: R$ {valor_tab1}\n\n"
+    
     elif contrato == "ESCRITÓRIO" and tipo_aquisicao:
         texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
         texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
+    
     else:
         texto = (
             f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente à obra: "
             f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+            if prefixo
+            else f"Solicito o pagamento ao fornecedor {nome_fornecedor}, para {contrato}.\n\n"
         )
         texto += f"SERVIÇO: {tipo_servico}\n\n"
         texto += f"VALOR: R$ {valor_tab1}\n\n"
@@ -1822,7 +1837,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
 
     # Configuração da interface gráfica
     root = ctk.CTk()
-    root.title("Modelo Solicitação de Pagamento")
+    root.title("Gerador de Requisições")
     root.geometry("680x600")
     ctk.set_default_color_theme("green")
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
