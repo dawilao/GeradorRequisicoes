@@ -22,6 +22,7 @@ from app.definir_diretorio_por_contrato import (
     salvar_arquivo_em_diretorio,
     abrir_explorer_se_necessario,
 )
+from app.salva_erros import salvar_erro
 
 @dataclass # pylint: disable=too-many-instance-attributes
 class DadosRequisicao:
@@ -116,6 +117,18 @@ def gerar_excel(dados: DadosRequisicao):
     - Erros na manipulação da planilha ou no processo de geração.
     """
     notification_manager = NotificationManager(dados.root)
+
+    def notificar_salvamento_erro(resultado_salvamento):
+        if resultado_salvamento is True:
+            notification_manager.show_notification(
+                "Arquivo de erro salvo na pasta de erros.",
+                NotifyType.WARNING, bg_color="#404040", text_color="#FFFF00"
+            )
+        else:
+            notification_manager.show_notification(
+                f"Falha ao salvar arquivo de erro:\n{resultado_salvamento}",
+                NotifyType.ERROR, bg_color="#404040", text_color="#FF0000"
+            )
 
     try:
         caminho_modelo = Path(
@@ -313,19 +326,40 @@ def gerar_excel(dados: DadosRequisicao):
 
             # Verifica se o destino não é a área de trabalho
             if os.path.normcase(os.path.normpath(caminho_destino)) != os.path.normcase(os.path.normpath(desktop_path)):
-                abrir_explorer_se_necessario(os.path.normpath(caminho_destino))
+                try:
+                    abrir_explorer_se_necessario(os.path.normpath(caminho_destino))
+                except Exception as e:
+                    notification_manager.show_notification(
+                        f"Arquivo salvo, mas erro ao abrir o Explorer: {e}",
+                        NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+                    )
+                    resultado_salvamento = salvar_erro(dados.nome_usuario, e)
+                    notificar_salvamento_erro(resultado_salvamento)
 
             time.sleep(1.2)
-            os.startfile(nome_arquivo_destino)
-        except FileNotFoundError:
+
+            try:
+                os.startfile(nome_arquivo_destino)
+            except Exception as e:
+                notification_manager.show_notification(
+                    f"Erro ao abrir o arquivo: {e}",
+                    NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+                )
+                resultado_salvamento = salvar_erro(dados.nome_usuario, e)
+                notificar_salvamento_erro(resultado_salvamento)
+                return
+
+        except FileNotFoundError as e_arqvivo:
             notification_manager.show_notification(
                 "Arquivo não encontrado após a geração.",
                 NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
             )
-            print(FileNotFoundError)
-
-    except Exception as e: # Captura genérica usada como fallback para evitar crash na interface
+            raise Exception("Arquivo não encontrado após a geração.") from e_arquivo
+            
+    except Exception as e:  # Captura genérica usada como fallback para evitar crash na interface
         notification_manager.show_notification(
-            f"Erro ao gerar o arquivo Excel: {e}",
+            f"Erro ao gerar o arquivo Excel",
             NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
         )
+        resultado_salvamento = salvar_erro(dados.nome_usuario, e)
+        notificar_salvamento_erro(resultado_salvamento)

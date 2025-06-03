@@ -203,8 +203,9 @@ def janela_alterar_senha(root_login):
     root_login.destroy()
     # Tela para alteração de senha
     janela_alterar = ctk.CTk()
-    janela_alterar.title("Alterar Senha")
-    janela_alterar.geometry("400x370")
+    janela_alterar.title("Gerador de Requisições - Alterar Senha")
+    janela_alterar.geometry("380x470")
+    janela_alterar.resizable(False, False)
     ctk.set_default_color_theme("green")
 
     frame = ctk.CTkFrame(master=janela_alterar)
@@ -213,28 +214,43 @@ def janela_alterar_senha(root_login):
     frame.grid_columnconfigure(1, weight=1)
     frame.grid_columnconfigure(2, weight=1)
 
+   # Substitua as linhas do título e subtítulo por:
+    titulo = ctk.CTkLabel(
+        master=frame, 
+        text="Gerador de\nRequisições", 
+        font=("Segoe UI", 32, "bold")
+    )
+    titulo.grid(row=0, column=1, pady=(15, 0), padx=20)
+
+    subtitulo = ctk.CTkLabel(
+        master=frame, 
+        text="Alterar senha", 
+        font=("Segoe UI", 16, "bold")
+    )
+    subtitulo.grid(row=1, column=1, pady=(10, 0), padx=20)
+
     # Criação dos campos para usuário e senha
     label_usuario_alt = ctk.CTkLabel(master=frame, text="Usuário:", anchor="w")
-    label_usuario_alt.grid(row=0, column=1, sticky="w", pady=(5, 0))
+    label_usuario_alt.grid(row=2, column=1, sticky="w", pady=(15, 0))
 
     entry_usuario_alt = CustomEntry(master=frame, placeholder_text="Insira o usuário")
-    entry_usuario_alt.grid(row=1, column=1, sticky="ew")
+    entry_usuario_alt.grid(row=3, column=1, sticky="ew")
 
     label_senha_atual = ctk.CTkLabel(master=frame, text="Senha Atual:", anchor="w")
-    label_senha_atual.grid(row=2, column=1, sticky="w", pady=(10, 0))
+    label_senha_atual.grid(row=4, column=1, sticky="w", pady=(10, 0))
 
     entry_senha_atual = CustomEntry(master=frame, show="*", placeholder_text="Insira a senha atual")
-    entry_senha_atual.grid(row=3, column=1, sticky="ew")
+    entry_senha_atual.grid(row=5, column=1, sticky="ew")
 
     label_nova_senha = ctk.CTkLabel(master=frame, text="Nova Senha:", anchor="w")
-    label_nova_senha.grid(row=4, column=1, sticky="w", pady=(10, 0))
+    label_nova_senha.grid(row=6, column=1, sticky="w", pady=(10, 0))
 
     entry_nova_senha = CustomEntry(master=frame, show="*", placeholder_text="Insira a nova senha")
-    entry_nova_senha.grid(row=5, column=1, sticky="ew")
+    entry_nova_senha.grid(row=7, column=1, sticky="ew")
 
     # Botão para alterar a senha
     botao_alterar_senha = ctk.CTkButton(master=frame, text="Alterar Senha", command=alterar_senha)
-    botao_alterar_senha.grid(row=6, column=1, sticky="ew", pady=(15, 0))
+    botao_alterar_senha.grid(row=8, column=1, sticky="ew", pady=(15, 0))
 
     janela_alterar.bind("<Return>", lambda enter: botao_alterar_senha.invoke())
 
@@ -246,7 +262,7 @@ def janela_alterar_senha(root_login):
         hover_color="Dark red",
         command=voltar_para_login
     )
-    botao_voltar.grid(row=7, column=1, sticky="ew", pady=(10, 5))
+    botao_voltar.grid(row=9, column=1, sticky="ew", pady=(10, 5))
 
     janela_alterar.mainloop()
 
@@ -258,13 +274,18 @@ def janela_login():
     faça login, altere sua senha ou encerre o programa.
     """
     root_login = ctk.CTk()
-    root_login.title("Login")
-    root_login.geometry("300x350")
+    root_login.title("Gerador de Requisições - Login")
+    root_login.geometry("340x420")
+    root_login.resizable(False, False)
     ctk.set_default_color_theme("green")
+
+    # Título da janela
+    titulo = ctk.CTkLabel(master=root_login, text="Gerador de\nRequisições", font=("Segoe UI", 32, "bold"))
+    titulo.pack(pady=(15, 0))
 
     # Cria um rótulo (label) para o campo de entrada do nome de usuário
     label_usuario = ctk.CTkLabel(master=root_login, text="Usuário:", anchor="w")
-    label_usuario.pack(pady=(10,0), padx=80, fill="x")
+    label_usuario.pack(pady=(15,0), padx=100, fill="x")
 
     # Cria um campo de entrada (Entry) para o usuário digitar seu nome de usuário
     entry_usuario = CustomEntry(master=root_login, placeholder_text="Insira o usuário")
@@ -272,7 +293,7 @@ def janela_login():
 
     # Cria um rótulo (label) para o campo de entrada da senha
     label_senha = ctk.CTkLabel(master=root_login, text="Senha:", anchor="w")
-    label_senha.pack(pady=0, padx=80, fill="x")
+    label_senha.pack(pady=0, padx=100, fill="x")
 
     # Cria um campo de entrada (Entry) para o usuário digitar sua senha
     entry_senha = CustomEntry(master=root_login, show='*', placeholder_text="Insira a senha")

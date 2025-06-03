@@ -113,7 +113,14 @@ def explorer_esta_aberto_no_caminho(caminho_desejado: str) -> bool:
     """
     caminho_desejado = os.path.normpath(caminho_desejado).lower()
     shell = win32com.client.Dispatch("Shell.Application")
-    for window in shell.Windows():
+    
+    try:
+        windows = shell.Windows()
+    except Exception as e_windows:
+        print(f"Erro ao acessar Shell.Application().Windows(): {e_windows}")
+        return False
+
+    for window in windows:
         try:
             if window.Name == "Explorador de Arquivos":
                 path = os.path.normpath(window.Document.Folder.Self.Path).lower()
@@ -139,10 +146,10 @@ def abrir_explorer_se_necessario(caminho_desejado: str):
         if not explorer_esta_aberto_no_caminho(caminho_desejado):
             subprocess.Popen(['explorer', caminho_desejado])
     except subprocess.SubprocessError as e_abrir_explorer:
-        print(
+        raise Exception(
             f"Erro ao tentar abrir o Explorer no caminho {caminho_desejado}: {e_abrir_explorer}"
-        )
+        ) from e_abrir_explorer
     except OSError as e_os:
-        print(
+        raise Exception(
             f"Erro ao tentar abrir o Explorer no caminho {caminho_desejado}: {e_os}"
-        )
+        ) from e_os
