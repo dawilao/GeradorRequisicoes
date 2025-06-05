@@ -1,4 +1,31 @@
 import re
+import traceback
+import tkinter as tk
+from tkinter import filedialog, messagebox, scrolledtext, Toplevel, Button, Label
+
+def handle_error(funcao, erro, root):
+    """Trata erros de forma centralizada com opção de expandir traceback"""
+    tb = traceback.format_exc()
+
+    def mostrar_traceback():
+        win = Toplevel(root)
+        win.title("Detalhes do erro")
+        win.geometry("540x320")
+        Label(win, text="Traceback completo:", font=("Arial", 10, "bold")).pack(pady=(10, 0))
+        txt = scrolledtext.ScrolledText(win, wrap=tk.WORD, font=("Consolas", 9))
+        txt.pack(expand=True, fill="both", padx=10, pady=10)
+        txt.insert(tk.END, tb)
+        txt.config(state="disabled")
+        Button(win, text="Fechar", command=win.destroy).pack(pady=(0, 10))
+
+    resposta = messagebox.askyesno(
+        "Erro",
+        f"Erro em {funcao}: {erro}\n\nDeseja ver detalhes do erro?",
+        parent=root
+    )
+    if resposta:
+        mostrar_traceback()
+
 
 def arrumar_texto(texto):
     return ' '.join(texto.strip().split()) if texto else ''
