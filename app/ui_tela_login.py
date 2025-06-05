@@ -16,7 +16,8 @@ import customtkinter as ctk
 
 from .CTkFloatingNotifications import NotificationManager, NotifyType
 from .bd.utils_bd import DatabaseManager
-from .componentes import CustomEntry, handle_error
+from .componentes import CustomEntry
+from .utils import handle_error
 
 class LoginManager:
     """
@@ -24,7 +25,6 @@ class LoginManager:
     
     Inclui métodos para validação de login e alteração de senha.
     """
-    
     def __init__(self):
         self.db_manager = DatabaseManager()
         self.root_login = None
@@ -66,12 +66,11 @@ class LoginManager:
                 )
 
         except sqlite3.Error as erro_conexao:
-            e = (
-                "Erro de conexão",
-                f"Não foi possível conectar ao banco de dados: {erro_conexao}\n"
+            mensagem_erro = (
+                f"Não foi possível conectar ao banco de dados: {erro_conexao}\n\n"
                 "Certifique-se de que o Drive está conectado e de que há conexão com a internet."
             )
-            handle_error("erro_conexao", e, self.root_login)
+            handle_error("Erro de conexão", mensagem_erro, self.root_login)
                 
     def _validar_nova_senha(self, nova_senha: str, senha_atual_banco: str) -> bool:
         """

@@ -14,17 +14,22 @@ class DatabaseManager:
             r'app\bd\login.db'
         ]
     
-    def _get_connection(self) -> sqlite3.Connection:
+    def _get_connection(self, outros_paths: list = None) -> sqlite3.Connection:
         """
         Estabelece conexão com o banco de dados.
         
+        Args:
+            outros_paths (list, opcional): Lista de caminhos alternativos para tentar a conexão.
+
         Returns:
             sqlite3.Connection: Conexão com o banco de dados.
             
         Raises:
             sqlite3.Error: Se não conseguir conectar a nenhum dos caminhos.
         """
-        for db_path in self.db_paths:
+        paths_para_iterar = outros_paths if outros_paths is not None else self.db_paths
+
+        for db_path in paths_para_iterar:
             try:
                 return sqlite3.connect(db_path)
             except sqlite3.Error:

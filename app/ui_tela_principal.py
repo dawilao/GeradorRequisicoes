@@ -2061,6 +2061,18 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         # -------------------------------
         # Aba "E-MAIL"
         # -------------------------------
+        from .ui_aba_email import AbaEmail
+
+        frame_tab2 = ctk.CTkScrollableFrame(master=tabview.tab("E-MAIL"))
+        frame_tab2.pack(fill="both", expand=True, padx=2, pady=2)
+
+        aba_dados_email = AbaEmail(
+            master=frame_tab2,
+            tabview=tabview,
+            nome_completo_usuario=nome_completo_usuario,
+        )
+    
+        """
         frame_tab2 = ctk.CTkScrollableFrame(master=tabview.tab("E-MAIL"))
         frame_tab2.pack(fill="both", expand=True, padx=2, pady=2)
 
@@ -2141,6 +2153,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         texto_email = ctk.CTkTextbox(master=frame_tab2)
         texto_email.grid(row=14, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
         widgets_para_limpar_tab2.append(texto_email)
+        """
 
     if "AQUISIÇÃO" in abas_permitidas:
         # -------------------------------
