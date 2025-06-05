@@ -174,12 +174,12 @@ class AbaEmail(ctk.CTkFrame):
     def _criar_botoes(self):
         """Cria os botões da interface."""
         # Botão Gerar
-        gerar_button = ctk.CTkButton(
+        self.gerar_button = ctk.CTkButton(
             self, 
             text="GERAR", 
             command=self.gerar_texto_email
         )
-        gerar_button.grid(row=12, column=0, sticky="ew", padx=(10, 10), pady=10)
+        self.gerar_button.grid(row=12, column=0, sticky="ew", padx=(10, 10), pady=10)
         
         # Botão Limpar
         limpar_button = ctk.CTkButton(
@@ -209,12 +209,12 @@ class AbaEmail(ctk.CTkFrame):
     
     def _configurar_eventos(self):
         """Configura os eventos da interface."""
-        root.bind("<Return>", self._on_return_press)
-    
+        pass
+
     def _adicionar_campos_condicionais(self):
         """Adiciona ou remove campos baseado no tipo de serviço selecionado."""
         tipo_servico = self.tipo_servico_combobox.get()
-        
+
         if tipo_servico in {"COMPRAS EM GERAL - COM OS", "LOCAÇÃO"}:
             # Mostra campos obrigatórios
             self.prefixo_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
@@ -232,7 +232,7 @@ class AbaEmail(ctk.CTkFrame):
             ]
             for widget in campos_ocultar:
                 widget.grid_forget()
-        
+
         # Campo endereço específico para locação
         if tipo_servico == "LOCAÇÃO":
             self.endereco_agencia_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
@@ -240,16 +240,16 @@ class AbaEmail(ctk.CTkFrame):
         else:
             self.endereco_agencia_label.grid_forget()
             self.endereco_entry.grid_forget()
-    
+
     def _adicionar_campo_pix(self):
         """Adiciona campos específicos para pagamento PIX se necessário."""
         # Implementar lógica específica para PIX se necessário
         pass
-    
+
     def _on_return_press(self, event):
         """Manipula o evento de pressionar Enter."""
         self.gerar_texto_email()
-    
+
     def _validar_campos(self):
         """Valida todos os campos obrigatórios."""
         # Coleta dados dos campos
@@ -258,7 +258,7 @@ class AbaEmail(ctk.CTkFrame):
         nome_fornecedor = arrumar_texto(self.nome_fornecedor_entry.get().upper())
         valor = verificar_se_numero(self.valor_entry.get())
         tipo_pagamento = arrumar_texto(self.tipo_pagamento_combobox.get().upper())
-        
+
         # Campos obrigatórios básicos
         campos_obrigatorios = [
             (nome_usuario, "USUÁRIO"),
@@ -267,7 +267,7 @@ class AbaEmail(ctk.CTkFrame):
             (valor, "VALOR"),
             (tipo_pagamento, "TIPO DE PAGAMENTO")
         ]
-        
+
         # Adiciona campos condicionais
         if tipo_servico in {"COMPRAS EM GERAL - COM OS", "LOCAÇÃO"}:
             prefixo = valida_prefixo(self.prefixo_entry.get())
@@ -279,10 +279,10 @@ class AbaEmail(ctk.CTkFrame):
                 (agencia, "AGÊNCIA"),
                 (os_num, "OS")
             ])
-        
+
         # Verifica campos vazios
         campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
-        
+
         # Validações específicas
         if tipo_servico in {"COMPRAS EM GERAL - COM OS", "LOCAÇÃO"}:
             prefixo = valida_prefixo(self.prefixo_entry.get())
@@ -320,9 +320,10 @@ class AbaEmail(ctk.CTkFrame):
     def _gerar_texto_compras_com_os(self, dados):
         """Gera texto para compras em geral com OS."""
         texto = f"Prezado Fornecedor {dados['nome_fornecedor']},\n\n"
+        pedido = dados['num_orcamento'] if dados['num_orcamento'] else "S/N"
         
         if dados['tipo_pagamento'] == "FATURAMENTO":
-            texto += f"Comunico que está autorizado para FATURAMENTO o pedido {dados['os_num']}, no valor de R$ {dados['valor']}.\n\n"
+            texto += f"Comunico que está autorizado para FATURAMENTO o pedido {pedido}, no valor de R$ {dados['valor']}.\n\n"
         else:
             pedido = dados['num_orcamento'] if dados['num_orcamento'] else "S/N"
             texto += f"Comunico que está autorizado para pagamento via {dados['tipo_pagamento']} o pedido {pedido}, no valor de R$ {dados['valor']}.\n\n"
@@ -344,13 +345,15 @@ class AbaEmail(ctk.CTkFrame):
         """Gera texto para locação."""
         texto = f"Prezado Fornecedor {dados['nome_fornecedor']},\n\n"
         pedido = dados['num_orcamento'] if dados['num_orcamento'] else ""
+        endereco = dados['endereco'] if dados['endereco'] else ""
 
         if pedido:
             texto += f"Comunico que está autorizado a locação de EQUIPAMENTO via {dados['tipo_pagamento']}, referente ao pedido {pedido}, no valor de R$ {dados['valor']}.\n\n"
         else:
             texto += f"Comunico que está autorizado a locação de EQUIPAMENTO via {dados['tipo_pagamento']}, no valor de R$ {dados['valor']}.\n\n"
         
-        texto += f"Segue informação referente ao local para entrega do material:\n{dados['endereco']}\n\n"
+        if endereco:
+            texto += f"Segue informação referente ao local para entrega do material:\n{dados['endereco']}\n\n"
         texto += f"SEGUE INFORMAÇÕES PARA NOTA FISCAL:\n{dados['prefixo']} - {dados['agencia']} - {dados['os_num']}\n\n"
         texto += self._get_texto_padrao_fornecedor()
         

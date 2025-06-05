@@ -358,8 +358,15 @@ def remover_item_pagamento(index):
         notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a exclusão.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
         pass
 
+aparece_lista_itens_aba_pagamentos = {
+    "RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO",
+    "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
+    "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
+    "REEMBOLSO UBER",
+}
+
 def add_campos():
-    global tipo_servico, aparece_lista_itens_aba_pagamentos, valor_atual_combobox
+    global tipo_servico, valor_atual_combobox
 
     # Verificar se há um item em edição
     if editando_item_pagamento is not None:
@@ -422,13 +429,6 @@ def add_campos():
     motivo_entry.delete(0, tk.END)
     saida_destino_entry.delete(0, tk.END)
     tecnicos_entry.delete(0, tk.END)
-
-    aparece_lista_itens_aba_pagamentos = {
-        "RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO",
-        "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS",
-        "SOLICITAÇÃO COM OS", "REEMBOLSO COM OS",
-        "REEMBOLSO UBER",
-    }
 
     if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
         competencia_label.grid(row=9, column=0, sticky="w", padx=(10, 10))
@@ -1093,95 +1093,6 @@ def gerar_solicitacao():
 # Fim das funções da aba "Pagamento"
 # -------------------------------
 
-def gerar_texto_email():
-    # Coletar dados dos campos
-    nome_usuario_tab2 = arrumar_texto(nome_usuario_entry_tab2.get().upper())
-    tipo_servico_tab2 = arrumar_texto(tipo_servico_combobox_tab2.get().upper())
-    nome_fornecedor_tab2 = arrumar_texto(nome_fornecedor_entry_tab2.get().upper())
-    prefixo_tab2 = valida_prefixo(prefixo_entry_tab2.get())
-    agencia_tab2 = arrumar_texto(agencia_entry_tab2.get().upper())
-    os_num_tab2 = valida_os(os_entry_tab2.get())
-    endereco_tab2 = arrumar_texto(endereco_entry_tab2.get().upper())
-    valor_tab2 = verificar_se_numero(valor_entry_tab2.get())
-    tipo_pagamento_tab2 = arrumar_texto(tipo_pagamento_combobox_tab2.get().upper())
-    num_orcamento_tab2 = arrumar_texto(num_orcamento_entry_tab2.get().upper())
-
-    # Verificar se algum campo obrigatório está vazio
-    campos_obrigatorios = [
-        (nome_usuario_tab2, "USUÁRIO"),
-        (tipo_servico_tab2, "TIPO DE SERVIÇO"),
-        (nome_fornecedor_tab2, "NOME DO FORNECEDOR/BENEFICIÁRIO"),
-        (valor_tab2, "VALOR"),
-        (tipo_pagamento_tab2, "TIPO DE PAGAMENTO")
-    ]
-
-    if tipo_servico_tab2 in {"COMPRAS EM GERAL - COM OS", "LOCAÇÃO"}:
-        # Adiciona os campos comuns para os dois tipos
-        campos_obrigatorios.extend([
-            (prefixo_tab2, "PREFIXO"),
-            (agencia_tab2, "AGÊNCIA"),
-            (os_num_tab2, "OS")
-        ])
-        
-        # Adiciona o campo "ENDEREÇO" apenas para "LOCAÇÃO"
-        if tipo_servico_tab2 == "LOCAÇÃO":
-            campos_obrigatorios.append((endereco_tab2, "ENDEREÇO"))           
-
-    # Verificar campos vazios
-    campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
-
-    if prefixo_tab2 == "Prefixo inválido":
-        notification_manager.show_notification("Campo PREFIXO\nPrefixo inválido. Use o padrão XXXX/XX.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return  
-
-    if valor_tab2 == ValueError:
-        notification_manager.show_notification(f"Campo VALOR\nPor favor, insira um número válido!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
-
-    if os_num_tab2 == "OS_invalida":
-        notification_manager.show_notification(f"Campo OS\nPor favor, insira uma OS válida!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
-
-    if campos_vazios:
-        notification_manager.show_notification(f"Preencha os campos obrigatórios em branco!", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
-        return
-
-    if tipo_servico_tab2 == "COMPRAS EM GERAL - COM OS":
-        texto = f"Prezado Fornecedor {nome_fornecedor_tab2},\n\n"
-        
-        if tipo_pagamento_combobox_tab2 == "FATURAMENTO":
-            texto += f"Comunico que está autorizado para FATURAMENTO o pedido {os_num_tab2}, no valor de R$ {valor_tab2}.\n\n"
-        else:
-            texto += f"Comunico que está autorizado para pagamento via {tipo_pagamento_tab2} o pedido {num_orcamento_tab2}, no valor de R$ {valor_tab2}.\n\n" if num_orcamento_tab2 else f"Comunico que está autorizado para pagamento via {tipo_pagamento_tab2} o pedido S/N, no valor de R$ {valor_tab2}.\n\n"
-        
-        texto += f"SEGUE INFORMAÇÕES PARA NOTA FISCAL:\n{prefixo_tab2} - {agencia_tab2} - {os_num_tab2}\n\n"
-        texto += f"Prezado fornecedor, solicito por gentileza que a partir deste momento todos os e-mails enviados sejam respondidos para todos.\n"
-        texto += f"Nossa empresa solicita que seja incluída na nota fiscal as informações referentes a obra enviada no corpo do e-mail no momento da autorização da compra.\n"
-        texto += f"Gostaria de solicitar, por gentileza, o envio da nota fiscal, boleto e ordem de compra para compras faturadas. Para pagamentos à vista, solicito apenas a nota fiscal e a ordem de compra.\n"
-        texto += f"Por favor, encaminhem todos os documentos para o e-mail, respondendo para todos os envolvidos."
-    
-    elif tipo_servico_tab2 == "COMPRAS EM GERAL - SEM OS":
-        texto = f"Prezado(a),\n\n"
-        texto += f"Comunico que está autorizado para pagamento via {tipo_pagamento_tab2} o pedido {num_orcamento_tab2}, no valor de R$ {valor_tab2}.\n\n" if num_orcamento_tab2 else f"Comunico que está autorizado para pagamento via {tipo_pagamento_tab2} o pedido S/N, no valor de R$ {valor_tab2}.\n\n"
-    
-    else:
-        texto = f"Prezado Fornecedor {nome_fornecedor_tab2},\n\n"
-        texto += f"Comunico que está autorizado a locação de EQUIPAMENTO via {tipo_pagamento_tab2}, referente ao pedido {num_orcamento_tab2}, no valor de R$ {valor_tab2}.\n\n" if num_orcamento_tab2 else f"Comunico que está autorizado a locação de EQUIPAMENTO via {tipo_pagamento_tab2}, no valor de R$ {valor_tab2}.\n\n"
-        texto += f"Segue informação referente ao local para entrega do material:\n{endereco_tab2}\n\n"
-        texto += f"SEGUE INFORMAÇÕES PARA NOTA FISCAL:\n{prefixo_tab2} - {agencia_tab2} - {os_num_tab2}\n\n"
-        texto += f"Prezado fornecedor, solicito por gentileza que a partir deste momento todos os e-mails enviados sejam respondidos para todos.\n"
-        texto += f"Nossa empresa solicita que seja incluída na nota fiscal as informações referentes a obra enviada no corpo do e-mail no momento da autorização da compra.\n"
-        texto += f"Gostaria de solicitar, por gentileza, o envio da nota fiscal, boleto e ordem de compra para compras faturadas. Para pagamentos à vista, solicito apenas a nota fiscal e a ordem de compra.\n"
-        texto += f"Por favor, encaminhem todos os documentos para o e-mail, respondendo para todos os envolvidos."
-
-    # Exibir texto na caixa de texto
-    texto_email.delete(1.0, tk.END)
-    texto_email.insert(tk.END, texto)
-
-    # Copiar automaticamente o texto gerado caso o switch esteja ativo
-    if switch_autocopia_frame_tab2_var.get():
-        pyperclip.copy(texto)
-
 # -------------------------------
 # Funções da aba "Aquisições"
 # -------------------------------
@@ -1672,41 +1583,17 @@ def gerar_texto_aquisicao():
 # Fim das funções da aba "Aquisições"
 # -------------------------------
 
-def add_campos_tab2():
-    tipo_servico_tab2 = tipo_servico_combobox_tab2.get()
- 
-    if tipo_servico_tab2 in {"COMPRAS EM GERAL - COM OS", "LOCAÇÃO"}:
-        prefixo_label_tab2.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        prefixo_entry_tab2.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
-        agencia_label_tab2.grid(row=5, column=0, sticky="w", padx=(10, 10))
-        agencia_entry_tab2.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
-        os_label_tab2.grid(row=6, column=0, sticky="w", padx=(10, 10))
-        os_entry_tab2.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
-    else:
-        oculta_campos = [
-            prefixo_label_tab2, prefixo_entry_tab2,
-            os_label_tab2, os_entry_tab2,
-            agencia_label_tab2, agencia_entry_tab2
-        ]
-
-        for widget in oculta_campos:
-            widget.grid_forget()
-
-    if tipo_servico_tab2 == "LOCAÇÃO":
-        endereco_agencia_label_tab2.grid(row=7, column=0, sticky="w", padx=(10, 10))
-        endereco_entry_tab2.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
-    else:
-        endereco_agencia_label_tab2.grid_forget()
-        endereco_entry_tab2.grid_forget()        
-
 def on_return_press(event):
     # Verifica qual aba está selecionada
     aba_atual = tabview.get()  # Retorna o nome da aba selecionada
+    print(f"Aba atual: {aba_atual}")
 
+    aba_atual = tabview.get()
     if aba_atual == "PAGAMENTO":
         gerar_button.invoke()
     elif aba_atual == "E-MAIL":
-        gerar_button_tab2.invoke()
+        if aba_dados_email:
+            aba_dados_email.gerar_texto_email()
     elif aba_atual == "AQUISIÇÃO":
         gerar_button_tab3.invoke()
 
@@ -1791,6 +1678,7 @@ def limpar_dados():
             pass
 
 def janela_principal(nome_completo_usuario, abas_permitidas):
+    global aba_dados_email
 
     # Variáveis globais principais
     global root, tabview, frame, widgets_para_limpar, widgets_para_limpar_tab2, widgets_para_limpar_tab3
@@ -1812,12 +1700,6 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
     global descricao_do_item_pagamento_label, descricao_do_item_pagamento_entry
     global editando_item_pagamento, btn_adicionar_servico_pagamento
     global valor_caixa_itens_label, valor_caixa_itens_entry
-
-    # Widgets da aba E-MAIL
-    global nome_usuario_entry_tab2, tipo_servico_combobox_tab2, prefixo_entry_tab2, agencia_entry_tab2
-    global os_entry_tab2, endereco_entry_tab2, nome_fornecedor_entry_tab2, valor_entry_tab2, num_orcamento_label_tab2
-    global tipo_pagamento_combobox_tab2, num_orcamento_entry_tab2, texto_email, switch_autocopia_frame_tab2_var
-    global prefixo_label_tab2, os_label_tab2, agencia_label_tab2, endereco_agencia_label_tab2, gerar_button_tab2
 
     # Widgets da aba AQUISIÇÃO
     global nome_usuario_entry_tab3, tipo_aquisicao_combobox_tab3, contrato_combobox_tab3
@@ -1855,6 +1737,8 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         tabview.set(abas_permitidas[0])  # Define a primeira aba como a aba ativa (opcional)
 
     print("Abas permitidas:", abas_permitidas)
+
+    root.bind("<Return>", on_return_press)
 
     # pegar todos os contratos do banco de dados
     contratos = acessa_bd_contratos()
@@ -2037,7 +1921,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         gerar_button = ctk.CTkButton(master=frame, text="GERAR", command=gerar_solicitacao)
         gerar_button.grid(row=16, column=0, sticky="ew", padx=(10, 10), pady=10)
 
-        root.bind("<Return>", on_return_press)
+        # root.bind("<Return>", on_return_press)
 
         limpar_button = ctk.CTkButton(master=frame, text="LIMPAR", width=150, command=limpar_dados)
         limpar_button.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=10)
@@ -2066,94 +1950,12 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         frame_tab2 = ctk.CTkScrollableFrame(master=tabview.tab("E-MAIL"))
         frame_tab2.pack(fill="both", expand=True, padx=2, pady=2)
 
+        global aba_dados_email
         aba_dados_email = AbaEmail(
             master=frame_tab2,
             tabview=tabview,
             nome_completo_usuario=nome_completo_usuario,
         )
-    
-        """
-        frame_tab2 = ctk.CTkScrollableFrame(master=tabview.tab("E-MAIL"))
-        frame_tab2.pack(fill="both", expand=True, padx=2, pady=2)
-
-        # Configurando a coluna do frame para expandir
-        frame_tab2.grid_rowconfigure(14, weight=1)  # Expande a linha
-        frame_tab2.grid_columnconfigure(0, weight=1)  # Expande a coluna 0
-        frame_tab2.grid_columnconfigure(1, weight=1)  # Expande a coluna 1
-
-        # Campos de entrada
-        ctk.CTkLabel(master=frame_tab2, text="USUÁRIO:").grid(row=0, column=0, sticky="w", padx=(10, 10), pady=(10, 0))
-        nome_usuario_entry_tab2 = CustomEntry(master=frame_tab2)
-        nome_usuario_entry_tab2.grid(row=0, column=1, sticky="ew", padx=(0, 10), pady=(10, 2))
-        nome_usuario_entry_tab2.insert(0, nome_completo_usuario)
-        nome_usuario_entry_tab2.configure(state='disabled')
-
-        ctk.CTkLabel(master=frame_tab2, text="TIPO DE SERVIÇO:").grid(row=1, column=0, sticky="w", padx=(10, 10))
-        tipo_servico_combobox_tab2 = CustomComboBox(master=frame_tab2, values=[
-            "COMPRAS EM GERAL - COM OS",
-            "COMPRAS EM GERAL - SEM OS",
-            "LOCAÇÃO",
-        ], command=lambda choice: add_campos_tab2())
-        tipo_servico_combobox_tab2.grid(row=1, column=1, sticky="ew", padx=(0, 10), pady=2)
-        tipo_servico_combobox_tab2.set("")
-
-        prefixo_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="PREFIXO:")
-        prefixo_entry_tab2 = CustomEntry(master=frame_tab2)
-        widgets_para_limpar_tab2.append(prefixo_entry_tab2)
-
-        agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="AGÊNCIA:")
-        agencia_entry_tab2 = CustomEntry(master=frame_tab2)
-        widgets_para_limpar_tab2.append(agencia_entry_tab2)
-
-        os_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="OS:")
-        os_entry_tab2 = CustomEntry(master=frame_tab2)
-        widgets_para_limpar_tab2.append(os_entry_tab2)
-
-        endereco_agencia_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="ENDEREÇO DE ENTREGA:")
-        endereco_entry_tab2 = CustomEntry(master=frame_tab2)
-        widgets_para_limpar_tab2.append(endereco_entry_tab2)
-
-        ctk.CTkLabel(master=frame_tab2, text="NOME FORNEC./BENEF.:").grid(row=8, column=0, sticky="w", padx=(10, 10))
-        nome_fornecedor_entry_tab2 = CustomEntry(master=frame_tab2)
-        nome_fornecedor_entry_tab2.grid(row=8, column=1, sticky="ew", padx=(0, 10), pady=2)
-        widgets_para_limpar_tab2.append(nome_fornecedor_entry_tab2)
-
-        ctk.CTkLabel(master=frame_tab2, text="VALOR:").grid(row=9, column=0, sticky="w", padx=(10, 10))
-        valor_entry_tab2 = CustomEntry(master=frame_tab2)
-        valor_entry_tab2.grid(row=9, column=1, sticky="ew", padx=(0, 10), pady=2)
-        widgets_para_limpar_tab2.append(valor_entry_tab2)
-
-        ctk.CTkLabel(master=frame_tab2, text="TIPO DE PAGAMENTO:").grid(row=10, column=0, sticky="w", padx=(10, 10))
-        tipo_pagamento_combobox_tab2 = CustomComboBox(master=frame_tab2, values=[
-            "FATURAMENTO", "PIX", "VEXPENSES"
-        ], command=lambda choice: adiciona_campo_pix())
-        tipo_pagamento_combobox_tab2.grid(row=10, column=1, sticky="ew", padx=(0, 10), pady=2)
-        tipo_pagamento_combobox_tab2.set("")
-        widgets_para_limpar_tab2.append(tipo_pagamento_combobox_tab2)
-
-        num_orcamento_label_tab2 = ctk.CTkLabel(master=frame_tab2, text="Nº ORÇAM./PEDIDO (SE APLICÁVEL):").grid(row=11, column=0, sticky="w", padx=(10, 10))
-        num_orcamento_entry_tab2 = CustomEntry(master=frame_tab2, placeholder_text="Opcional")
-        num_orcamento_entry_tab2.grid(row=11, column=1, sticky="ew", padx=(0, 10), pady=2)
-        widgets_para_limpar_tab2.append(num_orcamento_entry_tab2)
-
-        gerar_button_tab2 = ctk.CTkButton(master=frame_tab2, text="GERAR", command=gerar_texto_email)
-        gerar_button_tab2.grid(row=12, column=0, sticky="ew", padx=(10, 10), pady=10)
-
-        limpar_button_tab2 = ctk.CTkButton(master=frame_tab2, text="LIMPAR", width=150, command=limpar_dados)
-        limpar_button_tab2.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=10)
-
-        root.bind("<Return>", on_return_press)
-
-        switch_autocopia_frame_tab2_var = tk.BooleanVar(value=True)
-        switch_autocopia_frame_tab2 = ctk.CTkSwitch(master=frame_tab2, text="Auto-Cópia",
-                                        variable=switch_autocopia_frame_tab2_var, onvalue=True, offvalue=False)
-        switch_autocopia_frame_tab2.grid(row=13, column=0, columnspan=2, sticky="n", padx=10, pady=10)
-
-        # Caixa de texto para a solicitação
-        texto_email = ctk.CTkTextbox(master=frame_tab2)
-        texto_email.grid(row=14, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
-        widgets_para_limpar_tab2.append(texto_email)
-        """
 
     if "AQUISIÇÃO" in abas_permitidas:
         # -------------------------------
@@ -2339,7 +2141,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         gerar_button_tab3 = ctk.CTkButton(master=frame_tab3, text="GERAR", command=gerar_texto_aquisicao)
         gerar_button_tab3.grid(row=21, column=0, sticky="ew", padx=(10, 10), pady=10)
 
-        root.bind("<Return>", on_return_press)
+        # root.bind("<Return>", on_return_press)
 
         limpar_button_tab3 = ctk.CTkButton(master=frame_tab3, text="LIMPAR", width=150, command=limpar_dados)
         limpar_button_tab3.grid(row=21, column=1, sticky="ew", padx=(0, 10), pady=10)
