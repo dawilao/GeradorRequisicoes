@@ -256,38 +256,40 @@ def acessa_bd_usuarios():
             )
 
         cursor = conn.cursor()
-        cursor.execute("SELECT nome_completo FROM dados_login")
+        cursor.execute("SELECT nome_completo, varios_departamentos FROM dados_login")
         resultados = cursor.fetchall()
         conn.close()
 
-        return sorted([row[0] for row in resultados])
+        # Lista com todos os usuários
+        todos_usuarios = sorted([row[0] for row in resultados])
+
+        # Lista apenas com usuários que têm varios_departamentos = 'SIM'
+        usuarios_varios_dept = sorted([
+            row[0] for row in resultados 
+            if row[1] and row[1].upper() == 'SIM'
+        ])
+
+        return todos_usuarios, usuarios_varios_dept
 
     except Exception as e:
         print(f"Erro ao acessar o banco de dados: {e}")
-        return ['ADRIANA BARRETO',
-                'AMANDA SAMPAIO',
-                'CARLOS ALBERTO',
-                'DANIEL ROMUALDO',
-                'DAWISON NASCIMENTO',
-                'FELIPE COSTA',
-                'FELIPE MOTA',
-                'GABRIEL BARBOSA',
-                'GUILHERME ANDRADE',
-                'HENRIQUE CARDOSO',
-                'IGOR ALBERT',
-                'IURE OLIVEIRA',
-                'JOÃO GABRIEL',
-                'LUCAS MACIEL',
-                'LUCAS HEBERT',
-                'MATEUS SILVA',
-                'TÁCIO BARBOSA',
-                'TAIANE MARQUES',
-                'VINICIUS CRUZ',
-                'LUCAS CALAIS',
-                'KALIL',
-                'GABRIEL LOURENÇO',
-                'LUCAS BORGES',
-                'MARILIZA MACHADO',
-                'ROSANA SILVA',
-                'GUILHERME VICTORIO'
-                ]
+        # Valores padrão caso ocorra erro
+        todos_usuarios = [
+            'ADRIANA BARRETO', 'AMANDA SAMPAIO', 'CARLOS ALBERTO',
+            'DANIEL ROMUALDO', 'DAWISON NASCIMENTO', 'FELIPE COSTA',
+            'FELIPE MOTA', 'GABRIEL BARBOSA', 'GUILHERME ANDRADE',
+            'HENRIQUE CARDOSO', 'IGOR ALBERT', 'IURE OLIVEIRA',
+            'JOÃO GABRIEL', 'LUCAS MACIEL', 'LUCAS HEBERT',
+            'MATEUS SILVA', 'TÁCIO BARBOSA', 'TAIANE MARQUES',
+            'VINICIUS CRUZ', 'LUCAS CALAIS', 'KALI ABDALLA',
+            'DAVI BORGES', 'LUCAS BORGES', 'MARILIZA MACHADO',
+            'ROSANA SILVA', 'DAVI ABDALLA', 'SAYMA ABDALLA',
+            'BRUNA BORGES', 'ROBERTO ADANS', 'MIGUEL MARQUES',
+            'JADSON JUNIOR',
+        ]
+        usuarios_varios_dept = [
+            'AMANDA SAMPAIO', 'DAWISON NASCIMENTO', 
+            'TÁCIO BARBOSA', 'TAIANE MARQUES', 'ROSANA SILVA'
+            'MIGUEL MARQUES',
+        ]
+        return todos_usuarios, usuarios_varios_dept

@@ -1258,14 +1258,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         widgets_para_limpar_tab2 = []
         widgets_para_limpar_tab3 = []
 
-        usuarios_gerais = acessa_bd_usuarios()
-
-        usuarios_varios_departamentos = ["AMANDA SAMPAIO",
-            "DAWISON NASCIMENTO",
-            "JOÃO GABRIEL",
-            "TÁCIO BARBOSA",
-            "TAIANE MARQUES"
-        ]
+        usuarios_gerais, usuarios_varios_departamentos = acessa_bd_usuarios()
 
         # Campos de entrada
         ctk.CTkLabel(master=frame, text="USUÁRIO:").grid(row=0, column=0, sticky="w", padx=(10, 10), pady=(10, 0))
