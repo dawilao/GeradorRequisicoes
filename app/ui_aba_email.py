@@ -10,9 +10,9 @@ from app.ui_tela_principal import root
 from .bd.utils_bd import DatabaseManager
 
 class AbaEmail(ctk.CTkFrame):
-    def __init__(self, master, tabview="E-mail", nome_completo_usuario=None):
+    def __init__(self, master, tabview="E-MAIL", nome_completo_usuario=None):
         """
-        Inicializa a aba de email com todos os componentes necessários.
+        Inicializa a aba de e-mail com todos os componentes necessários.
         
         Args:
             master (CTkFrame): Frame pai onde a aba será criada
@@ -55,7 +55,7 @@ class AbaEmail(ctk.CTkFrame):
         self._criar_interface()
         self._configurar_eventos()
     
-    def inicializar_banco(self):
+    def _inicializar_banco(self):
         """Inicializa o banco de dados"""
         try:
             # Usa o DatabaseManager já existente
