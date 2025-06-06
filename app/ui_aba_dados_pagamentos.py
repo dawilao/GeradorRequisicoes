@@ -259,6 +259,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
                 )
             self.botao_marcar_nao_lido.grid_forget()
             self.botao_marcar_lido.grid(row=4, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
+            self.busca_por_data()
 
     def deletar_registro(self):
         if self.registro_atual:
@@ -276,3 +277,4 @@ class AbaDadosPagamentos(ctk.CTkFrame):
                 self.botao_marcar_lido.grid_forget()
                 self.botao_marcar_nao_lido.grid_forget()
                 self.botao_deletar.grid_forget()
+                self.busca_por_data()
