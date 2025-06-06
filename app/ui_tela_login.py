@@ -17,7 +17,7 @@ import customtkinter as ctk
 from .CTkFloatingNotifications import NotificationManager, NotifyType
 from .bd.utils_bd import DatabaseManager
 from .componentes import CustomEntry
-from .utils import handle_error
+from .utils import handle_error, IconManager
 
 class LoginManager:
     """
@@ -29,8 +29,8 @@ class LoginManager:
         self.db_manager = DatabaseManager()
         self.root_login = None
         self.janela_alterar = None
-        self.icon_path = None
         self.notificacao = NotificationManager(master=None)
+        self.icon_manager = IconManager()
 
     def validacao_login(self, root_login: ctk.CTk, entry_usuario: CustomEntry, entry_senha: CustomEntry):
         """
@@ -178,6 +178,19 @@ class LoginManager:
         
         self.criar_janela_login()
     
+    def _set_window_icon(self, window):
+            """Define o ícone da janela usando o primeiro caminho válido encontrado."""
+            for path in self.icon_path:
+                if exists(path):
+                    try:
+                        window.iconbitmap(path)
+                        return  # Se conseguiu definir o ícone, encerra a função
+                    except Exception as e:
+                        print(f"Erro ao carregar o ícone de {path}: {e}")
+                        continue  # Tenta o próximo caminho se houver erro
+            
+            print("Não foi possível carregar o ícone de nenhum dos caminhos disponíveis")
+
     def criar_janela_alterar_senha(self):
         """
         Cria e exibe a janela de alteração de senha para o usuário.
@@ -196,15 +209,9 @@ class LoginManager:
         self.janela_alterar.geometry("380x450")
         self.janela_alterar.resizable(False, False)
         ctk.set_default_color_theme("green")
-
-        # A implantar: ícone
-        """
-        try:
-            self.janela_alterar.iconbitmap(self.icon_path)
-        except Exception as e:
-            print(f"Não foi possível carregar o ícone: {e}")
-        """
-
+        
+        self.icon_manager.set_window_icon(self.janela_alterar)
+        
         frame = ctk.CTkFrame(master=self.janela_alterar)
         frame.pack(fill="both", expand=True, padx=5, pady=5)
         frame.grid_columnconfigure(0, weight=1)
@@ -282,13 +289,7 @@ class LoginManager:
         self.root_login.resizable(False, False)
         ctk.set_default_color_theme("green")
 
-        # A implantar: ícone
-        """
-        try:
-            self.janela_alterar.iconbitmap(self.icon_path)
-        except Exception as e:
-            print(f"Não foi possível carregar o ícone: {e}")
-        """
+        self.icon_manager.set_window_icon(self.root_login)
 
         # Título da janela
         titulo = ctk.CTkLabel(

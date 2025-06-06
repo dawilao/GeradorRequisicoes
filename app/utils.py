@@ -2,6 +2,31 @@ import re
 import traceback
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, Toplevel, Button, Label
+from os.path import exists
+
+
+class IconManager:
+    """Gerencia o carregamento de ícones da aplicação."""
+    
+    def __init__(self):
+        self.icon_paths = [
+            r'app/assets/GerReq_icon.ico',
+            r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\assets\GerReq_icon.ico',
+        ]
+
+    def set_window_icon(self, window):
+        """Define o ícone da janela usando o primeiro caminho válido encontrado."""
+        for path in self.icon_paths:
+            if exists(path):
+                try:
+                    window.iconbitmap(path)
+                    return  # Se conseguiu definir o ícone, encerra a função
+                except Exception as e:
+                    print(f"Erro ao carregar o ícone de {path}: {e}")
+                    continue  # Tenta o próximo caminho se houver erro
+        
+        print("Não foi possível carregar o ícone de nenhum dos caminhos disponíveis")
+
 
 def handle_error(funcao, erro, root):
     """Trata erros de forma centralizada com opção de expandir traceback"""

@@ -1221,6 +1221,9 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
     ctk.set_default_color_theme("green")
     notification_manager = NotificationManager(root)  # passando a instância da janela principal
 
+    icon_manager = IconManager()
+    icon_manager.set_window_icon(root)
+
     ''' CRIAÇÃO DAS ABAS PARA SELEÇAO DOS TIPOS DE MODELOS DE TEXTO '''
     tabview = ctk.CTkTabview(master=root)
     tabview.pack(fill="both", expand=True, padx=10, pady=10)
