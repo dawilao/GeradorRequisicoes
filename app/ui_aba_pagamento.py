@@ -355,7 +355,7 @@ class AbaPagamento(ctk.CTkFrame):
         
         # Configurar campos específicos por tipo de serviço
         self._configure_service_specific_fields(tipo_servico)
-        self._configure_pref_age_os(tipo_servico)
+        self._configure_pref_age_os()
         self._configure_opcoes_pagamento(tipo_servico)
         self._configure_visibilidade_contrato(tipo_servico)
         self._configure_campos_aquisicao(tipo_servico)
@@ -452,7 +452,7 @@ class AbaPagamento(ctk.CTkFrame):
         # Configurar campos para serviços com lista de itens
         if hasattr(self, 'aparece_lista_itens_aba_pagamentos'):
             if tipo_servico in self.aparece_lista_itens_aba_pagamentos:
-                self._configure_campos_da_lista_de_itens(tipo_servico)
+                self._configure_campos_da_lista_de_itens()
 
     def _configure_campo_competencia(self):
         """Configura campos para prestação de serviço/mão de obra"""
@@ -466,10 +466,12 @@ class AbaPagamento(ctk.CTkFrame):
         self.tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
         self.tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    def _configure_campos_da_lista_de_itens(self, tipo_servico: str):
+    def _configure_campos_da_lista_de_itens(self):
         """Configura campos da lista de itens"""
+        tipo_servico = self.tipo_servico_combobox.get()
+
         # Posicionamento do frame de itens
-        if tipo_servico in {"SOLICITAÇÃO COM OS", "REEMBOLSO COM OS", "REEMBOLSO UBER"}:
+        if tipo_servico in {"SOLICITAÇÃO COM OS", "SOLICITAÇÃO SEM OS", "REEMBOLSO COM OS", "REEMBOLSO SEM OS", "REEMBOLSO UBER"}:
             self.frame_caixa_itens_pagamento.grid(row=9, column=0, columnspan=2, sticky="nsew", pady=5)
         elif tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
             self.opcao_os_parceiro_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
@@ -484,9 +486,9 @@ class AbaPagamento(ctk.CTkFrame):
                 self._atualizar_lista_itens_pagamento()
             self._add_campos()  # Recursão controlada
 
-        self._configure_campos_especificos_de_itens(tipo_servico)
+        self._configure_campos_especificos_de_itens()
 
-    def _configure_campos_especificos_de_itens(self, tipo_servico: str):
+    def _configure_campos_especificos_de_itens(self):
         """Configura campos específicos dos itens"""
         # Esconder todos os campos de itens primeiro
         item_widgets = [
@@ -503,12 +505,14 @@ class AbaPagamento(ctk.CTkFrame):
         for entry in [self.descricao_do_item_pagamento_entry, self.motivo_entry]:
             entry.delete(0, tk.END)
 
+        tipo_servico = self.tipo_servico_combobox.get()
+
         if tipo_servico == "ADIANTAMENTO/PAGAMENTO PARCEIRO":
             self._configure_campos_parceiros()
         elif tipo_servico == "RELATÓRIO EXTRA":
-            self._configure_relatorio_extra(tipo_servico)
+            self._configure_relatorio_extra()
         else:
-            self._configure_campos_padroes_itens(tipo_servico)
+            self._configure_campos_padroes_itens()
 
     def _configure_campos_parceiros(self):
         """Configura campos para adiantamento de parceiro"""
@@ -519,18 +523,17 @@ class AbaPagamento(ctk.CTkFrame):
         self.competencia_label.grid(row=7, column=0, sticky="w", padx=(10, 10))
         self.competencia_combobox.grid(row=7, column=1, sticky="ew", padx=(0, 10), pady=2)
 
-    def _configure_relatorio_extra(self, tipo_servico: str):
+    def _configure_relatorio_extra(self):
         """Configura campos para relatório extra"""
         self.descricao_do_item_pagamento_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
         self.descricao_do_item_pagamento_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
         self.descricao_do_item_pagamento_entry.configure(placeholder_text="PREFIXO - AGÊNCIA - OS - VALOR")
 
-        self._configure_campos_da_lista_de_itens(tipo_servico)
-        self._configure_campos_padroes_itens()
-
-    def _configure_campos_padroes_itens(self, tipo_servico: str):
+    def _configure_campos_padroes_itens(self):
         """Configura campos padrão para itens"""
         # Esconder campo valor principal
+        tipo_servico = self.tipo_servico_combobox.get()
+        
         self.valor_label.grid_forget()
         self.valor_entry.grid_forget()
 
@@ -547,13 +550,15 @@ class AbaPagamento(ctk.CTkFrame):
         self.valor_caixa_itens_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
         self.valor_caixa_itens_entry.configure(placeholder_text="Informe o valor")
 
-        self._configure_labels_dos_itens(tipo_servico)
+        self._configure_labels_dos_itens()
 
-    def _configure_labels_dos_itens(self, tipo_servico: str):
+    def _configure_labels_dos_itens(self):
         """Configura textos dos labels dos itens"""
         # Resetar labels
         for label in [self.motivo_label, self.valor_caixa_itens_label]:
             label.configure(text="")
+
+        tipo_servico = self.tipo_servico_combobox.get()
 
         if tipo_servico in {"REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS"}:
             self.motivo_label.configure(text="MOTIVO:\t\t      ")
@@ -566,13 +571,15 @@ class AbaPagamento(ctk.CTkFrame):
             self.motivo_label.configure(text="MOTIVO:\t\t\t     ")
             self.valor_caixa_itens_label.configure(text="VALOR:")
 
-    def _configure_pref_age_os(self, tipo_servico: str):
+    def _configure_pref_age_os(self):
         """Configura campos de prefixo, agência e OS"""
         esconde_pref_age_os = {
             "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS", "ABASTECIMENTO",
             "ENVIO DE MATERIAL", "AQUISIÇÃO SEM OS", "RELATÓRIO EXTRA",
             "ADIANTAMENTO/PAGAMENTO PARCEIRO"
         }
+
+        tipo_servico = self.tipo_servico_combobox.get()
 
         if tipo_servico in esconde_pref_age_os:
             self._esconde_pref_age_os()
@@ -897,9 +904,9 @@ class AbaPagamento(ctk.CTkFrame):
             }
 
         elif tipo_servico == "REEMBOLSO UBER":
-            self.saida_e_destino = arrumar_texto(saida_destino_entry.get().upper().strip())
-            self.motivo = arrumar_texto(motivo_entry.get().upper().strip())
-            self.valor = verificar_se_numero(valor_caixa_itens_entry.get())
+            saida_e_destino = arrumar_texto(self.saida_destino_entry.get().upper().strip())
+            motivo = arrumar_texto(self.motivo_entry.get().upper().strip())
+            valor = verificar_se_numero(self.valor_caixa_itens_entry.get())
 
             # Verificações de campos obrigatórios
             if not motivo and not valor and not saida_e_destino:
@@ -939,8 +946,8 @@ class AbaPagamento(ctk.CTkFrame):
                 "descricao": f"{saida_e_destino} - {motivo} - R$ {valor}"
             }
         else:
-            self.motivo = arrumar_texto(motivo_entry.get().upper().strip())
-            self.valor = verificar_se_numero(valor_caixa_itens_entry.get())
+            motivo = arrumar_texto(motivo_entry.get().upper().strip())
+            valor = verificar_se_numero(valor_caixa_itens_entry.get())
 
             # Verificações de campos obrigatórios
             if not motivo and not valor:
