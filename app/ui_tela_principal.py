@@ -40,61 +40,6 @@ def on_return_press(event):
         if aba_dados_aquisicao:
             aba_dados_aquisicao.gerar_texto_aquisicao()
 
-def limpar_dados():
-    """
-    Limpar widgets da aba ativa
-    """
-    
-    aba_ativa  = tabview.get()
-    
-    if aba_ativa == "PAGAMENTO":
-        if editando_item_pagamento is None:
-            # Limpar os widgets da Tab 1
-            for widget in widgets_para_limpar:
-                if isinstance(widget, ctk.CTkEntry):
-                    widget.delete(0, tk.END)
-                elif isinstance(widget, ctk.CTkTextbox):
-                    widget.delete("0.0", tk.END)
-                elif isinstance(widget, ctk.CTkComboBox):
-                    widget.set("")
-
-                itens_pagamento.clear()
-                atualizar_lista_itens_pagamento()
-                add_campos()
-        else:
-            notification_manager = NotificationManager(root)  # passando a instância da janela principal
-            notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a limpeza dos campos.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
-            pass 
-    elif aba_ativa == "E-MAIL":
-        # Limpar os widgets da Tab 2
-        for widget in widgets_para_limpar_tab2:
-            if isinstance(widget, ctk.CTkEntry):
-                widget.delete(0, tk.END)
-            elif isinstance(widget, ctk.CTkTextbox):
-                widget.delete("0.0", tk.END)
-            elif isinstance(widget, ctk.CTkComboBox):
-                widget.set("")
-    elif aba_ativa == "AQUISIÇÃO":
-        if editando_item is None:
-            # Limpar os widgets da Tab 3
-            for widget in widgets_para_limpar_tab3:
-                if isinstance(widget, ctk.CTkEntry):
-                    widget.delete(0, tk.END)
-                elif isinstance(widget, ctk.CTkTextbox):
-                    widget.delete("0.0", tk.END)
-                elif isinstance(widget, ctk.CTkComboBox):
-                    widget.set("")
-                elif isinstance(widget, CTkDatePicker):
-                    widget.set("")
-
-                servicos_tab3.clear()
-                atualizar_lista_itens_tab3()
-                add_campos_tab3()
-        else:
-            notification_manager = NotificationManager(root)  # passando a instância da janela principal
-            notification_manager.show_notification("Item em edição!\nSalve-o para habilitar a limpeza dos campos.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
-            pass
-
 def janela_principal(nome_completo_usuario, abas_permitidas):
     global aba_dados_pagamento, aba_dados_email, aba_dados_aquisicao
 

@@ -226,7 +226,7 @@ class AbaPagamento(ctk.CTkFrame):
             row=8, column=1, sticky="ew", padx=(0, 10), pady=2
         )
         self.widgets_para_limpar.append(self.nome_fornecedor_entry)
-    
+
     def _create_secao_valor(self):
         """Cria a seção de valores"""
         self.valor_label = ctk.CTkLabel(self, text="VALOR:")
@@ -512,7 +512,7 @@ class AbaPagamento(ctk.CTkFrame):
             widget.grid_forget()
         
         # Limpar campos
-        for entry in [self.descricao_do_item_pagamento_entry, self.motivo_entry]:
+        for entry in [self.descricao_do_item_pagamento_entry, self.motivo_entry, self.valor_caixa_itens_entry]:
             entry.delete(0, tk.END)
 
         tipo_servico = self.tipo_servico_combobox.get()
@@ -1536,15 +1536,22 @@ class AbaPagamento(ctk.CTkFrame):
 
     def _limpar_dados(self):
         """Limpa todos os dados dos campos"""
-        for widget in self.widgets_para_limpar:
-            if hasattr(widget, 'delete'):
-                if isinstance(widget, ctk.CTkTextbox):
-                    widget.delete("1.0", "end")
-                else:
-                    widget.delete(0, "end")
-            elif hasattr(widget, 'set'):
-                widget.set("")
+        if self.editando_item_pagamento is None:
+            # Limpar os widgets da Tab 1
+            for widget in self.widgets_para_limpar:
+                if isinstance(widget, ctk.CTkEntry):
+                    widget.delete(0, tk.END)
+                elif isinstance(widget, ctk.CTkTextbox):
+                    widget.delete("0.0", tk.END)
+                elif isinstance(widget, ctk.CTkComboBox):
+                    widget.set("")
 
+                self.itens_pagamento.clear()
+                self._atualizar_lista_itens_pagamento()
+                self._add_campos()
+        else:
+            self.notificacao.show_notification("Item em edição!\nSalve-o para habilitar a limpeza dos campos.", NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF")
+            pass 
 
 # Classe de utilidade para facilitar a criação
 class AbaPagamentoManager:
