@@ -1,9 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import messagebox
-import pyperclip
 import re
-from os.path import splitext
 from datetime import datetime
 import locale
 
@@ -15,37 +13,6 @@ from .CTkFloatingNotifications import *
 from .componentes import CustomEntry, CustomComboBox
 
 locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil')
-
-def identifica_preenchimento_pref_os_age(prefixo, agencia, os_num):
-    notification_manager = NotificationManager(root)  # passando a instância da janela principal
-
-    campos_preenchidos = {
-        "PREFIXO": bool(prefixo),
-        "AGÊNCIA": bool(agencia),
-        "OS": bool(os_num),
-    }
-
-    faltantes = [campo for campo, preenchido in campos_preenchidos.items() if not preenchido]
-    preenchidos = [campo for campo, preenchido in campos_preenchidos.items() if preenchido]
-
-    def formatar_lista(lista):
-        """Formata uma lista para usar 'e' antes do último item."""
-        if len(lista) > 1:
-            return f"{', '.join(lista[:-1])} e {lista[-1]}"
-        return lista[0]
-
-    if len(preenchidos) == 1:
-        notification_manager.show_notification(
-            f"Campo {preenchidos[0]} está preenchido\nPor favor, insira {formatar_lista(faltantes)}.",
-            NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
-        )
-        return True
-    elif len(preenchidos) == 2:
-        notification_manager.show_notification(
-            f"Os campos {formatar_lista(preenchidos)} estão preenchidos\nPor favor, insira {faltantes[0]}.",
-            NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
-        )
-        return True
 
 def on_return_press(event):
     # Verifica qual aba está selecionada
