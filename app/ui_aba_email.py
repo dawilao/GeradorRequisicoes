@@ -3,11 +3,16 @@ import customtkinter as ctk
 import pyperclip
 import sqlite3
 
-from .componentes import CustomEntry, CustomComboBox
-from .CTkFloatingNotifications import NotificationManager, NotifyType
-from .utils import arrumar_texto, valida_prefixo, valida_os, verificar_se_numero
-from app.ui_tela_principal import root
-from .bd.utils_bd import DatabaseManager
+try:
+    from .componentes import CustomEntry, CustomComboBox
+    from .CTkFloatingNotifications import NotificationManager, NotifyType
+    from .utils import arrumar_texto, valida_prefixo, valida_os, verificar_se_numero
+    from .bd.utils_bd import DatabaseManager
+except ImportError:
+    from componentes import CustomEntry, CustomComboBox
+    from CTkFloatingNotifications import NotificationManager, NotifyType
+    from utils import arrumar_texto, valida_prefixo, valida_os, verificar_se_numero
+    from bd.utils_bd import DatabaseManager
 
 class AbaEmail(ctk.CTkFrame):
     def __init__(self, master, tabview="E-MAIL", nome_completo_usuario=None):

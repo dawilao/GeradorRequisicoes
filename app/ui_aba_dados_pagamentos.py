@@ -6,26 +6,33 @@ import customtkinter as ctk
 from tkinter import messagebox, scrolledtext
 from datetime import datetime
 
-import app.componentes as componentes
-from .CTkDatePicker import CTkDatePicker
-from .CTkFloatingNotifications import *
-from app.ui_tela_principal import root
+try:
+    import app.componentes as componentes
+    from .CTkDatePicker import CTkDatePicker
+    from .CTkFloatingNotifications import *
+except ImportError:
+    import componentes as componentes
+    from CTkDatePicker import CTkDatePicker
+    from CTkFloatingNotifications import *
 
 CAMINHO_BD = r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\dados.db'
-notification_manager = NotificationManager(root)  # passando a instância da janela principal
 
 class AbaDadosPagamentos(ctk.CTkFrame):
-    def __init__(self, master, tabview="DADOS PAGAMENTOS", **kwargs):
+    def __init__(self, master, root, tabview="DADOS PAGAMENTOS", **kwargs):
         super().__init__(master, **kwargs)
+        self.pack(fill="both", expand=True, padx=2, pady=2)
+        
         self.tabview = tabview
         self.estado_anterior = None  # Adicionado para rastrear mudanças de estado da janela
-        self.pack(fill="both", expand=True, padx=2, pady=2)
+        self.root = root
+        self.notificacao = NotificationManager(self.root)
+
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
         self.registro_atual = None
         self.lido_atual = None
-        self.ultimo_fullscreen = root.attributes('-fullscreen')  # Salva o estado inicial
+        self.ultimo_fullscreen = self.root.attributes('-fullscreen')  # Salva o estado inicial
 
         self.inicializar_banco()
         self._construir_widgets()
@@ -41,7 +48,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
 
     def _construir_widgets(self):
         self._set_appearance_mode("system")
-        root.bind("<Configure>", self._on_configure)  # Adiciona o listener
+        self.root.bind("<Configure>", self._on_configure)  # Adiciona o listener
 
         self.label_data = ctk.CTkLabel(self, text="Data:")
         self.label_data.grid(row=0, column=0, sticky="e", padx=(10, 10), pady=(10, 0))
@@ -59,7 +66,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
         self.botao_deletar = ctk.CTkButton(self, text="Deletar Registro", command=self.deletar_registro)
 
     def _on_configure(self, event):
-        estado = root.state()
+        estado = self.root.state()
 
         if estado != self.estado_anterior:
             self.estado_anterior = estado
@@ -77,7 +84,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
 
     def quebra_linhas(self, texto, tamanho=83):
         try:
-            estado = root.state()
+            estado = self.root.state()
             if estado == 'zoomed':
                 tamanho = 9999  # Se maximizada, não quebra a linha
         except Exception:
@@ -96,7 +103,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             self.frame_listagem = None
 
         if not registros:
-            notification_manager.show_notification(
+            self.notificacao.show_notification(
                 f"Nenhum registro encontrado.",
                 NotifyType.ERROR,
                 bg_color="#404040", text_color="#FFFFFF"
@@ -104,7 +111,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             return
 
         # Cria o frame de listagem na linha 2
-        h = 340 if root.state() == 'zoomed' else 250
+        h = 340 if self.root.state() == 'zoomed' else 250
         if hasattr(self, 'frame_listagem') and self.frame_listagem is not None:
             self.frame_listagem.destroy()
             self.frame_listagem = None
@@ -186,7 +193,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
         self.saida_texto.delete("1.0", "end")
 
         if not data:
-            notification_manager.show_notification(
+            self.notificacao.show_notification(
                 f"Por favor, selecione uma data.",
                 NotifyType.ERROR,
                 bg_color="#404040",text_color="#FFFFFF"
@@ -252,7 +259,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
                 cursor = conn.cursor()
                 cursor.execute("UPDATE registros SET lido = 0 WHERE rowid = ?", (self.registro_atual,))
                 conn.commit()
-                notification_manager.show_notification(
+                self.notificacao.show_notification(
                     f"Registro marcado como não lido!",
                     NotifyType.SUCCESS,
                     bg_color="#404040",text_color="#FFFFFF"
@@ -269,7 +276,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
                     cursor = conn.cursor()
                     cursor.execute("DELETE FROM registros WHERE rowid = ?", (self.registro_atual,))
                     conn.commit()
-                    notification_manager.show_notification(
+                    self.notificacao.show_notification(
                         f"Registro deletado com sucesso!",
                         NotifyType.SUCCESS,
                         bg_color="#404040",text_color="#FFFFFF"

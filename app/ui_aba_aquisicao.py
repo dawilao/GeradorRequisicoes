@@ -2,11 +2,16 @@ import tkinter as tk
 import customtkinter as ctk
 import pyperclip
 
-from .CTkFloatingNotifications import *
-from .CTkDatePicker import *
-from .componentes import CustomEntry, CustomComboBox
-from .utils import arrumar_texto, valida_prefixo, valida_os
-
+try:
+    from .CTkFloatingNotifications import *
+    from .CTkDatePicker import *
+    from .componentes import CustomEntry, CustomComboBox
+    from .utils import arrumar_texto, valida_prefixo, valida_os
+except ImportError:
+    from CTkFloatingNotifications import *
+    from CTkDatePicker import *
+    from componentes import CustomEntry, CustomComboBox
+    from utils import arrumar_texto, valida_prefixo, valida_os
 
 class AbaAquisicao(ctk.CTkFrame):
     def __init__(self, master, tabview="AQUISIÇÃO", nome_completo_usuario=None, contratos=None):

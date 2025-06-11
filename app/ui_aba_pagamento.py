@@ -10,22 +10,32 @@ import pyperclip
 from typing import List, Dict, Any, Optional
 from os.path import splitext
 
-from .utils import *
-from .bd.utils_bd import acessa_bd_contratos, acessa_bd_usuarios
-from .componentes import CustomEntry, CustomComboBox
-from .CTkFloatingNotifications import *
-from .gerador_excel import gerar_excel, DadosRequisicao
+try:
+    from .utils import *
+    from .bd.utils_bd import acessa_bd_contratos, acessa_bd_usuarios, conecta_banco_pagamentos
+    from .componentes import CustomEntry, CustomComboBox
+    from .CTkFloatingNotifications import *
+    from .gerador_excel import gerar_excel, DadosRequisicao
+except ImportError:
+    from utils import *
+    from bd.utils_bd import acessa_bd_contratos, acessa_bd_usuarios, conecta_banco_pagamentos
+    from componentes import CustomEntry, CustomComboBox
+    from CTkFloatingNotifications import *
+    from gerador_excel import gerar_excel, DadosRequisicao
 
 class AbaPagamento(ctk.CTkFrame):
     """Classe responsável pela aba de Pagamento"""
     
-    def __init__(self, master, tabview="PAGAMENTO", nome_completo_usuario=None, contratos=None):
+    def __init__(self, master, tela_para_notifcacao, tabview="PAGAMENTO", nome_completo_usuario=None, contratos=None):
         super().__init__(master)
         self.pack(fill="both", expand=True)
         self.tabview = tabview
         self.nome_completo_usuario = nome_completo_usuario
         self.contratos = contratos  # Lista de contratos
         self.notificacao = NotificationManager(master=None)
+
+        # Variavel para passar parâmetro da tela principal para o gerador_excel
+        self.root = tela_para_notifcacao
 
         # Listas para widgets que precisam ser limpos
         self.widgets_para_limpar = []
@@ -1073,7 +1083,12 @@ class AbaPagamento(ctk.CTkFrame):
         prefixo = valida_prefixo(self.prefixo_entry.get())
         agencia = arrumar_texto(self.agencia_entry.get().upper())
         os_num = valida_os(self.os_entry.get())
-        contrato = arrumar_texto(self.contrato_combobox.get().upper())
+        
+        if tipo_servico == "ENVIO DE MATERIAL":
+            contrato = "ESCRITÓRIO"
+        else:
+            contrato = arrumar_texto(self.contrato_combobox.get().upper())
+
         motivo = arrumar_texto(self.motivo_entry.get().upper())
         
         if tipo_servico in {
@@ -1424,7 +1439,6 @@ class AbaPagamento(ctk.CTkFrame):
         self.texto_solicitacao.insert(tk.END, texto)
 
         # Insere os dados no BD
-        from .bd import conecta_banco_pagamentos
         conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
             contrato, motivo, valor_tab1, tipo_pagamento, tecnicos, competencia,
             porcentagem, tipo_aquisicao)
@@ -1468,7 +1482,7 @@ class AbaPagamento(ctk.CTkFrame):
 
             # Criando uma instância do dataclass DadosRequisicao
             dados = DadosRequisicao(
-                root=self.master,
+                root=self.root,
                 nome_arquivo=nome_arquivo,
                 tipo_servico=tipo_servico,
                 nome_fornecedor=nome_fornecedor,
