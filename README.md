@@ -1,68 +1,173 @@
-# Gerador de Texto de Compras
+# Gerador de Requisições
 
-Ferramenta para automatizar a criação de textos utilizados em solicitações de pagamento, e-mails e aquisições. Desenvolvida para agilizar processos administrativos e reduzir erros manuais.
+Sistema para geração automatizada de requisições de pagamento, e-mail, aquisição e dados de pagamentos. Desenvolvido para agilizar processos administrativos e reduzir erros manuais.
 
-## Funcionalidades
+## 📋 Funcionalidades
 
-- Geração de textos padrões para:
-  - Pagamentos, com validação de campos obrigatórios.
-  - E-mails a fornecedores, com dados de pagamento e entrega.
-  - Aquisições, com suporte a múltiplos itens.
-- Validação de prefixos, porcentagens, números de OS e outros campos.
-- Integração com banco de dados SQLite para gerenciamento de contratos e usuários.
-- Exportação para planilhas Excel.
-- Interface gráfica com CustomTkinter.
+- **Pagamento**: Geração de requisições para adiantamentos, reembolsos e pagamentos a parceiros
+- **E-mail**: Criação automática de e-mails formatados para fornecedores
+- **Aquisição**: Requisições para compras e aquisições com suporte a múltiplos itens
+- **Dados Pagamentos**: Gerenciamento de informações de pagamento
+- Validação de campos obrigatórios e formatação automática
+- Integração com banco de dados SQLite para contratos e usuários
+- Exportação para planilhas Excel
+- Interface gráfica moderna com CustomTkinter
 
-## Estrutura
+## 📁 Estrutura do Projeto
 
-- app/
-  - ui_tela_principal.py — Interface principal.
-  - ui_tela_login.py — Tela de login.
-  - utils.py — Funções auxiliares.
-  - bd/ — Scripts e banco de dados.
+```
+GeradorRequisicoes/
+├── app/
+│   ├── ui_tela_principal.py      # Interface principal
+│   ├── ui_tela_login.py          # Tela de login
+│   ├── ui_aba_pagamento.py       # Aba de pagamentos
+│   ├── ui_aba_email.py           # Aba de e-mails
+│   ├── ui_aba_aquisicao.py       # Aba de aquisições
+│   ├── ui_aba_dados_pagamentos.py # Aba de dados de pagamentos
+│   ├── gerador_excel.py          # Exportação para Excel
+│   ├── utils.py                  # Funções auxiliares
+│   ├── bd/                       # Scripts e banco de dados
+│   └── assets/                   # Recursos (ícones, etc.)
+├── .venv/                        # Ambiente virtual (não versionado)
+├── requirements.txt              # Dependências do projeto
+├── .gitignore                    # Arquivos ignorados pelo Git
+└── README.md                     # Este arquivo
+```
 
-## Requisitos
+## 🛠️ Tecnologias Utilizadas
 
-- Python 3.8+
-- Bibliotecas: customtkinter, sqlite3, pyperclip
+- **Python 3.13+**
+- **CustomTkinter** - Interface gráfica moderna
+- **OpenPyXL** - Manipulação de planilhas Excel
+- **Pillow** - Processamento de imagens
+- **PyWin32** - APIs do Windows
+- **SQLite** - Banco de dados
 
-## Uso
+## 📦 Instalação
+
+### Pré-requisitos
+
+- Python 3.13 ou superior
+- Windows (devido ao PyWin32)
+
+### 🧑‍💻 Para Desenvolvedores (Execução via Código)
+
+1. **Clone o repositório:**
+   ```bash
+   git clone https://github.com/dawilao/GeradorRequisicoes.git
+   cd GeradorRequisicoes
+   ```
+
+2. **Crie um ambiente virtual:**
+   ```bash
+   python -m venv .venv
+   ```
+
+3. **Ative o ambiente virtual:**
+   ```bash
+   # Windows PowerShell
+   .venv\Scripts\activate
+
+   # Windows Command Prompt
+   .venv\Scripts\activate.bat
+   ```
+
+4. **Instale as dependências:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Configuração do PowerShell (se necessário)
+
+Se encontrar erro de política de execução:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+## 🚀 Execução
+
+### Ambiente de Desenvolvimento
+```bash
+# Certifique-se que o ambiente virtual está ativado
+(.venv) python app/ui_tela_login.py
+```
 
 ### ▶️ Para Usuários Finais (Ambiente Corporativo)
 
 Se você não tem conhecimento em programação, utilize a versão pronta do programa:
 
 1. Acesse a página de releases:
-   👉 [github.com/dawilao/GeradorRequisicoes/releases](https://github.com/dawilao/GeradorRequisicoes/releases)
+   👉 [github.com/dawilao/GeradorRequisicoes/releases](https://github.com/dawilao/GeradorRequisicoes/releases/latest)
 2. Baixe o arquivo mais recente com extensão `.exe`.
 3. Execute o arquivo baixado normalmente (não requer instalação do Python).
-4. O programa abrirá com a interface gráfica — basta fazer login e utilizar as abas disponíveis para gerar os textos desejados.
+4. O programa abrirá com a interface gráfica — basta fazer login e utilizar as abas disponíveis.
 
-> ⚠️ Dica: mantenha o arquivo `.exe` e a pasta `bd` juntos, caso o banco de dados não esteja embutido na versão.
+> ⚠️ **Importante**: mantenha o arquivo `.exe` e a pasta `bd` juntos, caso o banco de dados não esteja embutido na versão.
 
----
+## 🔧 Desenvolvimento
 
-### 🧑‍💻 Para Desenvolvedores (Execução via Código)
+### Ambiente Virtual
 
-Se você deseja rodar ou modificar o código-fonte:
+O projeto utiliza ambiente virtual para isolamento de dependências. A pasta `.venv` não é versionada e deve ser criada localmente em cada máquina.
 
-1. Clone o repositório:
-    ```bash
-   git clone https://github.com/dawilao/GeradorRequisicoes.git
-2. Instale as dependências necessárias:
-    ```bash
-   pip install customtkinter pyperclip
-3. Execute o arquivo principal:
-    ```bash
-    python app/ui_tela_login.py
+### Adicionando Novas Dependências
 
-⚠️ Atenção: o programa depende de caminhos fixos para o banco de dados.  
-Se for executado fora do VSCode ou da estrutura original, certifique-se de que os arquivos `contratos.db` e `login.bd` estejam localizados em um dos seguintes caminhos:
+1. Ative o ambiente virtual
+2. Instale o pacote: `pip install nome-do-pacote`
+3. Atualize o requirements.txt: `pip freeze > requirements.txt`
+
+### Padrão de Commits
+
+Este projeto segue o padrão [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` - Nova funcionalidade
+- `fix:` - Correção de bug
+- `chore:` - Tarefas de manutenção
+- `docs:` - Documentação
+- `refactor:` - Refatoração de código
+
+## 🔍 Abas Disponíveis
+
+- **PAGAMENTO**: Requisições de adiantamento, reembolso e pagamentos a parceiros
+- **E-MAIL**: Geração de e-mails formatados para fornecedores
+- **AQUISIÇÃO**: Requisições de compra com múltiplos itens
+- **DADOS PAGAMENTOS**: Gerenciamento de informações de pagamento
+
+## 🐛 Solução de Problemas
+
+### Erro de Política de Execução (PowerShell)
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Erro de Compatibilidade do Pillow
+```bash
+pip install --upgrade Pillow
+```
+
+### Verificar Ambiente Virtual
+```bash
+where python  # Deve apontar para .venv\Scripts\python.exe
+pip list      # Verificar pacotes instalados
+```
+
+### Dependências do Sistema
+
+⚠️ **Atenção**: o programa depende de caminhos específicos para o banco de dados.  
+Se for executado fora do ambiente original, certifique-se de que os arquivos `contratos.db` e `login.db` estejam localizados em:
 
 - `app/bd/` (recomendado para uso local)
-- `G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\` (utilizado em ambiente corporativo)
+- `G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\` (ambiente corporativo)
 
-Você também pode ajustar esses caminhos diretamente no código Python, caso necessário.
+Você pode ajustar esses caminhos diretamente no código Python, se necessário.
+
+## 🤝 Contribuição
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature: `git checkout -b feature/nova-funcionalidade`
+3. Commit suas mudanças: `git commit -m 'feat: adiciona nova funcionalidade'`
+4. Push para a branch: `git push origin feature/nova-funcionalidade`
+5. Abra um Pull Request
 
 ## Créditos
 
