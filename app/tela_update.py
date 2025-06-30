@@ -23,7 +23,7 @@ class TelaUpdate:
         # Configurar janela
         self.root = ctk.CTk()
         self.root.title("Gerador de Requisições - Atualização Necessária")
-        self.root.geometry("400x420")
+        self.root.geometry("430x420")
         self.root.resizable(False, False)
         self.icone.set_window_icon(self.root)
         
@@ -53,7 +53,7 @@ class TelaUpdate:
         # Mensagem
         mensagem = ctk.CTkLabel(
             master=frame,
-            text="Uma nova versão do PDFMaster está disponível.\nVocê precisa atualizar para continuar usando o aplicativo.",
+            text="Uma nova versão do Gerador de Requisições está disponível.\nVocê precisa atualizar para continuar usando o aplicativo.",
             font=("Segoe UI", 14),
             justify="center"
         )
