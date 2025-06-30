@@ -586,7 +586,7 @@ class AbaPagamento(ctk.CTkFrame):
         esconde_pref_age_os = {
             "REEMBOLSO SEM OS", "SOLICITAÇÃO SEM OS", "ABASTECIMENTO",
             "ENVIO DE MATERIAL", "AQUISIÇÃO SEM OS", "RELATÓRIO EXTRA",
-            "ADIANTAMENTO/PAGAMENTO PARCEIRO"
+            "ADIANTAMENTO/PAGAMENTO PARCEIRO", "COMPRA IN LOCO",
         }
 
         tipo_servico = self.tipo_servico_combobox.get()
@@ -600,16 +600,17 @@ class AbaPagamento(ctk.CTkFrame):
             self._show_pref_age_os_obrigatorios()
 
     def _esconde_pref_age_os(self):
-        """Esconde campos de prefixo, agência e OS"""
-        fields = [
+        """Esconde campos de prefixo, agência e OS"""        
+        campos = [
             (self.prefixo_label, self.prefixo_entry),
             (self.agencia_label, self.agencia_entry),
             (self.os_label, self.os_entry)
         ]
         
-        for label, entry in fields:
+        for label, entry in campos:
             label.grid_forget()
             entry.grid_forget()
+            entry.delete(0, tk.END)  # Limpa o conteúdo do campo
 
     def _show_pref_age_os_opcionais(self):
         """Mostra campos opcionais de prefixo, agência e OS"""
@@ -666,7 +667,7 @@ class AbaPagamento(ctk.CTkFrame):
         acquisition_configs = {
             "AQUISIÇÃO COM OS": ["CORRETIVA DIÁRIA", "LOCAÇÃO"],
             "AQUISIÇÃO SEM OS": ["EPI", "CRACHÁ", "FERRAMENTAS", "FARDAMENTO", "ESTOQUE", "UTILIDADES"],
-            "COMPRA IN LOCO": ["CORRETIVA DIÁRIA", "ORÇAMENTO APROVADO"]
+            "COMPRA IN LOCO": ["CORRETIVA DIÁRIA", "SEM OS", "ORÇAMENTO APROVADO"]
         }
         
         if tipo_servico in acquisition_configs:
@@ -1026,7 +1027,12 @@ class AbaPagamento(ctk.CTkFrame):
             self.descricao_utilidades_label.grid_forget()
             self.descricao_utilidades_entry.grid_forget()
             self.descricao_utilidades_entry.delete(0, tk.END)
-    
+
+        if tipo_aquisicao == "SEM OS":
+            self._esconde_pref_age_os()
+        else:
+            self._show_pref_age_os_obrigatorios()    
+
     def _restaurar_valores_tipo_aquisicao(self, event):
         """Restaura valores do tipo de aquisição"""
         # Implementar lógica específica
@@ -1134,12 +1140,21 @@ class AbaPagamento(ctk.CTkFrame):
                 (porcentagem, "% DO ADIANTAMENTO DO PARCEIRO")
             ])
         elif tipo_servico in {"AQUISIÇÃO COM OS", "COMPRA IN LOCO"}:
-            campos_obrigatorios.extend([
-                (tipo_aquisicao, "TIPO DE AQUISIÇÃO"),
-                (prefixo, "PREFIXO"),
-                (agencia, "AGÊNCIA"),
-                (os_num, "OS")
-            ])
+            if tipo_servico == "AQUISIÇÃO COM OS":
+                campos_obrigatorios.extend([
+                    (tipo_aquisicao, "TIPO DE AQUISIÇÃO"),
+                    (prefixo, "PREFIXO"),
+                    (agencia, "AGÊNCIA"),
+                    (os_num, "OS")
+                ])
+            else:
+                campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
+                if tipo_aquisicao != "SEM OS":
+                    campos_obrigatorios.extend([
+                        (prefixo, "PREFIXO"),
+                        (agencia, "AGÊNCIA"),
+                        (os_num, "OS")
+                    ])
         elif tipo_servico == "AQUISIÇÃO SEM OS":
             campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
             if tipo_aquisicao == "UTILIDADES":
@@ -1252,14 +1267,29 @@ class AbaPagamento(ctk.CTkFrame):
             texto += f"COMPETÊNCIA: {competencia}\n\n"
             texto += f"PORCENTAGEM DO ADIANTAMENTO: {porcentagem}%\n\n"
             texto += f"VALOR: R$ {valor_tab1}\n\n"
-        elif tipo_servico == "AQUISIÇÃO COM OS" or tipo_servico == "COMPRA IN LOCO":
+        elif tipo_servico == "AQUISIÇÃO COM OS":
             texto = (
                 f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
                 f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
             )
             texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
             texto += f"VALOR: R$ {valor_tab1}\n\n"
-        
+
+        elif tipo_servico == "COMPRA IN LOCO":
+            if tipo_aquisicao != "SEM OS":
+                texto = (
+                    f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
+                    f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
+                )
+                texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+                texto += f"VALOR: R$ {valor_tab1}\n\n"
+            else:
+                texto = (
+                    f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
+                )
+                texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+                texto += f"VALOR: R$ {valor_tab1}\n\n"
+
         elif tipo_servico == "AQUISIÇÃO SEM OS":
             texto = f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
             
