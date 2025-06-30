@@ -47,6 +47,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
     root = ctk.CTk()
     root.title("Gerador de Requisições")
     root.geometry("680x600")
+    root.minsize(680, 600)
     ctk.set_default_color_theme("green")
 
     icon_manager = IconManager()
