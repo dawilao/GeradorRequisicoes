@@ -170,6 +170,8 @@ def gerar_excel(dados: DadosRequisicao):
                 f"Falha ao definir diretório: {e}",
                 NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF"
             )
+            resultado_salvamento = salvar_erro(dados.nome_usuario, e)
+            notificar_salvamento_erro(resultado_salvamento)
             return
 
         workbook = load_workbook(nome_arquivo_destino)
