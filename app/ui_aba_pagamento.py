@@ -12,13 +12,13 @@ from os.path import splitext
 
 try:
     from .utils import *
-    from .bd.utils_bd import acessa_bd_contratos, acessa_bd_usuarios, conecta_banco_pagamentos
+    from .bd.utils_bd import acessa_bd_contratos, acessa_bd_usuarios, conecta_banco_pagamentos, conecta_banco_pagamentos_v2
     from .componentes import CustomEntry, CustomComboBox
     from .CTkFloatingNotifications import *
     from .gerador_excel import gerar_excel, DadosRequisicao
 except ImportError:
     from utils import *
-    from bd.utils_bd import acessa_bd_contratos, acessa_bd_usuarios, conecta_banco_pagamentos
+    from bd.utils_bd import acessa_bd_contratos, acessa_bd_usuarios, conecta_banco_pagamentos, conecta_banco_pagamentos_v2
     from componentes import CustomEntry, CustomComboBox
     from CTkFloatingNotifications import *
     from gerador_excel import gerar_excel, DadosRequisicao
@@ -1468,8 +1468,8 @@ class AbaPagamento(ctk.CTkFrame):
         self.texto_solicitacao.delete(1.0, tk.END)
         self.texto_solicitacao.insert(tk.END, texto)
 
-        # Insere os dados no BD
-        conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
+        # Insere os dados no BD usando o novo sistema de filas
+        conecta_banco_pagamentos_v2(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
             contrato, motivo, valor_tab1, tipo_pagamento, tecnicos, competencia,
             porcentagem, tipo_aquisicao)
 

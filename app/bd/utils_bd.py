@@ -3,6 +3,7 @@ Módulo para gerenciar operações de banco de dados relacionadas a usuários e 
 """
 
 import sqlite3
+import os
 from typing import Optional, Tuple
 
 class DatabaseManager:
@@ -249,7 +250,9 @@ def acessa_bd_usuarios():
     """
     try:
         try:
-            conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\login.db')
+            conn = sqlite3.connect(
+                r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\login.db'
+            )
         except sqlite3.Error:
             conn = sqlite3.connect(
                 r'app\bd\login.db'
@@ -293,3 +296,194 @@ def acessa_bd_usuarios():
             'MIGUEL MARQUES',
         ]
         return todos_usuarios, usuarios_varios_dept
+
+def conecta_banco_pagamentos_v2(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
+        contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
+        porcentagem, tipo_aquisicao):
+    """
+    Versão com sistema de filas simples - salva como JSON e processa depois.
+    
+    Esta função resolve problemas de concorrência salvando cada requisição como um arquivo JSON
+    individual em uma fila de processamento, evitando conflitos quando múltiplos usuários
+    fazem requisições simultaneamente.
+    
+    Args:
+        nome_usuario (str): Nome do usuário que está fazendo a requisição
+        tipo_servico (str): Tipo de serviço solicitado
+        nome_fornecedor (str): Nome do fornecedor
+        prefixo (str): Prefixo da requisição
+        agencia (str): Agência responsável
+        os_num (str): Número da OS
+        contrato (str): Contrato relacionado
+        motivo (str): Motivo da requisição
+        valor (float): Valor da requisição
+        tipo_pagamento (str): Tipo de pagamento
+        tecnicos (str): Técnicos envolvidos
+        competencia (str): Competência
+        porcentagem (str): Porcentagem
+        tipo_aquisicao (str): Tipo de aquisição
+        
+    Returns:
+        str: ID único da requisição ou status do fallback
+    """
+    from datetime import datetime
+    import json
+    import uuid
+    import os
+    
+    # Preparar dados da requisição
+    dados_requisicao = {
+        'id': str(uuid.uuid4()),
+        'timestamp': datetime.now().isoformat(),
+        'nome_usuario': nome_usuario,
+        'tipo_servico': tipo_servico,
+        'nome_fornecedor': nome_fornecedor,
+        'prefixo': prefixo,
+        'agencia': agencia,
+        'os_num': os_num,
+        'contrato': contrato,
+        'motivo': motivo,
+        'valor': valor,
+        'tipo_pagamento': tipo_pagamento,
+        'tecnicos': tecnicos,
+        'competencia': competencia,
+        'porcentagem': porcentagem,
+        'tipo_aquisicao': tipo_aquisicao,
+        'data_criacao': datetime.now().strftime('%d/%m/%Y'),
+        'hora_criacao': datetime.now().strftime('%H:%M:%S'),
+        'processado': False
+    }
+    
+    # Definir caminhos da fila de requisições
+    caminhos_fila = [
+        r'app\bd\fila_requisicoes',
+        r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\fila_requisicoes'
+    ]
+    
+    # Criar diretório da fila se não existir
+    diretorio_fila = None
+    for caminho in caminhos_fila:
+        try:
+            os.makedirs(caminho, exist_ok=True)
+            diretorio_fila = caminho
+            break
+        except:
+            continue
+    
+    if not diretorio_fila:
+        # Fallback para método original se não conseguir criar fila
+        print("⚠️  Não foi possível criar fila. Usando método original...")
+        conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
+            contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
+            porcentagem, tipo_aquisicao)
+        return "fallback"
+    
+    # Salvar como arquivo JSON na fila
+    timestamp_arquivo = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]  # Remove últimos 3 dígitos dos microssegundos
+    nome_arquivo = f"req_{timestamp_arquivo}_{dados_requisicao['id'][:8]}.json"
+    caminho_arquivo = os.path.join(diretorio_fila, nome_arquivo)
+    
+    try:
+        with open(caminho_arquivo, 'w', encoding='utf-8') as f:
+            json.dump(dados_requisicao, f, ensure_ascii=False, indent=2)
+        
+        print(f"✅ Requisição salva na fila: {dados_requisicao['id'][:8]}")
+        print(f"   Arquivo: {nome_arquivo}")
+        print(f"   Status: Aguardando processamento")
+        
+        return dados_requisicao['id']
+        
+    except Exception as e:
+        print(f"❌ Erro ao salvar na fila: {e}")
+        print("🔄 Tentando método original como fallback...")
+        
+        try:
+            conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
+                contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
+                porcentagem, tipo_aquisicao)
+            print("✅ Salvo pelo método original")
+            return "fallback_success"
+        except Exception as erro_fallback:
+            print(f"❌ Falha em ambos os métodos: {e} / {erro_fallback}")
+            raise
+
+def verificar_status_fila():
+    """
+    Verifica quantas requisições estão pendentes na fila de processamento.
+    
+    Esta função examina os arquivos JSON na fila e conta quantos estão pendentes
+    de processamento e quantos já foram processados.
+    
+    Returns:
+        dict: Dicionário com informações do status da fila:
+            - pendentes: número de requisições não processadas
+            - processados: número de requisições já processadas
+            - total: total de arquivos na fila
+            - diretorio: caminho do diretório da fila
+    """
+    import glob
+    import json
+    
+    # Caminhos possíveis para a fila de requisições
+    caminhos_fila = [
+        r'app\bd\fila_requisicoes',
+        r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\fila_requisicoes'
+    ]
+    
+    # Procurar por diretório existente da fila
+    for diretorio_fila in caminhos_fila:
+        if os.path.exists(diretorio_fila):
+            padrao_arquivos = os.path.join(diretorio_fila, "req_*.json")
+            arquivos = glob.glob(padrao_arquivos)
+            
+            pendentes = 0
+            processados = 0
+            
+            # Contar arquivos por status
+            for arquivo in arquivos:
+                try:
+                    with open(arquivo, 'r', encoding='utf-8') as f:
+                        dados = json.load(f)
+                    
+                    if dados.get('processado', False):
+                        processados += 1
+                    else:
+                        pendentes += 1
+                except:
+                    continue
+            
+            return {
+                'pendentes': pendentes,
+                'processados': processados,
+                'total': len(arquivos),
+                'diretorio': diretorio_fila
+            }
+    
+    return {'erro': 'Diretório da fila não encontrado'}
+
+def mostrar_info_fila():
+    """
+    Função para mostrar informações da fila na interface principal.
+    
+    Retorna uma string formatada com o status atual da fila de requisições,
+    incluindo indicadores visuais baseados na quantidade de requisições pendentes.
+    
+    Returns:
+        str: Mensagem de status formatada com emoji indicativo
+    """
+    status = verificar_status_fila()
+    
+    if 'erro' in status:
+        return "❌ Erro ao verificar fila"
+    
+    pendentes = status['pendentes']
+    total = status['total']
+    
+    if pendentes == 0:
+        return "✅ Fila vazia - todos os registros processados"
+    elif pendentes <= 5:
+        return f"🟡 {pendentes} requisições pendentes"
+    elif pendentes <= 20:
+        return f"🟠 {pendentes} requisições pendentes - processar em breve"
+    else:
+        return f"🔴 {pendentes} requisições pendentes - ATENÇÃO!"
