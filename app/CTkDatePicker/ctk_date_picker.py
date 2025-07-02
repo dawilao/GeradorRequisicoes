@@ -221,6 +221,37 @@ class CTkDatePicker(ctk.CTkFrame):
             self.date_entry.configure(state='normal')
 
     def set(self, value: str):
+        """
+        Define programaticamente o valor/data no campo de entrada do date picker.
+        
+        Esta função permite definir uma data específica no campo de entrada, 
+        independentemente da configuração de entrada manual do componente.
+        É especialmente útil para restaurar valores salvos, definir datas padrão
+        ou sincronizar com outros componentes da interface.
+        
+        Parameters:
+        - value (str): A data em formato string que será inserida no campo.
+                    Deve estar no formato especificado por self.date_format
+                    (padrão: "%d/%m/%Y", ex: "25/12/2023").
+        
+        Behavior:
+        - Se allow_manual_input for False (entrada manual desabilitada):
+        * Habilita temporariamente o campo
+        * Limpa o conteúdo atual
+        * Insere o novo valor
+        * Restaura o estado desabilitado
+        - Se allow_manual_input for True (entrada manual habilitada):
+        * Limpa o conteúdo atual
+        * Insere o novo valor diretamente
+        
+        Example:
+            date_picker.set("31/12/2023")  # Define 31 de dezembro de 2023
+            date_picker.set("01/01/2024")  # Define 1º de janeiro de 2024
+        
+        Note:
+            Esta função não valida o formato da data fornecida. É responsabilidade
+            do chamador garantir que o valor esteja no formato correto.
+        """
         if not self.allow_manual_input:
             self.date_entry.configure(state="normal")
             self.date_entry.delete(0, tk.END)
