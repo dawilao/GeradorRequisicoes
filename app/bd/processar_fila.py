@@ -46,8 +46,6 @@ USUARIOS_AUTORIZADOS = [
     'TÁCIO BARBOSA',
 ]
 
-nome_usuario = ''
-
 def verificar_autorizacao(nome_usuario_logado: str = None) -> bool:
     """
     Verifica se o usuário atual está autorizado a processar a fila.

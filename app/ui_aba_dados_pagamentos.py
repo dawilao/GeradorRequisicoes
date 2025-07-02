@@ -70,6 +70,10 @@ class AbaDadosPagamentos(ctk.CTkFrame):
         self.lido_atual = None
         self.ultimo_fullscreen = self.root.attributes('-fullscreen')  # Salva o estado inicial
 
+        # Variáveis para rastrear se foi feita busca por data
+        self.ultima_busca_data = None  # Armazena a última data pesquisada
+        self.busca_ativa = False  # Flag para indicar se há uma busca ativa
+
         self.inicializar_banco()
         self._construir_widgets()
 
@@ -284,7 +288,38 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             cursor.execute("SELECT rowid, * FROM registros WHERE data_criacao = ? ORDER BY id DESC", (data,))
             registros = cursor.fetchall()
 
+        # Atualizar variáveis de controle de busca
+        self.ultima_busca_data = data
+        self.busca_ativa = True
+
         self.exibir_registros_em_frame(registros, titulo=f"Registros em {data}")
+
+    def reexecutar_ultima_busca(self):
+        """
+        Reexecuta a última busca realizada para atualizar os resultados.
+        """
+        if self.busca_ativa and self.ultima_busca_data:
+            print(f"Reexecutando busca por data: {self.ultima_busca_data}")
+            
+            # Definir a data no DatePicker
+            self.data_entry.set(self.ultima_busca_data)
+            
+            # Executar a busca
+            with sqlite3.connect(CAMINHO_BD) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT rowid, * FROM registros WHERE data_criacao = ? ORDER BY id DESC", (self.ultima_busca_data,))
+                registros = cursor.fetchall()
+
+            self.exibir_registros_em_frame(registros, titulo=f"Registros em {self.ultima_busca_data}")
+            
+            # Mostrar notificação de atualização
+            self.notificacao.show_notification(
+                f"Registros atualizados para {self.ultima_busca_data}",
+                NotifyType.INFO,
+                bg_color="#404040", text_color="#FFFFFF"
+            )
+        else:
+            print("Nenhuma busca anterior para reexecutar")
 
     def mostrar_dados_selecionados(self, index, registros):
         self.registro_atual = registros[index][0]
@@ -358,7 +393,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             self.botao_marcar_nao_lido.grid(row=5, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
             
             # Recarregar dados para refletir mudança
-            self.busca_por_data()
+            self.reexecutar_ultima_busca()
 
     def marcar_como_nao_lido(self):
         if self.registro_atual:
@@ -380,7 +415,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             self.botao_marcar_lido.grid(row=5, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
             
             # Recarregar dados para refletir mudança
-            self.busca_por_data()
+            self.reexecutar_ultima_busca()
 
     def deletar_registro(self):
         if self.registro_atual:
@@ -398,7 +433,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
                 self.botao_marcar_lido.grid_forget()
                 self.botao_marcar_nao_lido.grid_forget()
                 self.botao_deletar.grid_forget()
-                self.busca_por_data()
+                self.reexecutar_ultima_busca()
 
     def atualizar_status_fila_manual(self):
         """
@@ -616,7 +651,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
                 except Exception as e:
                     erros += 1
                     print(f"Erro ao processar arquivo {caminho_arquivo}: {e}")
-            
+
             # Finalizar processamento
             widgets_progresso['progress_bar'].set(1.0)
             
@@ -651,6 +686,9 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             
             # Atualizar status da fila na interface principal após 2 segundos
             self.root.after(2000, self.atualizar_status_fila_manual)
+
+            # Reexecutar última busca se havia uma busca ativa
+            self.root.after(1000, self.reexecutar_ultima_busca)
 
         except Exception as e:
             # Erro durante processamento
