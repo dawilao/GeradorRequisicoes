@@ -45,7 +45,16 @@ class LoginManager:
             entry_usuario (CustomEntry): Campo de entrada do nome de usuário.
             entry_senha (CustomEntry): Campo de entrada da senha.
         """
-        from .ui_tela_principal import janela_principal
+        try:
+            from .ui_tela_principal import janela_principal
+        except ImportError:
+            try:
+                from app.ui_tela_principal import janela_principal
+            except ImportError:
+                import sys
+                import os
+                sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+                from ui_tela_principal import janela_principal
 
         usuario = entry_usuario.get().strip().lower()
         senha = entry_senha.get()

@@ -481,9 +481,7 @@ def mostrar_info_fila():
     
     if pendentes == 0:
         return "✅ Fila vazia - todos os registros processados"
-    elif pendentes <= 5:
+    elif pendentes <= 15:
         return f"🟡 {pendentes} requisições pendentes"
-    elif pendentes <= 20:
-        return f"🟠 {pendentes} requisições pendentes - processar em breve"
     else:
         return f"🔴 {pendentes} requisições pendentes - ATENÇÃO!"

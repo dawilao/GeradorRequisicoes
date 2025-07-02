@@ -13,12 +13,23 @@ try:
     from .ui_aba_aquisicao import AbaAquisicao
     from .ui_aba_dados_pagamentos import AbaDadosPagamentos
 except ImportError:
-    from utils import IconManager
-    from bd.utils_bd import acessa_bd_contratos
-    from ui_aba_pagamento import AbaPagamento
-    from ui_aba_email import AbaEmail
-    from ui_aba_aquisicao import AbaAquisicao
-    from ui_aba_dados_pagamentos import AbaDadosPagamentos
+    try:
+        from app.utils import IconManager
+        from app.bd.utils_bd import acessa_bd_contratos
+        from app.ui_aba_pagamento import AbaPagamento
+        from app.ui_aba_email import AbaEmail
+        from app.ui_aba_aquisicao import AbaAquisicao
+        from app.ui_aba_dados_pagamentos import AbaDadosPagamentos
+    except ImportError:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        from utils import IconManager
+        from bd.utils_bd import acessa_bd_contratos
+        from ui_aba_pagamento import AbaPagamento
+        from ui_aba_email import AbaEmail
+        from ui_aba_aquisicao import AbaAquisicao
+        from ui_aba_dados_pagamentos import AbaDadosPagamentos
 
 
 locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil')
@@ -124,7 +135,11 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         frame_tab4 = ctk.CTkScrollableFrame(master=tabview.tab("DADOS PAGAMENTOS"))
         frame_tab4.pack(fill="both", expand=True, padx=2, pady=2)
 
-        aba_dados_pagamentos = AbaDadosPagamentos(master=frame_tab4, root=root)
+        aba_dados_pagamentos = AbaDadosPagamentos(
+            master=frame_tab4,
+            nome_completo_usuario=nome_completo_usuario,
+            root=root
+        )
 
     root.mainloop()
 

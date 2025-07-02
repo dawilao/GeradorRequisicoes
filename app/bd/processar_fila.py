@@ -4,6 +4,21 @@ Processador manual da fila de requisições com controle de acesso.
 Este módulo permite que apenas usuários autorizados processem as requisições
 armazenadas na fila de arquivos JSON, consolidando-as no banco de dados principal.
 Isso resolve problemas de concorrência ao permitir processamento controlado e manual.
+
+NOVAS FUNCIONALIDADES:
+- verificar_autorizacao() agora aceita o nome do usuário logado no programa
+- Se nome_usuario_logado for fornecido, usa ele diretamente
+- Caso contrário, mantém o comportamento original (usuário do sistema operacional)
+- Nova função verificar_usuario_autorizado() para verificações silenciosas
+
+EXEMPLO DE USO:
+    # Verificar com usuário logado no programa
+    if verificar_autorizacao("TAIANE MARQUES"):
+        processar_fila_completa("TAIANE MARQUES")
+    
+    # Verificação silenciosa para interfaces
+    if verificar_usuario_autorizado("DAWISON NASCIMENTO"):
+        print("Usuário autorizado")
 """
 
 import os
@@ -13,6 +28,17 @@ import sqlite3
 from datetime import datetime
 from typing import List, Dict
 
+try:
+    from ..salva_erros import salvar_erro
+except ImportError:
+    try:
+        from app.salva_erros import salvar_erro
+    except ImportError:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        from salva_erros import salvar_erro
+
 # Lista de usuários autorizados a processar a fila de requisições
 USUARIOS_AUTORIZADOS = [
     'TAIANE MARQUES',
@@ -20,34 +46,57 @@ USUARIOS_AUTORIZADOS = [
     'TÁCIO BARBOSA',
 ]
 
-def verificar_autorizacao() -> bool:
+nome_usuario = ''
+
+def verificar_autorizacao(nome_usuario_logado: str = None) -> bool:
     """
     Verifica se o usuário atual está autorizado a processar a fila.
     
-    Compara o nome de usuário do sistema operacional com a lista de usuários
-    autorizados, permitindo diferentes variações de nomes de login.
+    Compara o nome de usuário logado no programa com a lista de usuários
+    autorizados. Se nome_usuario_logado não for fornecido, usa o usuário
+    do sistema operacional como fallback.
+    
+    Args:
+        nome_usuario_logado (str, optional): Nome do usuário logado no programa
     
     Returns:
         bool: True se o usuário está autorizado, False caso contrário
     """
-    usuario_sistema = os.environ.get('USERNAME', '').upper()
-    
-    # Mapeamento de usuários do sistema para nomes completos
-    mapeamento_usuarios = {
-        'TAIANE MARQUES': ['TAIANE', 'TAIANEMAR', 'TAIANE.MARQUES', 'TAIANE MARQUES'],
-        'DAWISON NASCIMENTO': ['DAWISON', 'DAWISON.NASCIMENTO', 'DAWISON NASCIMENTO'],
-        'TÁCIO BARBOSA': ['TACIO', 'TACIO.BARBOSA', 'TACIO BARBOSA', 'TÁCIO BARBOSA'],
-    }
-    
-    # Verificar se o usuário atual corresponde a algum usuário autorizado
-    for nome_completo, usuarios_sistema in mapeamento_usuarios.items():
-        if usuario_sistema in [u.upper() for u in usuarios_sistema]:
-            print(f"✅ Usuário autorizado: {nome_completo} ({usuario_sistema})")
+    if nome_usuario_logado:
+        # Usar o nome do usuário logado no programa
+        usuario_verificacao = nome_usuario_logado.upper().strip()
+        print(f"🔍 Verificando autorização para usuário logado: {usuario_verificacao}")
+        
+        # Verificar se o usuário logado está na lista de autorizados
+        if usuario_verificacao in [u.upper() for u in USUARIOS_AUTORIZADOS]:
+            print(f"✅ Usuário autorizado: {usuario_verificacao}")
             return True
+        
+        print(f"❌ Usuário não autorizado: {usuario_verificacao}")
+        print(f"📋 Usuários autorizados: {', '.join(USUARIOS_AUTORIZADOS)}")
+        return False
     
-    print(f"❌ Usuário não autorizado: {usuario_sistema}")
-    print(f"📋 Usuários autorizados: {', '.join(USUARIOS_AUTORIZADOS)}")
-    return False
+    else:
+        # Fallback: usar o usuário do sistema operacional (comportamento original)
+        usuario_sistema = os.environ.get('USERNAME', '').upper()
+        print(f"🔍 Verificando autorização para usuário do sistema: {usuario_sistema}")
+        
+        # Mapeamento de usuários do sistema para nomes completos
+        mapeamento_usuarios = {
+            'TAIANE MARQUES': ['TAIANE', 'TAIANEMAR', 'TAIANE.MARQUES', 'TAIANE MARQUES'],
+            'DAWISON NASCIMENTO': ['DAWISON', 'DAWISON.NASCIMENTO', 'DAWISON NASCIMENTO'],
+            'TÁCIO BARBOSA': ['TACIO', 'TACIO.BARBOSA', 'TACIO BARBOSA', 'TÁCIO BARBOSA'],
+        }
+        
+        # Verificar se o usuário atual corresponde a algum usuário autorizado
+        for nome_completo, usuarios_sistema in mapeamento_usuarios.items():
+            if usuario_sistema in [u.upper() for u in usuarios_sistema]:
+                print(f"✅ Usuário autorizado: {nome_completo} ({usuario_sistema})")
+                return True
+        
+        print(f"❌ Usuário não autorizado: {usuario_sistema}")
+        print(f"📋 Usuários autorizados: {', '.join(USUARIOS_AUTORIZADOS)}")
+        return False
 
 def obter_arquivos_pendentes() -> List[str]:
     """
@@ -61,7 +110,7 @@ def obter_arquivos_pendentes() -> List[str]:
     """
     caminhos_fila = [
         r'app\bd\fila_requisicoes',
-        r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\fila_requisicoes'
+        # r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\fila_requisicoes'
     ]
     
     # Procurar diretório existente da fila
@@ -103,10 +152,12 @@ def processar_requisicao_individual(dados: Dict) -> bool:
     """
     # Caminhos possíveis para o banco de dados (priorizar o banco principal do Drive)
     caminhos_bd = [
-        r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\dados.db',  # Banco principal primeiro
-        r'app\bd\dados.db'  # Fallback local
+        r'app\bd\dados.db'  # Banco local
+        # r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\dados.db',  # Banco principal
     ]
     
+    nome_usuario = dados.get('nome_usuario', '').upper().strip()
+
     # Tentar conectar ao banco de dados
     conn = None
     for caminho_bd in caminhos_bd:
@@ -118,6 +169,7 @@ def processar_requisicao_individual(dados: Dict) -> bool:
     
     if not conn:
         raise sqlite3.Error("Não foi possível conectar ao banco de dados")
+        salvar_erro(nome_usuario, "Erro ao conectar ao banco de dados")
     
     try:
         cursor = conn.cursor()
@@ -129,12 +181,12 @@ def processar_requisicao_individual(dados: Dict) -> bool:
         # Adicionar colunas se não existirem (principalmente para o banco do Drive)
         if "data_processamento" not in colunas_existentes:
             cursor.execute("ALTER TABLE registros ADD COLUMN data_processamento TEXT")
-            print("📝 Coluna 'data_processamento' adicionada ao banco")
-            
+            print("Coluna 'data_processamento' adicionada ao banco")
+
         if "hora_processamento" not in colunas_existentes:
             cursor.execute("ALTER TABLE registros ADD COLUMN hora_processamento TEXT")
-            print("📝 Coluna 'hora_processamento' adicionada ao banco")
-        
+            print("Coluna 'hora_processamento' adicionada ao banco")
+
         # Criar tabela se não existir (para compatibilidade)
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS registros (
@@ -225,18 +277,24 @@ def marcar_como_processado(caminho_arquivo: str):
             
     except Exception as e:
         print(f"⚠️  Erro ao remover arquivo processado: {e}")
+        # Nota: Esta função pode ser chamada em contextos onde nome_usuario global não está definido
+        # Por isso comentamos a linha de log de erro para evitar problemas
+        # salvar_erro(nome_usuario, f"Erro ao remover arquivo processado: {e}")
 
-def processar_fila_completa():
+def processar_fila_completa(nome_usuario_logado: str = None):
     """
     Processa toda a fila de requisições pendentes.
     
     Função principal que verifica autorização, obtém arquivos pendentes,
     solicita confirmação do usuário e processa todas as requisições.
+    
+    Args:
+        nome_usuario_logado (str, optional): Nome do usuário logado no programa
     """
     print("=== PROCESSADOR DE FILA DE REQUISIÇÕES ===")
     
     # Verificar se o usuário está autorizado
-    if not verificar_autorizacao():
+    if not verificar_autorizacao(nome_usuario_logado):
         input("Pressione Enter para sair...")
         return
     
@@ -248,7 +306,7 @@ def processar_fila_completa():
         input("Pressione Enter para sair...")
         return
     
-    print(f"📋 Encontradas {len(arquivos_pendentes)} requisições pendentes")
+    print(f"Encontradas {len(arquivos_pendentes)} requisições pendentes")
     
     # Solicitar confirmação do usuário
     resposta = input(f"Deseja processar todas as {len(arquivos_pendentes)} requisições? (s/n): ")
@@ -351,14 +409,10 @@ def obter_info_fila_para_interface():
         status = "Fila vazia"
         cor = "verde"
         icone = "✅"
-    elif total_pendentes <= 5:
+    elif total_pendentes <= 15:
         status = f"{total_pendentes} pendentes"
         cor = "amarelo"
         icone = "🟡"
-    elif total_pendentes <= 20:
-        status = f"{total_pendentes} pendentes - processar em breve"
-        cor = "laranja"
-        icone = "🟠"
     else:
         status = f"{total_pendentes} pendentes - ATENÇÃO!"
         cor = "vermelho"
@@ -370,6 +424,26 @@ def obter_info_fila_para_interface():
         'cor': cor,
         'icone': icone
     }
+
+def verificar_usuario_autorizado(nome_usuario: str) -> bool:
+    """
+    Função auxiliar para verificar se um usuário específico está autorizado
+    a processar a fila de requisições.
+    
+    Esta função é útil para interfaces que precisam verificar autorização
+    sem mostrar mensagens de console.
+    
+    Args:
+        nome_usuario (str): Nome do usuário a ser verificado
+        
+    Returns:
+        bool: True se o usuário está autorizado, False caso contrário
+    """
+    if not nome_usuario:
+        return False
+        
+    usuario_verificacao = nome_usuario.upper().strip()
+    return usuario_verificacao in [u.upper() for u in USUARIOS_AUTORIZADOS]
 
 if __name__ == "__main__":
     import sys

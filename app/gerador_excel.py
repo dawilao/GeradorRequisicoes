@@ -25,12 +25,23 @@ try:
     )
     from .salva_erros import salvar_erro
 except ImportError:
-    from CTkFloatingNotifications import NotificationManager, NotifyType
-    from definir_diretorio_por_contrato import (
-        salvar_arquivo_em_diretorio,
-        abrir_explorer_se_necessario,
-    )
-    from salva_erros import salvar_erro
+    try:
+        from app.CTkFloatingNotifications import NotificationManager, NotifyType
+        from app.definir_diretorio_por_contrato import (
+            salvar_arquivo_em_diretorio,
+            abrir_explorer_se_necessario,
+        )
+        from app.salva_erros import salvar_erro
+    except ImportError:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        from CTkFloatingNotifications import NotificationManager, NotifyType
+        from definir_diretorio_por_contrato import (
+            salvar_arquivo_em_diretorio,
+            abrir_explorer_se_necessario,
+        )
+        from salva_erros import salvar_erro
 
 @dataclass # pylint: disable=too-many-instance-attributes
 class DadosRequisicao:

@@ -3,23 +3,38 @@ import re
 import pyperclip
 import tkinter as tk
 import customtkinter as ctk
+import os
 from tkinter import messagebox, scrolledtext
 from datetime import datetime
 
 try:
-    import app.componentes as componentes
+    from . import componentes
     from .CTkDatePicker import CTkDatePicker
     from .CTkFloatingNotifications import *
     from .bd.processar_fila import obter_info_fila_para_interface, processar_fila_completa, verificar_autorizacao
     from .bd.utils_bd import verificar_status_fila
+    from .salva_erros import salvar_erro
 except ImportError:
-    import componentes as componentes
-    from CTkDatePicker import CTkDatePicker
-    from CTkFloatingNotifications import *
-    from bd.processar_fila import obter_info_fila_para_interface, processar_fila_completa, verificar_autorizacao
-    from bd.utils_bd import verificar_status_fila
+    try:
+        import app.componentes as componentes
+        from app.CTkDatePicker import CTkDatePicker
+        from app.CTkFloatingNotifications import *
+        from app.bd.processar_fila import obter_info_fila_para_interface, processar_fila_completa, verificar_autorizacao
+        from app.bd.utils_bd import verificar_status_fila
+        from app.salva_erros import salvar_erro
+    except ImportError:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        import componentes
+        from CTkDatePicker import CTkDatePicker
+        from CTkFloatingNotifications import *
+        from bd.processar_fila import obter_info_fila_para_interface, processar_fila_completa, verificar_autorizacao
+        from bd.utils_bd import verificar_status_fila
+        from salva_erros import salvar_erro
 
-CAMINHO_BD = r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\dados.db'
+# CAMINHO_BD = r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\dados.db'
+CAMINHO_BD = r'app\bd\dados.db'
 
 def formatar_valor_brasileiro(valor):
     """
@@ -38,11 +53,12 @@ def formatar_valor_brasileiro(valor):
         return str(valor).replace('.', ',')
 
 class AbaDadosPagamentos(ctk.CTkFrame):
-    def __init__(self, master, root, tabview="DADOS PAGAMENTOS", **kwargs):
+    def __init__(self, master, nome_completo_usuario, root, tabview="DADOS PAGAMENTOS", **kwargs):
         super().__init__(master, **kwargs)
         self.pack(fill="both", expand=True, padx=2, pady=2)
         
         self.tabview = tabview
+        self.nome_usuario = nome_completo_usuario
         self.estado_anterior = None  # Adicionado para rastrear mudanças de estado da janela
         self.root = root
         self.notificacao = NotificationManager(self.root)
@@ -114,7 +130,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             command=self.atualizar_status_fila_manual,
             width=120
         )
-        self.botao_atualizar_fila.grid(row=0, column=1, sticky="e", padx=(5, 10), pady=5)
+        self.botao_atualizar_fila.grid(row=0, column=1, sticky="w", padx=(10, 5), pady=5)
         
         # Botão para processar fila (sempre visível nesta aba restrita)
         self.botao_processar_fila = ctk.CTkButton(
@@ -125,7 +141,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             hover_color="#ff5252",
             width=120
         )
-        self.botao_processar_fila.grid(row=0, column=2, sticky="e", padx=(5, 10), pady=5)
+        self.botao_processar_fila.grid(row=0, column=2, sticky="w", padx=(5, 5), pady=5)
         
         # Botão para mostrar detalhes da fila
         self.botao_detalhes_fila = ctk.CTkButton(
@@ -134,12 +150,12 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             command=self.mostrar_detalhes_fila,
             width=100
         )
-        self.botao_detalhes_fila.grid(row=1, column=1, columnspan=2, sticky="e", padx=(5, 10), pady=(0, 5))
+        self.botao_detalhes_fila.grid(row=0, column=3, sticky="w", padx=(5, 5), pady=5)
         
         # Atualizar status da fila na inicialização (sem auto-refresh)
         self.atualizar_status_fila_manual()
 
-        self.saida_texto = ctk.CTkTextbox(self, width=500, height=100)
+        self.saida_texto = ctk.CTkTextbox(self, width=500, height=75)
         self.saida_texto.grid(row=4, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew")
 
         self.botao_marcar_lido = ctk.CTkButton(self, text="Marcar como Lido", command=self.marcar_como_lido)
@@ -192,7 +208,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             return
 
         # Cria o frame de listagem na linha 3
-        h = 340 if self.root.state() == 'zoomed' else 250
+        h = 340 if self.root.state() == 'zoomed' else 235
         if hasattr(self, 'frame_listagem') and self.frame_listagem is not None:
             self.frame_listagem.destroy()
             self.frame_listagem = None
@@ -209,13 +225,13 @@ class AbaDadosPagamentos(ctk.CTkFrame):
 
         for registro in registros:
             # Com rowid incluído no SELECT, os índices ficam deslocados em +1
-            # Campo 'lido' está na posição 19 (18 + 1 devido ao rowid)
+            # Campo 'lido' está na última coluna
+            lido_status = registro[-1]
+            
             if len(registro) > 19:
-                lido_status = registro[19]  # Posição correta do campo 'lido' com rowid
-                hora_criacao = registro[18] if len(registro) > 18 else "00:00"  # hora_criacao na posição 18
+                hora_criacao = registro[-4] if len(registro) > 1 else "00:00"  # Fallback
             else:
-                lido_status = registro[-1]  # Fallback para formato antigo
-                hora_criacao = registro[-2] if len(registro) > 1 else "00:00"  # Fallback
+                hora_criacao = registro[-2] if len(registro) > 16 else "00:00"  # Fallback para hora_criacao
             
             prefixo_status = '[OK]' if lido_status else '[NAO LIDO]'
             
@@ -290,11 +306,11 @@ class AbaDadosPagamentos(ctk.CTkFrame):
         self.botao_deletar.grid_forget()
 
         if self.lido_atual:
-            self.botao_marcar_nao_lido.grid(row=4, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
+            self.botao_marcar_nao_lido.grid(row=5, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
         else:
-            self.botao_marcar_lido.grid(row=4, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
+            self.botao_marcar_lido.grid(row=5, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
 
-        self.botao_deletar.grid(row=4, column=1, sticky="e", padx=(10, 10), pady=(0, 10))
+        self.botao_deletar.grid(row=5, column=1, sticky="e", padx=(10, 10), pady=(0, 10))
 
     def preencher_campos(self, dados):
         # Extrair dados considerando as novas colunas (data_processamento e hora_processamento)
@@ -339,7 +355,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             # Atualizar interface
             self.lido_atual = 1  # Atualizar estado local
             self.botao_marcar_lido.grid_forget()
-            self.botao_marcar_nao_lido.grid(row=4, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
+            self.botao_marcar_nao_lido.grid(row=5, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
             
             # Recarregar dados para refletir mudança
             self.busca_por_data()
@@ -361,7 +377,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             # Atualizar interface
             self.lido_atual = 0  # Atualizar estado local
             self.botao_marcar_nao_lido.grid_forget()
-            self.botao_marcar_lido.grid(row=4, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
+            self.botao_marcar_lido.grid(row=5, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
             
             # Recarregar dados para refletir mudança
             self.busca_por_data()
@@ -409,13 +425,13 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             # Exibir notificação sobre o status
             if info_fila['total_pendentes'] == 0:
                 self.notificacao.show_notification(
-                    "✅ Fila vazia - todos os registros processados",
+                    "Fila vazia - todos os registros processados",
                     NotifyType.INFO,
                     bg_color="#404040", text_color="#FFFFFF"
                 )
             elif info_fila['total_pendentes'] > 20:
                 self.notificacao.show_notification(
-                    f"🔴 ATENÇÃO: {info_fila['total_pendentes']} requisições pendentes!",
+                    f"ATENÇÃO: {info_fila['total_pendentes']} requisições pendentes!",
                     NotifyType.WARNING,
                     bg_color="#404040", text_color="#FFFFFF"
                 )
@@ -428,13 +444,14 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             
         except Exception as e:
             print(f"Erro ao atualizar status da fila: {e}")
-            self.label_status_fila.configure(text="❌ Erro ao verificar fila")
+            self.label_status_fila.configure(text="Erro ao verificar fila")
             self.botao_processar_fila.configure(text="Processar Fila (?)")
             self.notificacao.show_notification(
-                f"❌ Erro ao verificar fila: {str(e)}",
+                f"Erro ao verificar fila: {str(e)}",
                 NotifyType.ERROR,
                 bg_color="#404040", text_color="#FFFFFF"
             )
+            salvar_erro(self.nome_usuario, f"Erro ao atualizar status da fila: {e}")
 
     def processar_fila_requisicoes(self):
         """
@@ -452,6 +469,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             
             if 'erro' in status_fila:
                 messagebox.showerror("Erro", "Erro ao verificar status da fila:\n" + status_fila['erro'])
+                salvar_erro(self.nome_usuario, f"Erro ao verificar status da fila: {status_fila['erro']}")
                 return
                 
             pendentes = status_fila['pendentes']
@@ -487,6 +505,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao processar fila: {e}")
+            salvar_erro(self.nome_usuario, f"Erro ao processar fila: {e}")
 
     def criar_janela_progresso(self):
         """
@@ -539,7 +558,16 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             total_requisicoes (int): Total de requisições a processar
         """
         try:
-            from .bd.processar_fila import obter_arquivos_pendentes, processar_requisicao_individual, marcar_como_processado
+            try:
+                from .bd.processar_fila import obter_arquivos_pendentes, processar_requisicao_individual, marcar_como_processado
+            except ImportError:
+                try:
+                    from app.bd.processar_fila import obter_arquivos_pendentes, processar_requisicao_individual, marcar_como_processado
+                except ImportError:
+                    import sys
+                    import os
+                    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+                    from bd.processar_fila import obter_arquivos_pendentes, processar_requisicao_individual, marcar_como_processado
             
             # Atualizar status inicial
             widgets_progresso['label_status'].configure(text="Obtendo arquivos da fila...")
@@ -593,9 +621,9 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             widgets_progresso['progress_bar'].set(1.0)
             
             if erros == 0:
-                widgets_progresso['label_status'].configure(text="🎉 Processamento concluído com sucesso!")
+                widgets_progresso['label_status'].configure(text="Processamento concluído com sucesso!")
                 widgets_progresso['label_detalhes'].configure(
-                    text=f"✅ {processadas} requisições processadas"
+                    text=f"{processadas} requisições processadas"
                 )
                 
                 # Mostrar notificação de sucesso
@@ -616,36 +644,46 @@ class AbaDadosPagamentos(ctk.CTkFrame):
                     NotifyType.WARNING,
                     bg_color="#404040", text_color="#FFFFFF"
                 ))
-            
+                salvar_erro(self.nome_usuario, f"Fila processada com {erros} erros. {processadas} requisições processadas")
+
             # Habilitar botão de fechar
             widgets_progresso['botao_fechar'].configure(state="normal")
             
             # Atualizar status da fila na interface principal após 2 segundos
             self.root.after(2000, self.atualizar_status_fila_manual)
-            
+
         except Exception as e:
             # Erro durante processamento
             widgets_progresso['label_status'].configure(text="❌ Erro durante processamento")
             widgets_progresso['label_detalhes'].configure(text=f"Erro: {str(e)}")
             widgets_progresso['botao_fechar'].configure(state="normal")
-            
+
             # Mostrar notificação de erro
             self.root.after(0, lambda: self.notificacao.show_notification(
                 f"Erro ao processar fila: {str(e)}",
                 NotifyType.ERROR,
                 bg_color="#404040", text_color="#FFFFFF"
             ))
+            salvar_erro(self.nome_usuario, f"Erro ao processar fila: {str(e)}")
 
     def mostrar_detalhes_fila(self):
         """
         Mostra uma janela com detalhes das requisições na fila.
-        
+
         Exibe informações detalhadas sobre as requisições pendentes,
         incluindo usuário, timestamp e tipo de serviço.
         """
         try:
-            from .bd.processar_fila import obter_arquivos_pendentes
-            
+            try:
+                from .bd.processar_fila import obter_arquivos_pendentes
+            except ImportError:
+                try:
+                    from app.bd.processar_fila import obter_arquivos_pendentes
+                except ImportError:
+                    import sys
+                    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+                    from bd.processar_fila import obter_arquivos_pendentes
+
             # Obter arquivos pendentes
             arquivos_pendentes = obter_arquivos_pendentes()
             
@@ -669,7 +707,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             # Título
             titulo = ctk.CTkLabel(
                 frame_scroll, 
-                text=f"📋 Requisições Pendentes na Fila ({len(arquivos_pendentes)})",
+                text=f"Requisições Pendentes na Fila ({len(arquivos_pendentes)})",
                 font=ctk.CTkFont(size=16, weight="bold")
             )
             titulo.pack(pady=(0, 20))
@@ -740,3 +778,4 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao mostrar detalhes da fila: {e}")
+            salvar_erro(self.nome_usuario, f"Erro ao mostrar detalhes da fila: {e}")
