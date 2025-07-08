@@ -107,7 +107,7 @@ class AbaPagamento(ctk.CTkFrame):
         service_types = [
             "ABASTECIMENTO", "ADIANTAMENTO/PAGAMENTO PARCEIRO", "AQUISIÇÃO COM OS",
             "AQUISIÇÃO SEM OS", "CARRETO", "COMPRA IN LOCO", "ENVIO DE MATERIAL",
-            "ESTACIONAMENTO", "HOSPEDAGEM", "ORÇAMENTO APROVADO",
+            "ESTACIONAMENTO/PEDÁGIO", "HOSPEDAGEM", "ORÇAMENTO APROVADO",
             "PREST. SERVIÇO/MÃO DE OBRA", "REEMBOLSO COM OS", "REEMBOLSO SEM OS",
             "REEMBOLSO UBER", "RELATÓRIO EXTRA", "SOLICITAÇÃO COM OS",
             "SOLICITAÇÃO SEM OS", "TRANSPORTADORA"
@@ -455,7 +455,7 @@ class AbaPagamento(ctk.CTkFrame):
         """Configura campos específicos baseado no tipo de serviço"""
         if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
             self._configure_campo_competencia()
-        elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO", "HOSPEDAGEM", 
+        elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO/PEDÁGIO", "HOSPEDAGEM", 
                              "SOLICITAÇÃO COM OS", "SOLICITAÇÃO SEM OS"}:
             self._configure_campos_tecnicos()
         
@@ -1161,7 +1161,7 @@ class AbaPagamento(ctk.CTkFrame):
                 campos_obrigatorios.append((descricao_utilidades, "DESCRIÇÃO UTILIDADES"))
         elif tipo_servico == "ENVIO DE MATERIAL":
             campos_obrigatorios.remove((contrato, "CONTRATO"))
-        elif tipo_servico in {"ESTACIONAMENTO", "HOSPEDAGEM"}:
+        elif tipo_servico in {"ESTACIONAMENTO/PEDÁGIO", "HOSPEDAGEM"}:
             campos_obrigatorios.extend([
                 (tecnicos, "TÉCNICOS"),
                 (prefixo, "PREFIXO"),
@@ -1345,9 +1345,9 @@ class AbaPagamento(ctk.CTkFrame):
             texto += f"SERVIÇO: {tipo_servico}\n\n"
             texto += f"VALOR: R$ {valor_tab1}\n\n"
         
-        elif tipo_servico == "ESTACIONAMENTO":
+        elif tipo_servico == "ESTACIONAMENTO/PEDÁGIO":
             texto = (
-                f"Solicito o pagamento ao fornecedor {nome_fornecedor}, pelo estacionamento "
+                f"Solicito o pagamento ao fornecedor {nome_fornecedor}, pelo estacionamento/pedágio "
                 f"dos técnicos {tecnicos}, referente à obra: {prefixo} - {agencia} - {os_num}, "
                 f"para {contrato}.\n\n"
             )
