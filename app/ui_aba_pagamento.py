@@ -1018,6 +1018,7 @@ class AbaPagamento(ctk.CTkFrame):
 
     def _campo_descricao_utilidades(self, choice: str = None):
         """Gerencia campo de descrição de utilidades"""
+        tipo_servico = self.tipo_servico_combobox.get()
         tipo_aquisicao = self.tipo_aquisicao_combobox.get()
 
         if tipo_aquisicao == "UTILIDADES":
@@ -1028,7 +1029,7 @@ class AbaPagamento(ctk.CTkFrame):
             self.descricao_utilidades_entry.grid_forget()
             self.descricao_utilidades_entry.delete(0, tk.END)
 
-        if tipo_aquisicao == "SEM OS":
+        if tipo_servico == "AQUISIÇÃO SEM OS":
             self._esconde_pref_age_os()
         else:
             self._show_pref_age_os_obrigatorios()    
