@@ -51,6 +51,24 @@ def handle_error(funcao, erro, root):
     if resposta:
         mostrar_traceback()
 
+def retorna_competencia(hoje=None):
+    from datetime import datetime
+
+    if hoje is None:
+        hoje = datetime.today()
+    
+    mes = hoje.month
+    ano = hoje.year
+
+    # Se já passou do dia 20, próxima competência
+    if hoje.day > 20:
+        mes += 1
+        # Se passou de dezembro, vai para a competência 01 (janeiro) do próximo ano
+        if mes > 12:
+            mes = 1
+            ano += 1
+
+    return f"{str(mes).zfill(2)}/{ano}"
 
 def arrumar_texto(texto):
     return ' '.join(texto.strip().split()) if texto else ''

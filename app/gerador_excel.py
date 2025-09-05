@@ -24,6 +24,7 @@ try:
         abrir_explorer_se_necessario,
     )
     from .salva_erros import salvar_erro
+    from .utils import retorna_competencia
 except ImportError:
     from CTkFloatingNotifications import NotificationManager, NotifyType
     from definir_diretorio_por_contrato import (
@@ -31,6 +32,7 @@ except ImportError:
         abrir_explorer_se_necessario,
     )
     from salva_erros import salvar_erro
+    from utils import retorna_competencia
 
 @dataclass # pylint: disable=too-many-instance-attributes
 class DadosRequisicao:
@@ -181,6 +183,7 @@ def gerar_excel(dados: DadosRequisicao):
         sheet_principal["D5"] = dados.nome_fornecedor
         sheet_principal["D11"] = dados.nome_usuario
         sheet_principal["D16"] = dados.contrato if dados.contrato else "ESCRITÓRIO"
+        sheet_principal["K5"] = retorna_competencia()
 
         if dados.tipo_pagamento == "FATURAMENTO":
             sheet_principal["D47"] = "FATURADO"
