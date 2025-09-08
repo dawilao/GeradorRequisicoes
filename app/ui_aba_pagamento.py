@@ -1531,6 +1531,7 @@ class AbaPagamento(ctk.CTkFrame):
                 motivo=motivo,
                 descricao_itens=descricao_itens,
                 valor_itens=valor_itens,
+                competencia=competencia,
             )
 
             gerar_excel(dados)
