@@ -24,6 +24,7 @@ try:
         abrir_explorer_se_necessario,
     )
     from .salva_erros import salvar_erro
+    from .utils import retorna_competencia
 except ImportError:
     from CTkFloatingNotifications import NotificationManager, NotifyType
     from definir_diretorio_por_contrato import (
@@ -31,6 +32,7 @@ except ImportError:
         abrir_explorer_se_necessario,
     )
     from salva_erros import salvar_erro
+    from utils import retorna_competencia
 
 @dataclass # pylint: disable=too-many-instance-attributes
 class DadosRequisicao:
@@ -58,6 +60,7 @@ class DadosRequisicao:
     motivo: str
     descricao_itens: str
     valor_itens: str
+    competencia: str
 
 def gerar_excel(dados: DadosRequisicao):
     """
@@ -106,6 +109,8 @@ def gerar_excel(dados: DadosRequisicao):
         Descrição detalhada dos itens/serviços, separados por quebra de linha.
     valor_itens : str
         Valor dos itens/serviços, separados por quebra de linha.
+    competencia : str
+        Competência associada à requisição.
 
     Retorno
     -------
@@ -180,22 +185,27 @@ def gerar_excel(dados: DadosRequisicao):
         data_atual = datetime.now().strftime("%d/%m/%Y")
         sheet_principal["D5"] = dados.nome_fornecedor
         sheet_principal["D11"] = dados.nome_usuario
-        sheet_principal["D16"] = dados.contrato if dados.contrato else "ESCRITÓRIO"
+        sheet_principal["D17"] = dados.contrato if dados.contrato else "ESCRITÓRIO"
+        
+        if dados.tipo_servico in {"ADIANTAMENTO/PAGAMENTO PARCEIRO", "PREST. SERVIÇO/MÃO DE OBRA"}:
+            sheet_principal["D14"] = retorna_competencia(competencia=dados.competencia)
+        else:
+            sheet_principal["D14"] = retorna_competencia()
 
         if dados.tipo_pagamento == "FATURAMENTO":
-            sheet_principal["D47"] = "FATURADO"
+            sheet_principal["D48"] = "FATURADO"
         else:
-            sheet_principal["D47"] = dados.tipo_pagamento
+            sheet_principal["D48"] = dados.tipo_pagamento
 
-        sheet_principal["B53"] = f"Assinatura: {dados.nome_usuario}"
-        sheet_principal["B54"] = f"Data: {data_atual}"
+        sheet_principal["B54"] = f"Assinatura: {dados.nome_usuario}"
+        sheet_principal["B55"] = f"Data: {data_atual}"
 
         if dados.os_num in (0, '', None):
-            sheet_principal["D14"] = "-"
             sheet_principal["D15"] = "-"
+            sheet_principal["D16"] = "-"
         else:
-            sheet_principal["D14"] = dados.os_num
-            sheet_principal["D15"] = f"{dados.prefixo} - {dados.agencia}"
+            sheet_principal["D15"] = dados.os_num
+            sheet_principal["D16"] = f"{dados.prefixo} - {dados.agencia}"
 
         # Usuários que podem selecionar departamentos
         if dados.nome_usuario in dados.usuarios_varios_departamentos:
@@ -223,7 +233,7 @@ def gerar_excel(dados: DadosRequisicao):
         elif dados.nome_usuario in dados.usuarios_gerais:
             sheet_principal["D13"] = dados.departamento
 
-        linha_inicial = 19
+        linha_inicial = 20
         limite_caracteres = 43
         altura_por_linha = 15  # Altura padrão por linha
         sheet_principal.column_dimensions["E"].width = 15
@@ -318,7 +328,7 @@ def gerar_excel(dados: DadosRequisicao):
             allow_blank=True
         )
         sheet_principal.add_data_validation(dv)
-        dv.add("D48")
+        dv.add("D49")
 
         workbook.save(nome_arquivo_destino)
         workbook.close()
