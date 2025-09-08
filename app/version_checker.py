@@ -16,7 +16,7 @@ def get_version():
             return version_data["version"]
     except Exception as e:
         # Versão fallback caso não consiga ler o arquivo
-        return "2.2.0"
+        return "3.0.0"
 
 def check_for_updates():
     """Verifica se há uma versão mais recente disponível."""
