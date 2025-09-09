@@ -12,6 +12,7 @@ try:
     from .ui_aba_email import AbaEmail
     from .ui_aba_aquisicao import AbaAquisicao
     from .ui_aba_dados_pagamentos import AbaDadosPagamentos
+    from .version_checker import get_version
 except ImportError:
     from utils import IconManager
     from bd.utils_bd import acessa_bd_contratos
@@ -19,6 +20,7 @@ except ImportError:
     from ui_aba_email import AbaEmail
     from ui_aba_aquisicao import AbaAquisicao
     from ui_aba_dados_pagamentos import AbaDadosPagamentos
+    from version_checker import get_version
 
 
 locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil')
@@ -46,8 +48,8 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
     # Configuração da interface gráfica
     root = ctk.CTk()
     root.title("Gerador de Requisições")
-    root.geometry("680x600")
-    root.minsize(680, 600)
+    root.geometry("680x620")
+    root.minsize(680, 620)
     ctk.set_default_color_theme("green")
 
     icon_manager = IconManager()
@@ -55,7 +57,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
 
     ''' CRIAÇÃO DAS ABAS PARA SELEÇAO DOS TIPOS DE MODELOS DE TEXTO '''
     tabview = ctk.CTkTabview(master=root)
-    tabview.pack(fill="both", expand=True, padx=10, pady=10)
+    tabview.pack(fill="both", expand=True, padx=10, pady=(10, 0))
 
     # Criação das abas dinamicamente com base nas permissões
     for aba in abas_permitidas:
@@ -125,6 +127,16 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
         frame_tab4.pack(fill="both", expand=True, padx=2, pady=2)
 
         aba_dados_pagamentos = AbaDadosPagamentos(master=frame_tab4, root=root)
+
+    # Adiciona o label de versão na parte inferior da janela principal
+    versao_atual = get_version()
+    label_versao = ctk.CTkLabel(
+        master=root,
+        text=f"Versão {versao_atual}",
+        font=("Segoe UI", 9),
+        text_color="#888888",
+    )
+    label_versao.pack(side="bottom", pady=0)    
 
     root.mainloop()
 
