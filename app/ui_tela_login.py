@@ -179,7 +179,7 @@ class LoginManager:
                 "Não foi possível alterar a senha no banco de dados."
             )
 
-    def _voltar_para_login():
+    def _voltar_para_login(self):
         """Volta para a tela de login principal."""
         if self.janela_alterar:
             self.janela_alterar.destroy()
@@ -227,11 +227,11 @@ class LoginManager:
         frame.grid_columnconfigure(2, weight=1)
 
         titulo = ctk.CTkLabel(
-            master=frame, 
-            text="PDFMaster", 
-            font=("Segoe UI", 32, "bold")
-        )
-        titulo.grid(row=0, column=1, pady=(15, 0), padx=20)
+            master=frame,
+            text="Gerador de\nRequisições",
+            font=("Segoe UI", 32, "bold"
+            ))
+        titulo.grid(row=0, column=1, pady=(10, 0), padx=20)
 
         subtitulo = ctk.CTkLabel(
             master=frame, 
