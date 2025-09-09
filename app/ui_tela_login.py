@@ -14,10 +14,18 @@ from typing import Optional
 
 import customtkinter as ctk
 
-from .CTkFloatingNotifications import NotificationManager, NotifyType
-from .bd.utils_bd import DatabaseManager
-from .componentes import CustomEntry
-from .utils import handle_error, IconManager
+try:
+    from .CTkFloatingNotifications import NotificationManager, NotifyType
+    from .version_checker import get_version
+    from .bd.utils_bd import DatabaseManager
+    from .componentes import CustomEntry
+    from .utils import handle_error, IconManager
+except ImportError:
+    from CTkFloatingNotifications import NotificationManager, NotifyType
+    from version_checker import get_version
+    from bd.utils_bd import DatabaseManager
+    from componentes import CustomEntry
+    from utils import handle_error, IconManager
 
 class LoginManager:
     """
@@ -285,7 +293,7 @@ class LoginManager:
         """
         self.root_login = ctk.CTk()
         self.root_login.title("Gerador de Requisições - Login")
-        self.root_login.geometry("340x420")
+        self.root_login.geometry("340x430")
         self.root_login.resizable(False, False)
         ctk.set_default_color_theme("green")
 
@@ -339,9 +347,18 @@ class LoginManager:
             text="Alterar Senha",
             command=self.criar_janela_alterar_senha
         )
-        botao_alterar_senha.pack(pady=(0,15))
+        botao_alterar_senha.pack(pady=(0,13))
 
         self.root_login.bind("<Return>", lambda enter: botao_login.invoke())
+
+        versao_atual = get_version()
+        label_versao = ctk.CTkLabel(
+            master=self.root_login,
+            text=f"Versão {versao_atual}",
+            font=("Segoe UI", 9),
+            text_color="#888888",
+        )
+        label_versao.pack(side="bottom", pady=0)
 
         self.root_login.mainloop()
 
@@ -353,3 +370,7 @@ def janela_login():
     """Função de conveniência para criar a janela de login."""
     login_manager = LoginManager()
     return login_manager.criar_janela_login()
+
+
+if __name__ == "__main__":
+    janela_login()
