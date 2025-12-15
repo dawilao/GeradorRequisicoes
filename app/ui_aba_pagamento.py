@@ -456,7 +456,7 @@ class AbaPagamento(ctk.CTkFrame):
         if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
             self._configure_campo_competencia()
         elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO/PEDÁGIO", "HOSPEDAGEM", 
-                             "SOLICITAÇÃO COM OS", "SOLICITAÇÃO SEM OS"}:
+                             "SOLICITAÇÃO COM OS", "SOLICITAÇÃO SEM OS", "COMPRA IN LOCO"}:
             self._configure_campos_tecnicos()
         
         # Configurar campos para serviços com lista de itens
@@ -473,8 +473,14 @@ class AbaPagamento(ctk.CTkFrame):
 
     def _configure_campos_tecnicos(self):
         """Configura campo de técnicos"""
-        self.tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
-        self.tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
+        tipo_servico = self.tipo_servico_combobox.get()
+
+        if tipo_servico in {"COMPRA IN LOCO"}:
+            self.tecnicos_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
+            self.tecnicos_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)           
+        else:
+            self.tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
+            self.tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
 
     def _configure_campos_da_lista_de_itens(self):
         """Configura campos da lista de itens"""
@@ -1141,21 +1147,20 @@ class AbaPagamento(ctk.CTkFrame):
                 (porcentagem, "% DO ADIANTAMENTO DO PARCEIRO")
             ])
         elif tipo_servico in {"AQUISIÇÃO COM OS", "COMPRA IN LOCO"}:
-            if tipo_servico == "AQUISIÇÃO COM OS":
+            campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
+            
+            # Adicionar pref/age/os se necessário
+            if tipo_servico == "AQUISIÇÃO COM OS" or tipo_aquisicao != "SEM OS":
                 campos_obrigatorios.extend([
-                    (tipo_aquisicao, "TIPO DE AQUISIÇÃO"),
                     (prefixo, "PREFIXO"),
                     (agencia, "AGÊNCIA"),
                     (os_num, "OS")
                 ])
-            else:
-                campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
-                if tipo_aquisicao != "SEM OS":
-                    campos_obrigatorios.extend([
-                        (prefixo, "PREFIXO"),
-                        (agencia, "AGÊNCIA"),
-                        (os_num, "OS")
-                    ])
+            
+            # Adicionar técnicos apenas para COMPRA IN LOCO
+            if tipo_servico == "COMPRA IN LOCO":
+                campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
+
         elif tipo_servico == "AQUISIÇÃO SEM OS":
             campos_obrigatorios.append((tipo_aquisicao, "TIPO DE AQUISIÇÃO"))
             if tipo_aquisicao == "UTILIDADES":
@@ -1283,12 +1288,14 @@ class AbaPagamento(ctk.CTkFrame):
                     f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
                 )
                 texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+                texto += f"TÉCNICOS: {tecnicos}\n\n"
                 texto += f"VALOR: R$ {valor_tab1}\n\n"
             else:
                 texto = (
                     f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
                 )
                 texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+                texto += f"TÉCNICOS: {tecnicos}\n\n"
                 texto += f"VALOR: R$ {valor_tab1}\n\n"
 
         elif tipo_servico == "AQUISIÇÃO SEM OS":
