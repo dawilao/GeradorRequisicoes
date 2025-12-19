@@ -648,7 +648,7 @@ class AbaPagamento(ctk.CTkFrame):
         """Configura opções de pagamento baseado no tipo de serviço"""
         self.tipo_pagamento_combobox.set("")  # Limpar seleção
         
-        if tipo_servico in {"PREST. SERVIÇO/MÃO DE OBRA", "ABASTECIMENTO", 
+        if tipo_servico in {"PREST. SERVIÇO/MÃO DE OBRA", 
                            "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
             opcoes_pagamento = ["PIX"]
         elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS", "AQUISIÇÃO COM OS",

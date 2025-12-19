@@ -6,17 +6,13 @@ import webbrowser
 import os
 
 def get_version():
-    """Recupera a versão atual do aplicativo do arquivo version.json."""
+    """Recupera a versão atual do aplicativo do arquivo config.py."""
     try:
-        # Caminho para o arquivo version.json na raiz do projeto
-        json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'version.json')
-        
-        with open(json_path, 'r') as f:
-            version_data = json.load(f)
-            return version_data["version"]
+        from .config import VERSION
+        return VERSION
     except Exception as e:
-        # Versão fallback caso não consiga ler o arquivo
-        return "3.0.0"
+        # Versão fallback caso não consiga importar
+        return "3.1.0"
 
 def check_for_updates():
     """Verifica se há uma versão mais recente disponível."""
