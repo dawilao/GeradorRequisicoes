@@ -12,6 +12,7 @@ try:
     from .ui_aba_email import AbaEmail
     from .ui_aba_aquisicao import AbaAquisicao
     from .ui_aba_dados_pagamentos import AbaDadosPagamentos
+    from .ui_aba_controle_entregas import AbaPrazoEntregas
     from .version_checker import get_version
 except ImportError:
     from utils import IconManager
@@ -20,6 +21,7 @@ except ImportError:
     from ui_aba_email import AbaEmail
     from ui_aba_aquisicao import AbaAquisicao
     from ui_aba_dados_pagamentos import AbaDadosPagamentos
+    from ui_aba_controle_entregas import AbaPrazoEntregas
     from version_checker import get_version
 
 
@@ -128,6 +130,22 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
 
         aba_dados_pagamentos = AbaDadosPagamentos(master=frame_tab4, root=root)
 
+    if "CONTROLE ENTREGAS" in abas_permitidas:
+        # -------------------------------
+        # Aba "CONTROLE ENTREGAS"
+        # -------------------------------
+        # Usar frame normal (não scrollable) pois a aba já tem scroll interno
+        frame_tab5 = ctk.CTkFrame(master=tabview.tab("CONTROLE ENTREGAS"), fg_color="transparent")
+        frame_tab5.pack(fill="both", expand=True, padx=0, pady=0)
+
+        aba_prazo_entregas = AbaPrazoEntregas(
+            master=frame_tab5,
+            tabview=tabview,
+            nome_completo_usuario=nome_completo_usuario,
+            contratos=contratos,
+            tela_para_notifcacao=root,
+        )
+
     # Adiciona o label de versão na parte inferior da janela principal
     versao_atual = get_version()
     label_versao = ctk.CTkLabel(
@@ -143,5 +161,5 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
 
 if __name__ == "__main__":
     nome_completo_usuario = "User_teste"
-    abas_permitidas = ['PAGAMENTO', 'E-MAIL', 'AQUISIÇÃO', 'DADOS PAGAMENTOS']
+    abas_permitidas = ['PAGAMENTO', 'E-MAIL', 'AQUISIÇÃO', 'DADOS PAGAMENTOS', 'CONTROLE ENTREGAS']
     janela_principal(nome_completo_usuario, abas_permitidas)

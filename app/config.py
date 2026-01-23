@@ -3,7 +3,7 @@ Configurações centralizadas do programa.
 """
 
 # Informações da versão
-VERSION = "3.1.0"
+VERSION = "3.2.0"
 APP_NAME = "Gerador de Requisições"
 AUTHOR = "Dawison Nascimento"
 DESCRIPTION = "Sistema para geração de requisições"
