@@ -695,6 +695,14 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         # Verificar e enviar alertas automaticamente ao abrir o programa
         self.verificar_e_enviar_alertas_inicializacao()
     
+    def validar_entrada_numerica(self, texto):
+        """Valida se a entrada contém apenas números, ponto, barra ou está vazia"""
+        if texto == "":
+            return True
+        # Permitir apenas números, ponto (.) e barra (/)
+        caracteres_permitidos = set("0123456789./")
+        return all(char in caracteres_permitidos for char in texto)
+    
     def criar_interface(self):
         """Cria a interface gráfica"""
         self.grid_columnconfigure(1, weight=1)
@@ -733,7 +741,12 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         # Campo OS
         ctk.CTkLabel(frame_form, text="OS:", 
                     font=ctk.CTkFont(size=11, weight="bold")).grid(row=5, column=0, padx=15, pady=(8, 2), sticky="w")
-        self.entry_os = ctk.CTkEntry(frame_form, width=260, height=32)
+        
+        # Criar validação para aceitar apenas números, ponto e barra
+        vcmd = (self.register(self.validar_entrada_numerica), '%P')
+        self.entry_os = ctk.CTkEntry(frame_form, width=260, height=32, 
+                                     placeholder_text="Ex: 123 ou 123/456 ou 123.456",
+                                     validate="key", validatecommand=vcmd)
         self.entry_os.grid(row=6, column=0, padx=15, pady=(0, 8))
         
         # Campo Descrição do Produto
@@ -874,9 +887,13 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         descricao_produto = self.entry_descricao.get().strip()
         data_entrega_input = self.entry_data.get().strip()
         
-        if not all([contrato_nome, nome_agencia, os, data_entrega_input]):
+        # Se OS estiver vazia, definir como "SEM OS"
+        if not os:
+            os = "SEM OS"
+        
+        if not all([contrato_nome, nome_agencia, data_entrega_input]):
             self.notification_manager.show_notification(
-                "Os campos Contrato, Agência, OS e Data devem ser preenchidos!",
+                "Os campos Contrato, Agência e Data devem ser preenchidos!",
                 notify_type=NotifyType.ERROR,
                 duration=5000
             )
