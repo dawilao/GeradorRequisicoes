@@ -1048,7 +1048,12 @@ class AbaPrazoEntregas(ctk.CTkFrame):
     def atualizar_entregas(self):
         """Atualiza a lista de entregas"""
         self.carregar_entregas()
-        # Feedback visual rápido
+        self.notification_manager.show_notification(
+            "Lista de entregas atualizada!",
+            notify_type=NotifyType.INFO,
+            duration=2000
+        )
+        # Feedback no console também
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Lista de entregas atualizada")
     
     def iniciar_edicao(self, entrega_data):
