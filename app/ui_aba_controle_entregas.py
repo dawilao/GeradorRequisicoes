@@ -1106,7 +1106,7 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         self.entry_pesquisa_os.delete(0, 'end')
         
         if self.modo_lixeira:
-            self.titulo_lista.configure(text=f"Lixeira - {len(self.db.obter_entregas(lixeira=True))} entregas")
+            self.titulo_lista.configure(text=f"Lixeira - {len(self.db.obter_entregas_excluidas())} entrega(s)")
             self.btn_lixeira.configure(text="Entregas", fg_color="#2196F3", hover_color="#1976D2")
         else:
             self.titulo_lista.configure(text=f"({len(self.db.obter_entregas())}) Entregas Cadastradas")
