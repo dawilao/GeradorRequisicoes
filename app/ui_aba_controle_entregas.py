@@ -683,6 +683,9 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         # Modo de visualização
         self.modo_lixeira = False
         
+        # Controle de pesquisa
+        self.filtro_os = None
+        
         # Criar interface
         self.criar_interface()
         
@@ -820,12 +823,36 @@ class AbaPrazoEntregas(ctk.CTkFrame):
                                    font=ctk.CTkFont(size=24, weight="bold"))
         self.titulo_lista.grid(row=0, column=0, sticky="w")
         
+        # Frame de pesquisa
+        frame_pesquisa = ctk.CTkFrame(frame_topo, fg_color="transparent")
+        frame_pesquisa.grid(row=0, column=1, padx=(10, 0))
+        
+        ctk.CTkLabel(frame_pesquisa, text="Pesquisar OS:", 
+                    font=ctk.CTkFont(size=11)).grid(row=0, column=0, padx=(0, 5))
+        
+        self.entry_pesquisa_os = ctk.CTkEntry(frame_pesquisa, width=120, height=35,
+                                              placeholder_text="Digite a OS")
+        self.entry_pesquisa_os.grid(row=0, column=1, padx=(0, 5))
+        self.entry_pesquisa_os.bind("<Return>", lambda e: self.pesquisar_por_os())
+        
+        btn_pesquisar = ctk.CTkButton(frame_pesquisa, text="Buscar", 
+                                     command=self.pesquisar_por_os,
+                                     width=80, height=35,
+                                     fg_color="#4CAF50", hover_color="#388E3C")
+        btn_pesquisar.grid(row=0, column=2, padx=(0, 5))
+        
+        btn_limpar = ctk.CTkButton(frame_pesquisa, text="Limpar", 
+                                  command=self.limpar_pesquisa,
+                                  width=80, height=35,
+                                  fg_color="#757575", hover_color="#616161")
+        btn_limpar.grid(row=0, column=3, padx=(0, 5))
+        
         # Botão Atualizar
-        btn_atualizar = ctk.CTkButton(frame_topo, text="Atualizar", 
+        btn_atualizar = ctk.CTkButton(frame_pesquisa, text="Atualizar", 
                                      command=self.atualizar_entregas,
-                                     width=120, height=35,
+                                     width=100, height=35,
                                      fg_color="#1f6aa5", hover_color="#144870")
-        btn_atualizar.grid(row=0, column=1, padx=(10, 0))
+        btn_atualizar.grid(row=0, column=4)
         
         self.scrollable_frame = ctk.CTkScrollableFrame(self.painel_principal, corner_radius=0)
         self.scrollable_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
@@ -927,6 +954,17 @@ class AbaPrazoEntregas(ctk.CTkFrame):
             entregas = self.db.obter_entregas()
             mensagem_vazio = "Nenhuma entrega cadastrada ainda."
         
+        # Aplicar filtro de pesquisa por OS
+        if self.filtro_os:
+            entregas_filtradas = []
+            for entrega in entregas:
+                os_entrega = entrega[3].lower()  # Campo OS está no índice 3
+                if self.filtro_os.lower() in os_entrega:
+                    entregas_filtradas.append(entrega)
+            entregas = entregas_filtradas
+            if not entregas:
+                mensagem_vazio = f"Nenhuma entrega encontrada para OS '{self.filtro_os}'."
+        
         if not entregas:
             label_vazio = ctk.CTkLabel(self.scrollable_frame, 
                                       text=mensagem_vazio,
@@ -964,6 +1002,31 @@ class AbaPrazoEntregas(ctk.CTkFrame):
                 notify_type=NotifyType.ERROR,
                 duration=6000
             )
+    
+    def pesquisar_por_os(self):
+        """Aplica filtro de pesquisa por número de OS"""
+        os_pesquisa = self.entry_pesquisa_os.get().strip()
+        if os_pesquisa:
+            self.filtro_os = os_pesquisa
+            self.carregar_entregas()
+            # Atualizar título para indicar pesquisa ativa
+            if not self.modo_lixeira:
+                self.titulo_lista.configure(text=f"Resultados para OS: {os_pesquisa}")
+        else:
+            self.notification_manager.show_notification(
+                "Digite um número de OS para pesquisar.",
+                notify_type=NotifyType.WARNING,
+                duration=3000
+            )
+    
+    def limpar_pesquisa(self):
+        """Remove o filtro de pesquisa e recarrega todas as entregas"""
+        self.filtro_os = None
+        self.entry_pesquisa_os.delete(0, 'end')
+        self.carregar_entregas()
+        # Restaurar título original
+        if not self.modo_lixeira:
+            self.titulo_lista.configure(text="Entregas Cadastradas")
     
     def atualizar_entregas(self):
         """Atualiza a lista de entregas"""
@@ -1015,6 +1078,10 @@ class AbaPrazoEntregas(ctk.CTkFrame):
     def alternar_lixeira(self):
         """Alterna entre visualização normal e lixeira"""
         self.modo_lixeira = not self.modo_lixeira
+        
+        # Limpar pesquisa ao trocar de modo
+        self.filtro_os = None
+        self.entry_pesquisa_os.delete(0, 'end')
         
         if self.modo_lixeira:
             self.titulo_lista.configure(text="Lixeira")
