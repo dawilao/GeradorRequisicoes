@@ -832,7 +832,7 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         frame_topo.grid(row=0, column=0, sticky="ew", padx=20, pady=20)
         frame_topo.grid_columnconfigure(0, weight=1)
         
-        self.titulo_lista = ctk.CTkLabel(frame_topo, text="Entregas Cadastradas", 
+        self.titulo_lista = ctk.CTkLabel(frame_topo, text=f"({len(self.db.obter_entregas())}) Entregas Cadastradas", 
                                    font=ctk.CTkFont(size=24, weight="bold"))
         self.titulo_lista.grid(row=0, column=0, sticky="w")
         
@@ -1043,7 +1043,7 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         self.carregar_entregas()
         # Restaurar título original
         if not self.modo_lixeira:
-            self.titulo_lista.configure(text="Entregas Cadastradas")
+            self.titulo_lista.configure(text=f"({len(self.db.obter_entregas())}) Entregas Cadastradas")
     
     def atualizar_entregas(self):
         """Atualiza a lista de entregas"""
@@ -1106,10 +1106,10 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         self.entry_pesquisa_os.delete(0, 'end')
         
         if self.modo_lixeira:
-            self.titulo_lista.configure(text="Lixeira")
+            self.titulo_lista.configure(text=f"Lixeira - {len(self.db.obter_entregas(lixeira=True))} entregas")
             self.btn_lixeira.configure(text="Entregas", fg_color="#2196F3", hover_color="#1976D2")
         else:
-            self.titulo_lista.configure(text="Entregas Cadastradas")
+            self.titulo_lista.configure(text=f"({len(self.db.obter_entregas())}) Entregas Cadastradas")
             self.btn_lixeira.configure(text="Lixeira", fg_color="#757575", hover_color="#616161")
         
         self.carregar_entregas()
