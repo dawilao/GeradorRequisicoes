@@ -47,17 +47,20 @@ class DatabaseManagerEntregas:
                 usuario TEXT NOT NULL,
                 data_cadastro TEXT NOT NULL,
                 excluido INTEGER DEFAULT 0,
-                data_exclusao TEXT
+                data_exclusao TEXT,
+                requisicao_omie TEXT
             )
         ''')
         
-        # Adicionar colunas excluido e data_exclusao se não existirem (migração)
+        # Adicionar colunas excluido, data_exclusao e requisicao_omie se não existirem (migração)
         cursor.execute("PRAGMA table_info(entregas)")
         colunas = [col[1] for col in cursor.fetchall()]
         if 'excluido' not in colunas:
             cursor.execute("ALTER TABLE entregas ADD COLUMN excluido INTEGER DEFAULT 0")
         if 'data_exclusao' not in colunas:
             cursor.execute("ALTER TABLE entregas ADD COLUMN data_exclusao TEXT")
+        if 'requisicao_omie' not in colunas:
+            cursor.execute("ALTER TABLE entregas ADD COLUMN requisicao_omie TEXT")
         
         # Tabela de histórico de alertas de e-mail
         cursor.execute('''
@@ -72,16 +75,16 @@ class DatabaseManagerEntregas:
         conn.commit()
         conn.close()
     
-    def inserir_entrega(self, nome_contrato, nome_agencia, os, descricao_produto, data_entrega, usuario):
+    def inserir_entrega(self, nome_contrato, nome_agencia, os, descricao_produto, data_entrega, usuario, requisicao_omie=None):
         """Insere uma nova entrega no banco de dados"""
         conn = self.get_connection()
         cursor = conn.cursor()
         data_cadastro = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         cursor.execute('''
-            INSERT INTO entregas (nome_contrato, nome_agencia, os, descricao_produto, data_entrega, usuario, data_cadastro)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (nome_contrato, nome_agencia, os, descricao_produto, data_entrega, usuario, data_cadastro))
+            INSERT INTO entregas (nome_contrato, nome_agencia, os, descricao_produto, data_entrega, usuario, data_cadastro, requisicao_omie)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (nome_contrato, nome_agencia, os, descricao_produto, data_entrega, usuario, data_cadastro, requisicao_omie))
         
         conn.commit()
         conn.close()
@@ -91,7 +94,7 @@ class DatabaseManagerEntregas:
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT id, nome_contrato, nome_agencia, os, descricao_produto, data_entrega, usuario
+            SELECT id, nome_contrato, nome_agencia, os, descricao_produto, data_entrega, usuario, requisicao_omie
             FROM entregas
             WHERE excluido = 0
             ORDER BY data_entrega ASC
@@ -105,7 +108,7 @@ class DatabaseManagerEntregas:
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT id, nome_contrato, nome_agencia, os, descricao_produto, data_entrega, usuario, data_exclusao
+            SELECT id, nome_contrato, nome_agencia, os, descricao_produto, data_entrega, usuario, data_exclusao, requisicao_omie
             FROM entregas
             WHERE excluido = 1
             ORDER BY data_exclusao DESC
@@ -147,15 +150,15 @@ class DatabaseManagerEntregas:
         conn.commit()
         conn.close()
     
-    def atualizar_entrega(self, entrega_id, nome_contrato, nome_agencia, os, descricao_produto, data_entrega):
+    def atualizar_entrega(self, entrega_id, nome_contrato, nome_agencia, os, descricao_produto, data_entrega, requisicao_omie=None):
         """Atualiza uma entrega existente no banco de dados"""
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute('''
             UPDATE entregas 
-            SET nome_contrato = ?, nome_agencia = ?, os = ?, descricao_produto = ?, data_entrega = ?
+            SET nome_contrato = ?, nome_agencia = ?, os = ?, descricao_produto = ?, data_entrega = ?, requisicao_omie = ?
             WHERE id = ?
-        ''', (nome_contrato, nome_agencia, os, descricao_produto, data_entrega, entrega_id))
+        ''', (nome_contrato, nome_agencia, os, descricao_produto, data_entrega, requisicao_omie, entrega_id))
         conn.commit()
         conn.close()
     
@@ -283,6 +286,7 @@ class EmailManager:
                                     <th class="th-atrasado">Contrato</th>
                                     <th class="th-atrasado">Agência</th>
                                     <th class="th-atrasado">OS</th>
+                                    <th class="th-atrasado">Requisição OMIE</th>
                                     <th class="th-atrasado">Produto</th>
                                     <th class="th-atrasado">Responsável</th>
                                     <th class="th-atrasado">Data de Entrega</th>
@@ -295,6 +299,7 @@ class EmailManager:
                 for entrega in entregas_atrasadas:
                     data_formatada = datetime.strptime(entrega[5], "%Y-%m-%d").strftime("%d/%m/%Y")
                     produto = entrega[4] if entrega[4] else "Não especificado"
+                    requisicao_omie = entrega[7] if len(entrega) > 7 and entrega[7] else "-"
                     data_entrega = datetime.strptime(entrega[5], "%Y-%m-%d").date()
                     dias_atrasados = (hoje - data_entrega).days
                     
@@ -303,6 +308,7 @@ class EmailManager:
                                         <td><strong>{entrega[1]}</strong></td>
                                         <td>{entrega[2]}</td>
                                         <td>{entrega[3]}</td>
+                                        <td>{requisicao_omie}</td>
                                         <td>{produto}</td>
                                         <td>{entrega[6]}</td>
                                         <td class="urgente">{data_formatada}</td>
@@ -327,6 +333,7 @@ class EmailManager:
                                     <th class="th-proximo">Contrato</th>
                                     <th class="th-proximo">Agência</th>
                                     <th class="th-proximo">OS</th>
+                                    <th class="th-proximo">Requisição OMIE</th>
                                     <th class="th-proximo">Produto</th>
                                     <th class="th-proximo">Responsável</th>
                                     <th class="th-proximo">Data de Entrega</th>
@@ -339,6 +346,7 @@ class EmailManager:
                 for entrega in entregas_proximas_real:
                     data_formatada = datetime.strptime(entrega[5], "%Y-%m-%d").strftime("%d/%m/%Y")
                     produto = entrega[4] if entrega[4] else "Não especificado"
+                    requisicao_omie = entrega[7] if len(entrega) > 7 and entrega[7] else "-"
                     data_entrega = datetime.strptime(entrega[5], "%Y-%m-%d").date()
                     dias_restantes = (data_entrega - hoje).days
                     
@@ -350,6 +358,7 @@ class EmailManager:
                                         <td><strong>{entrega[1]}</strong></td>
                                         <td>{entrega[2]}</td>
                                         <td>{entrega[3]}</td>
+                                        <td>{requisicao_omie}</td>
                                         <td>{produto}</td>
                                         <td>{entrega[6]}</td>
                                         <td class="{classe_urgencia}">{data_formatada}</td>
@@ -437,21 +446,29 @@ class EntregaCard(ctk.CTkFrame):
                                font=ctk.CTkFont(size=11))
         label_os.grid(row=0, column=1, sticky="w")
         
-        # Linha 3: Produto (se existir)
+        # Linha 3: Requisição OMIE (se existir)
+        if len(entrega_data) > 7 and entrega_data[7]:
+            label_req_omie = ctk.CTkLabel(frame_conteudo, 
+                                         text=f"Requisição OMIE: {entrega_data[7]}",
+                                         font=ctk.CTkFont(size=11),
+                                         anchor="w")
+            label_req_omie.grid(row=2, column=0, sticky="w", pady=1)
+        
+        # Linha 4: Produto (se existir)
         if entrega_data[4]:
             label_produto = ctk.CTkLabel(frame_conteudo, 
                                         text=f"Produto: {entrega_data[4].upper()}",
                                         font=ctk.CTkFont(size=11),
                                         anchor="w")
-            label_produto.grid(row=2, column=0, sticky="w", pady=1)
+            label_produto.grid(row=3, column=0, sticky="w", pady=1)
         
-        # Linha 4: Data de entrega com destaque
+        # Linha 5: Data de entrega com destaque
         data_formatada = datetime.strptime(entrega_data[5], "%Y-%m-%d").strftime("%d/%m/%Y")
         dias_restantes = self.calcular_dias_restantes(entrega_data[5])
         cor_texto_data = self.obter_cor_texto_data(entrega_data[5])
         
         frame_data = ctk.CTkFrame(frame_conteudo, fg_color="transparent")
-        frame_data.grid(row=3, column=0, sticky="w", pady=(5, 2))
+        frame_data.grid(row=4, column=0, sticky="w", pady=(5, 2))
         
         label_data = ctk.CTkLabel(frame_data, text=f"Entrega: {data_formatada}",
                                  font=ctk.CTkFont(size=12, weight="bold"),
@@ -463,11 +480,11 @@ class EntregaCard(ctk.CTkFrame):
                                    text_color=cor_texto_data)
         label_status.grid(row=0, column=1, sticky="w")
         
-        # Linha 5: Usuário
+        # Linha 6: Usuário
         usuario = ctk.CTkLabel(frame_conteudo, text=f"Cadastrado por: {entrega_data[6].upper()}", 
                               font=ctk.CTkFont(size=9),
                               text_color="gray")
-        usuario.grid(row=4, column=0, sticky="w", pady=(3, 0))
+        usuario.grid(row=5, column=0, sticky="w", pady=(3, 0))
         
         # Frame para botões à direita
         frame_botoes = ctk.CTkFrame(self, fg_color="transparent")
@@ -604,6 +621,15 @@ class EntregaCardLixeira(ctk.CTkFrame):
                                text_color="gray")
         label_os.grid(row=0, column=1, sticky="w")
         
+        # Requisição OMIE (se existir)
+        if len(entrega_data) > 8 and entrega_data[8]:
+            label_req_omie = ctk.CTkLabel(frame_conteudo, 
+                                         text=f"Requisição OMIE: {entrega_data[8]}",
+                                         font=ctk.CTkFont(size=11),
+                                         text_color="gray",
+                                         anchor="w")
+            label_req_omie.grid(row=2, column=0, sticky="w", pady=1)
+        
         # Produto (se existir)
         if entrega_data[4]:
             label_produto = ctk.CTkLabel(frame_conteudo, 
@@ -611,14 +637,14 @@ class EntregaCardLixeira(ctk.CTkFrame):
                                         font=ctk.CTkFont(size=11),
                                         text_color="gray",
                                         anchor="w")
-            label_produto.grid(row=2, column=0, sticky="w", pady=1)
+            label_produto.grid(row=3, column=0, sticky="w", pady=1)
         
         # Data de entrega
         data_formatada = datetime.strptime(entrega_data[5], "%Y-%m-%d").strftime("%d/%m/%Y")
         label_data = ctk.CTkLabel(frame_conteudo, text=f"Entrega: {data_formatada}",
                                  font=ctk.CTkFont(size=11),
                                  text_color="gray")
-        label_data.grid(row=3, column=0, sticky="w", pady=(5, 2))
+        label_data.grid(row=4, column=0, sticky="w", pady=(5, 2))
         
         # Data de exclusão
         if len(entrega_data) > 7 and entrega_data[7]:
@@ -627,7 +653,7 @@ class EntregaCardLixeira(ctk.CTkFrame):
                 label_exclusao = ctk.CTkLabel(frame_conteudo, text=f"Excluído em: {data_exclusao}",
                                              font=ctk.CTkFont(size=9),
                                              text_color="darkgray")
-                label_exclusao.grid(row=4, column=0, sticky="w", pady=(3, 0))
+                label_exclusao.grid(row=5, column=0, sticky="w", pady=(3, 0))
             except:
                 pass
         
@@ -684,7 +710,8 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         self.modo_lixeira = False
         
         # Controle de pesquisa
-        self.filtro_os = None
+        self.filtro_tipo = None  # 'os', 'contrato', 'requisicao_omie'
+        self.filtro_termo = None
         
         # Criar interface
         self.criar_interface()
@@ -755,33 +782,44 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         self.entry_descricao = ctk.CTkEntry(frame_form, width=260, height=32)
         self.entry_descricao.grid(row=8, column=0, padx=15, pady=(0, 8))
         
+        # Campo Requisição OMIE
+        ctk.CTkLabel(frame_form, text="Requisição OMIE:", 
+                    font=ctk.CTkFont(size=11, weight="bold")).grid(row=9, column=0, padx=15, pady=(8, 2), sticky="w")
+        
+        # Criar validação para aceitar apenas números
+        vcmd_omie = (self.register(lambda texto: texto == "" or texto.isdigit()), '%P')
+        self.entry_req_omie = ctk.CTkEntry(frame_form, width=260, height=32, 
+                                           placeholder_text="Digite apenas números",
+                                           validate="key", validatecommand=vcmd_omie)
+        self.entry_req_omie.grid(row=10, column=0, padx=15, pady=(0, 8))
+        
         # Campo Data de Entrega
         ctk.CTkLabel(frame_form, text="Data de Entrega:", 
-                    font=ctk.CTkFont(size=11, weight="bold")).grid(row=9, column=0, padx=15, pady=(8, 2), sticky="w")
+                    font=ctk.CTkFont(size=11, weight="bold")).grid(row=11, column=0, padx=15, pady=(8, 2), sticky="w")
         self.entry_data = ctk.CTkEntry(frame_form, width=260, height=32, placeholder_text="DD/MM/AAAA")
-        self.entry_data.grid(row=10, column=0, padx=15, pady=(0, 8))
+        self.entry_data.grid(row=12, column=0, padx=15, pady=(0, 8))
         
         # Campo Usuário (somente leitura)
         ctk.CTkLabel(frame_form, text="Responsável:", 
-                    font=ctk.CTkFont(size=11, weight="bold")).grid(row=11, column=0, padx=15, pady=(8, 2), sticky="w")
+                    font=ctk.CTkFont(size=11, weight="bold")).grid(row=13, column=0, padx=15, pady=(8, 2), sticky="w")
         self.entry_usuario = ctk.CTkEntry(frame_form, width=260, height=32)
         self.entry_usuario.insert(0, self.nome_completo_usuario)
         self.entry_usuario.configure(state="disabled")
-        self.entry_usuario.grid(row=12, column=0, padx=15, pady=(0, 12))
+        self.entry_usuario.grid(row=14, column=0, padx=15, pady=(0, 12))
         
         # Botões de ação
         self.btn_cadastrar = ctk.CTkButton(frame_form, text="CADASTRAR", 
                                      command=self.cadastrar_ou_salvar_entrega, 
                                      height=40, width=260,
                                      font=ctk.CTkFont(size=13, weight="bold"))
-        self.btn_cadastrar.grid(row=13, column=0, padx=15, pady=(5, 10))
+        self.btn_cadastrar.grid(row=15, column=0, padx=15, pady=(5, 10))
         
         self.btn_cancelar = ctk.CTkButton(frame_form, text="CANCELAR", 
                                          command=self.cancelar_edicao, 
                                          height=36, width=260,
                                          fg_color="gray", hover_color="darkgray",
                                          font=ctk.CTkFont(size=12, weight="bold"))
-        self.btn_cancelar.grid(row=14, column=0, padx=15, pady=(0, 15))
+        self.btn_cancelar.grid(row=16, column=0, padx=15, pady=(0, 15))
         self.btn_cancelar.grid_remove()  # Ocultar inicialmente
         
         # ========== SEÇÃO: ALERTAS AUTOMÁTICOS ==========
@@ -837,39 +875,71 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         self.titulo_lista.grid(row=0, column=0, sticky="w")
         
         # Frame de pesquisa
-        frame_pesquisa = ctk.CTkFrame(frame_topo, fg_color="transparent")
-        frame_pesquisa.grid(row=0, column=1, padx=(10, 0))
+        self.frame_pesquisa = ctk.CTkFrame(frame_topo, fg_color="transparent")
+        self.frame_pesquisa.grid(row=0, column=1, padx=(10, 0))
         
-        ctk.CTkLabel(frame_pesquisa, text="Pesquisar OS:", 
+        ctk.CTkLabel(self.frame_pesquisa, text="Pesquisar:", 
                     font=ctk.CTkFont(size=11)).grid(row=0, column=0, padx=(0, 5))
         
-        self.entry_pesquisa_os = ctk.CTkEntry(frame_pesquisa, width=120, height=35,
-                                              placeholder_text="Digite a OS")
-        self.entry_pesquisa_os.grid(row=0, column=1, padx=(0, 5))
-        self.entry_pesquisa_os.bind("<Return>", lambda e: self.pesquisar_por_os())
+        self.combo_tipo_pesquisa = ctk.CTkComboBox(self.frame_pesquisa, 
+                                                    values=["OS", "Contrato", "Requisição OMIE"],
+                                                    width=140, height=35,
+                                                    command=self.atualizar_placeholder_pesquisa)
+        self.combo_tipo_pesquisa.set("OS")
+        self.combo_tipo_pesquisa.grid(row=0, column=1, padx=(0, 5))
         
-        btn_pesquisar = ctk.CTkButton(frame_pesquisa, text="Buscar", 
-                                     command=self.pesquisar_por_os,
+        self.entry_pesquisa = ctk.CTkEntry(self.frame_pesquisa, width=200, height=35,
+                                           placeholder_text="Digite a OS")
+        self.entry_pesquisa.grid(row=0, column=2, padx=(0, 5))
+        self.entry_pesquisa.bind("<Return>", lambda e: self.pesquisar())
+        
+        btn_pesquisar = ctk.CTkButton(self.frame_pesquisa, text="Buscar", 
+                                     command=self.pesquisar,
                                      width=80, height=35,
                                      fg_color="#4CAF50", hover_color="#388E3C")
-        btn_pesquisar.grid(row=0, column=2, padx=(0, 5))
+        btn_pesquisar.grid(row=0, column=3, padx=(0, 5))
         
-        btn_limpar = ctk.CTkButton(frame_pesquisa, text="Limpar", 
+        btn_limpar = ctk.CTkButton(self.frame_pesquisa, text="Limpar", 
                                   command=self.limpar_pesquisa,
                                   width=80, height=35,
                                   fg_color="#757575", hover_color="#616161")
-        btn_limpar.grid(row=0, column=3, padx=(0, 5))
+        btn_limpar.grid(row=0, column=4, padx=(0, 5))
         
         # Botão Atualizar
-        btn_atualizar = ctk.CTkButton(frame_pesquisa, text="Atualizar", 
+        btn_atualizar = ctk.CTkButton(self.frame_pesquisa, text="Atualizar", 
                                      command=self.atualizar_entregas,
                                      width=100, height=35,
                                      fg_color="#1f6aa5", hover_color="#144870")
-        btn_atualizar.grid(row=0, column=4)
+        btn_atualizar.grid(row=0, column=5)
         
         self.scrollable_frame = ctk.CTkScrollableFrame(self.painel_principal, corner_radius=0)
         self.scrollable_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
         self.scrollable_frame.grid_columnconfigure(0, weight=1)
+    
+    def atualizar_placeholder_pesquisa(self, escolha):
+        """Atualiza o campo de pesquisa conforme o tipo selecionado"""
+        # Destruir widget atual
+        if hasattr(self, 'entry_pesquisa'):
+            self.entry_pesquisa.destroy()
+        
+        if escolha == "Contrato":
+            # Usar ComboBox com lista de contratos
+            self.entry_pesquisa = ctk.CTkComboBox(self.frame_pesquisa, 
+                                                  values=self.contratos if self.contratos else ["Nenhum contrato"],
+                                                  width=200, height=35)
+            if self.contratos:
+                self.entry_pesquisa.set("Selecione um contrato")
+        else:
+            # Usar Entry normal com placeholder
+            placeholders = {
+                "OS": "Digite a OS",
+                "Requisição OMIE": "Digite o número da requisição"
+            }
+            self.entry_pesquisa = ctk.CTkEntry(self.frame_pesquisa, width=200, height=35,
+                                              placeholder_text=placeholders.get(escolha, "Digite o termo"))
+        
+        self.entry_pesquisa.grid(row=0, column=2, padx=(0, 5))
+        self.entry_pesquisa.bind("<Return>", lambda e: self.pesquisar())
     
     def validar_data(self, data_str):
         """Valida e converte data de DD/MM/AAAA para AAAA-MM-DD"""
@@ -885,11 +955,16 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         nome_agencia = self.entry_agencia.get().strip()
         os = self.entry_os.get().strip()
         descricao_produto = self.entry_descricao.get().strip()
+        requisicao_omie = self.entry_req_omie.get().strip()
         data_entrega_input = self.entry_data.get().strip()
         
         # Se OS estiver vazia, definir como "SEM OS"
         if not os:
             os = "SEM OS"
+        
+        # Se Requisição OMIE estiver vazia, definir como None
+        if not requisicao_omie:
+            requisicao_omie = None
         
         if not all([contrato_nome, nome_agencia, data_entrega_input]):
             self.notification_manager.show_notification(
@@ -912,7 +987,7 @@ class AbaPrazoEntregas(ctk.CTkFrame):
             if self.entrega_em_edicao:
                 # Modo edição - atualizar entrega existente
                 self.db.atualizar_entrega(self.entrega_em_edicao, contrato_nome, nome_agencia, 
-                                         os, descricao_produto, data_entrega)
+                                         os, descricao_produto, data_entrega, requisicao_omie)
                 self.notification_manager.show_notification(
                     "Entrega atualizada com sucesso!",
                     notify_type=NotifyType.SUCCESS,
@@ -922,7 +997,7 @@ class AbaPrazoEntregas(ctk.CTkFrame):
             else:
                 # Modo cadastro - inserir nova entrega
                 self.db.inserir_entrega(contrato_nome, nome_agencia, os, descricao_produto, 
-                                       data_entrega, self.nome_completo_usuario)
+                                       data_entrega, self.nome_completo_usuario, requisicao_omie)
                 self.notification_manager.show_notification(
                     "Entrega cadastrada com sucesso!",
                     notify_type=NotifyType.SUCCESS,
@@ -933,6 +1008,7 @@ class AbaPrazoEntregas(ctk.CTkFrame):
                 self.entry_agencia.delete(0, 'end')
                 self.entry_os.delete(0, 'end')
                 self.entry_descricao.delete(0, 'end')
+                self.entry_req_omie.delete(0, 'end')
                 self.entry_data.delete(0, 'end')
             
             self.carregar_entregas()
@@ -971,16 +1047,31 @@ class AbaPrazoEntregas(ctk.CTkFrame):
             entregas = self.db.obter_entregas()
             mensagem_vazio = "Nenhuma entrega cadastrada ainda."
         
-        # Aplicar filtro de pesquisa por OS
-        if self.filtro_os:
+        # Aplicar filtro de pesquisa
+        if self.filtro_tipo and self.filtro_termo:
             entregas_filtradas = []
+            termo_lower = self.filtro_termo.lower()
+            
             for entrega in entregas:
-                os_entrega = entrega[3].lower()  # Campo OS está no índice 3
-                if self.filtro_os.lower() in os_entrega:
-                    entregas_filtradas.append(entrega)
+                if self.filtro_tipo == "os":
+                    # Campo OS está no índice 3
+                    if termo_lower in entrega[3].lower():
+                        entregas_filtradas.append(entrega)
+                elif self.filtro_tipo == "contrato":
+                    # Campo nome_contrato está no índice 1
+                    if termo_lower in entrega[1].lower():
+                        entregas_filtradas.append(entrega)
+                elif self.filtro_tipo == "requisicao_omie":
+                    # Campo requisicao_omie está no índice 7 (entregas normais) ou 8 (lixeira)
+                    idx_req = 8 if self.modo_lixeira else 7
+                    if len(entrega) > idx_req and entrega[idx_req]:
+                        if termo_lower in str(entrega[idx_req]).lower():
+                            entregas_filtradas.append(entrega)
+            
             entregas = entregas_filtradas
             if not entregas:
-                mensagem_vazio = f"Nenhuma entrega encontrada para OS '{self.filtro_os}'."
+                tipo_nome = {"os": "OS", "contrato": "Contrato", "requisicao_omie": "Requisição OMIE"}
+                mensagem_vazio = f"Nenhuma entrega encontrada para {tipo_nome.get(self.filtro_tipo, 'termo')}: '{self.filtro_termo}'."
         
         if not entregas:
             label_vazio = ctk.CTkLabel(self.scrollable_frame, 
@@ -1020,26 +1111,51 @@ class AbaPrazoEntregas(ctk.CTkFrame):
                 duration=6000
             )
     
-    def pesquisar_por_os(self):
-        """Aplica filtro de pesquisa por número de OS"""
-        os_pesquisa = self.entry_pesquisa_os.get().strip()
-        if os_pesquisa:
-            self.filtro_os = os_pesquisa
+    def pesquisar(self):
+        """Aplica filtro de pesquisa por OS, Contrato ou Requisição OMIE"""
+        termo_pesquisa = self.entry_pesquisa.get()
+        if isinstance(termo_pesquisa, str):
+            termo_pesquisa = termo_pesquisa.strip()
+        tipo_pesquisa = self.combo_tipo_pesquisa.get()
+        
+        if termo_pesquisa and termo_pesquisa not in ["Selecione um contrato", "Nenhum contrato"]:
+            self.filtro_termo = termo_pesquisa
+            
+            # Mapear tipo de pesquisa
+            if tipo_pesquisa == "OS":
+                self.filtro_tipo = "os"
+            elif tipo_pesquisa == "Contrato":
+                self.filtro_tipo = "contrato"
+            elif tipo_pesquisa == "Requisição OMIE":
+                self.filtro_tipo = "requisicao_omie"
+            
             self.carregar_entregas()
+            
             # Atualizar título para indicar pesquisa ativa
             if not self.modo_lixeira:
-                self.titulo_lista.configure(text=f"Resultados para OS: {os_pesquisa}")
+                self.titulo_lista.configure(text=f"Resultados para {tipo_pesquisa}: {termo_pesquisa}")
         else:
             self.notification_manager.show_notification(
-                "Digite um número de OS para pesquisar.",
+                f"Digite um termo para pesquisar por {tipo_pesquisa}.",
                 notify_type=NotifyType.WARNING,
                 duration=3000
             )
     
     def limpar_pesquisa(self):
         """Remove o filtro de pesquisa e recarrega todas as entregas"""
-        self.filtro_os = None
-        self.entry_pesquisa_os.delete(0, 'end')
+        self.filtro_tipo = None
+        self.filtro_termo = None
+        
+        # Limpar campo de pesquisa baseado no tipo de widget
+        if hasattr(self, 'entry_pesquisa'):
+            if isinstance(self.entry_pesquisa, ctk.CTkComboBox):
+                # ComboBox: resetar para placeholder
+                if self.contratos:
+                    self.entry_pesquisa.set("Selecione um contrato")
+            else:
+                # Entry: limpar texto
+                self.entry_pesquisa.delete(0, 'end')
+        
         self.carregar_entregas()
         # Restaurar título original
         if not self.modo_lixeira:
@@ -1069,6 +1185,8 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         self.entry_os.insert(0, entrega_data[3])
         self.entry_descricao.delete(0, 'end')
         self.entry_descricao.insert(0, entrega_data[4] if entrega_data[4] else "")
+        self.entry_req_omie.delete(0, 'end')
+        self.entry_req_omie.insert(0, entrega_data[7] if len(entrega_data) > 7 and entrega_data[7] else "")
         self.entry_data.delete(0, 'end')
         # Converter data de AAAA-MM-DD para DD/MM/AAAA
         data_formatada = datetime.strptime(entrega_data[5], "%Y-%m-%d").strftime("%d/%m/%Y")
@@ -1091,6 +1209,7 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         self.entry_agencia.delete(0, 'end')
         self.entry_os.delete(0, 'end')
         self.entry_descricao.delete(0, 'end')
+        self.entry_req_omie.delete(0, 'end')
         self.entry_data.delete(0, 'end')
         
         # Restaurar aparência do botão e ocultar botão cancelar
@@ -1102,8 +1221,16 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         self.modo_lixeira = not self.modo_lixeira
         
         # Limpar pesquisa ao trocar de modo
-        self.filtro_os = None
-        self.entry_pesquisa_os.delete(0, 'end')
+        self.filtro_tipo = None
+        self.filtro_termo = None
+        
+        # Limpar campo de pesquisa baseado no tipo de widget
+        if hasattr(self, 'entry_pesquisa'):
+            if isinstance(self.entry_pesquisa, ctk.CTkComboBox):
+                if self.contratos:
+                    self.entry_pesquisa.set("Selecione um contrato")
+            else:
+                self.entry_pesquisa.delete(0, 'end')
         
         if self.modo_lixeira:
             self.titulo_lista.configure(text=f"Lixeira - {len(self.db.obter_entregas_excluidas())} entrega(s)")
