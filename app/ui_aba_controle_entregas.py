@@ -867,16 +867,17 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         
         # Frame para título e botão de atualizar
         frame_topo = ctk.CTkFrame(self.painel_principal, fg_color="transparent")
-        frame_topo.grid(row=0, column=0, sticky="ew", padx=20, pady=20)
+        frame_topo.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 10))
         frame_topo.grid_columnconfigure(0, weight=1)
         
+        # Título em linha separada
         self.titulo_lista = ctk.CTkLabel(frame_topo, text=f"({len(self.db.obter_entregas())}) Entregas Cadastradas", 
                                    font=ctk.CTkFont(size=24, weight="bold"))
-        self.titulo_lista.grid(row=0, column=0, sticky="w")
+        self.titulo_lista.grid(row=0, column=0, sticky="w", pady=(0, 10))
         
-        # Frame de pesquisa
+        # Frame de pesquisa em linha separada
         self.frame_pesquisa = ctk.CTkFrame(frame_topo, fg_color="transparent")
-        self.frame_pesquisa.grid(row=0, column=1, padx=(10, 0))
+        self.frame_pesquisa.grid(row=1, column=0, sticky="ew")
         
         ctk.CTkLabel(self.frame_pesquisa, text="Pesquisar:", 
                     font=ctk.CTkFont(size=11)).grid(row=0, column=0, padx=(0, 5))
@@ -906,11 +907,11 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         btn_limpar.grid(row=0, column=4, padx=(0, 5))
         
         # Botão Atualizar
-        btn_atualizar = ctk.CTkButton(self.frame_pesquisa, text="Atualizar", 
+        btn_atualizar = ctk.CTkButton(frame_topo, text="Atualizar", 
                                      command=self.atualizar_entregas,
                                      width=100, height=35,
                                      fg_color="#1f6aa5", hover_color="#144870")
-        btn_atualizar.grid(row=0, column=5)
+        btn_atualizar.grid(row=0, column=1, sticky="e", padx=(0, 10), pady=(0, 10))
         
         self.scrollable_frame = ctk.CTkScrollableFrame(self.painel_principal, corner_radius=0)
         self.scrollable_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
