@@ -13,10 +13,12 @@ try:
     from .bd.utils_bd import DatabaseManager as DBManager
     from .bd.utils_bd import acessa_bd_contratos
     from .CTkFloatingNotifications import NotificationManager, NotifyType
+    from .salva_erros import salvar_erro
 except ImportError:
     from bd.utils_bd import DatabaseManager as DBManager
     from bd.utils_bd import acessa_bd_contratos
     from CTkFloatingNotifications import NotificationManager, NotifyType
+    from salva_erros import salvar_erro
 
 class DatabaseManagerEntregas:
     """Gerenciador de banco de dados SQLite para Entregas"""
@@ -197,7 +199,7 @@ class EmailManager:
         self.smtp_port = smtp_port
         self.email_remetente = "dawison@machengenharia.com.br"
         self.senha = "Mach@123"
-        self.email_destinatario = "setordecompras@machengenharia.com.br"
+        self.email_destinatario = "setordecompras@machengenharia.com.br, dawison@machengenharia.com.br"
         self.db_manager = db_manager
     
     def verificar_entregas_proximas(self, entregas):
@@ -1370,10 +1372,19 @@ class AbaPrazoEntregas(ctk.CTkFrame):
             except Exception as e:
                 erro_msg = f"Erro na verificação automática: {str(e)}"
                 print(f"[ERRO] {erro_msg}")
-                self.label_status.configure(
-                    text="❌ Erro na verificação automática",
-                    text_color="#f44336"
-                )
+                
+                erro_salvo = salvar_erro(self.nome_completo_usuario, erro_msg)
+                
+                if erro_salvo:
+                    self.label_status.configure(
+                        text="❌ Erro na verificação automática\nErro registrado no log.",
+                        text_color="#f44336"
+                    )
+                else:
+                    self.label_status.configure(
+                        text=f"❌ Erro na verificação automática\nErro: {str(e)}",
+                        text_color="#f44336"
+                    )
         
         # Executar em thread separada para não bloquear a interface
         thread = threading.Thread(target=enviar_automatico, daemon=True)
