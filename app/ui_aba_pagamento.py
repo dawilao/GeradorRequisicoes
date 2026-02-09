@@ -1176,6 +1176,8 @@ class AbaPagamento(ctk.CTkFrame):
             # Formatar o campo projeto
             prefixo_projeto = prefixo.replace("/00", "").replace("/", "") if prefixo else ""
             projeto = arrumar_texto(f"{self._contrato_digitos(contrato)}/{prefixo_projeto}/{agencia.replace(" ", "")}/{os_num}")
+        else:
+            projeto = ""
 
         departamento, sigla_contrato = acessa_bd_contratos(contrato)
         print(f"Departamento: {departamento}, Sigla: {sigla_contrato}")
