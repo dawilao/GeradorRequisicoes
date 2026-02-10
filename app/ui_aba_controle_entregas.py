@@ -169,7 +169,7 @@ class DatabaseManagerEntregas:
         conn = self.get_connection()
         cursor = conn.cursor()
         hoje = datetime.now().strftime("%Y-%m-%d")
-        cursor.execute("SELECT id FROM historico_alertas WHERE data_envio = ?", (hoje,))
+        cursor.execute("SELECT data_hora_envio FROM historico_alertas WHERE data_envio = ?", (hoje,))
         resultado = cursor.fetchone()
         conn.close()
         return resultado is not None
@@ -189,6 +189,29 @@ class DatabaseManagerEntregas:
         
         conn.commit()
         conn.close()
+    
+    def obter_horario_envio_hoje(self):
+            """
+            Retorna apenas o horário (HH:MM:SS) do alerta enviado hoje.
+            Retorna None se não houver envio.
+            """
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            hoje = datetime.now().strftime("%Y-%m-%d")
+            
+            # Busca especificamente a coluna de data e hora
+            cursor.execute("SELECT data_hora_envio FROM historico_alertas WHERE data_envio = ?", (hoje,))
+            resultado = cursor.fetchone()
+            conn.close()
+            
+            if resultado and resultado[0]:
+                # String formatada como "2026-02-10 11:55:00"
+                try:
+                    return resultado[0].split(' ')[1][:5]  # Retorna apenas HH:MM
+                except IndexError:
+                    return resultado[0]
+            
+            return None
 
 
 class EmailManager:
@@ -226,7 +249,7 @@ class EmailManager:
         
         # Verificar se já foi enviado alerta hoje
         if self.db_manager and self.db_manager.verificar_alerta_enviado_hoje() and not force_send:
-            return False, "Já foi enviado um alerta hoje. Próximo envio será amanhã."
+            return False, f"Já foi enviado um alerta hoje às {self.db_manager.obter_horario_envio_hoje()}. Próximo envio será amanhã."
         
         try:
             # Separar entregas atrasadas das próximas
@@ -1335,9 +1358,9 @@ class AbaPrazoEntregas(ctk.CTkFrame):
                 
                 # Verificar se já foi enviado hoje
                 if self.db.verificar_alerta_enviado_hoje():
-                    print("[INFO] Alerta já foi enviado hoje. Próximo envio será amanhã.")
+                    print(f"[INFO] Alerta já foi enviado hoje às {self.db.obter_horario_envio_hoje()}. Próximo envio será amanhã.")
                     self.label_status.configure(
-                        text="✅ Alerta já enviado hoje\nPróximo envio: amanhã",
+                        text=f"✅ Alerta já enviado hoje às {self.db.obter_horario_envio_hoje()}\nPróximo envio: amanhã",
                         text_color="#4CAF50"
                     )
                     return
