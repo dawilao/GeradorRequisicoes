@@ -465,7 +465,7 @@ class AbaPagamento(ctk.CTkFrame):
         for entry in clear_entries:
             entry.delete(0, tk.END)
 
-    def _configure_campo_modalidade_compra(self):
+    def _configure_campo_modalidade_compra(self, tipo_servico: str):
         """Configura campo de modalidade de compra"""
         # Verifica se os widgets já existem
         if not hasattr(self, 'modalidade_compra_label'):
@@ -475,7 +475,12 @@ class AbaPagamento(ctk.CTkFrame):
 
             for label_text, attr_name in config_campo:
                 label = ctk.CTkLabel(self, text=label_text)
-                combobox = CustomComboBox(self, values=["CORRETIVA DIÁRIA", "ORÇAMENTO APROVADO"])
+                
+                if tipo_servico == "ENVIO DE MATERIAL":
+                    combobox = CustomComboBox(self, values=["CORRETIVA DIÁRIA", "SEM OS", "ORÇAMENTO APROVADO"])
+                else:
+                    combobox = CustomComboBox(self, values=["CORRETIVA DIÁRIA", "ORÇAMENTO APROVADO"])
+
                 setattr(self, f"{attr_name}_label", label)
                 setattr(self, f"{attr_name}_entry", combobox)
                 self.widgets_para_limpar.append(combobox)
@@ -490,12 +495,13 @@ class AbaPagamento(ctk.CTkFrame):
         if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
             self._configure_campo_competencia()
         elif tipo_servico in {
-            "ABASTECIMENTO", "ESTACIONAMENTO", "PEDÁGIO", "HOSPEDAGEM", 
+            "ESTACIONAMENTO", "PEDÁGIO", "HOSPEDAGEM", 
             "SOLICITAÇÃO COM OS", "ENVIO DE MATERIAL"
         }:
             self._configure_campos_tecnicos()
-            self._configure_campo_modalidade_compra()
-        elif tipo_servico in {"COMPRA IN LOCO", "SOLICITAÇÃO SEM OS"}: # Sem o campo modalidade de compra
+            self._configure_campo_modalidade_compra(tipo_servico)
+                
+        elif tipo_servico in {"ABASTECIMENTO", "COMPRA IN LOCO", "SOLICITAÇÃO SEM OS"}: # Sem o campo modalidade de compra
             self._configure_campos_tecnicos()
         
         # Configurar campos para serviços com lista de itens
@@ -712,7 +718,7 @@ class AbaPagamento(ctk.CTkFrame):
         acquisition_configs = {
             "AQUISIÇÃO COM OS": ["CORRETIVA DIÁRIA", "LOCAÇÃO"],
             "AQUISIÇÃO SEM OS": ["EPI", "CRACHÁ", "FERRAMENTAS", "FARDAMENTO", "ESTOQUE", "UTILIDADES"],
-            "COMPRA IN LOCO": ["CORRETIVA DIÁRIA", "SEM OS", "ORÇAMENTO APROVADO"]
+            "COMPRA IN LOCO": ["CORRETIVA DIÁRIA", "ORÇAMENTO APROVADO"]
         }
         
         if tipo_servico in acquisition_configs:
@@ -1194,7 +1200,6 @@ class AbaPagamento(ctk.CTkFrame):
 
         if tipo_servico == "ABASTECIMENTO":
             campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
-            campos_obrigatorios.append((modalidade, "MODALIDADE DA COMPRA"))
         elif tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
             campos_obrigatorios.extend([
                 (competencia, "COMPETÊNCIA"),
@@ -1422,7 +1427,6 @@ class AbaPagamento(ctk.CTkFrame):
             texto += f"SERVIÇO: {tipo_servico}\n\n"
             texto += f"PROJETO: {projeto}\n\n" if projeto else ""
             texto += f"TÉCNICOS: {tecnicos}\n\n"
-            texto += f"MODALIDADE DA COMPRA: {modalidade}\n\n"
             texto += f"VALOR: R$ {valor_tab1}\n\n"
         
         elif tipo_servico == "ESTACIONAMENTO":
