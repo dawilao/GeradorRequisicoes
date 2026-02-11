@@ -7,6 +7,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import threading
 import os
+import json
+from dotenv import load_dotenv
 import time
 
 try:
@@ -19,6 +21,7 @@ except ImportError:
     from bd.utils_bd import acessa_bd_contratos
     from CTkFloatingNotifications import NotificationManager, NotifyType
     from salva_erros import salvar_erro
+
 
 class DatabaseManagerEntregas:
     """Gerenciador de banco de dados SQLite para Entregas"""
@@ -217,14 +220,74 @@ class DatabaseManagerEntregas:
 class EmailManager:
     """Gerenciador de envio de e-mails"""
     
-    def __init__(self, smtp_server="smtp.kinghost.net", smtp_port=465, db_manager=None):
-        self.smtp_server = smtp_server
-        self.smtp_port = smtp_port
-        self.email_remetente = "dawison@machengenharia.com.br"
-        self.senha = "Mach@123"
-        self.email_destinatario = "setordecompras@machengenharia.com.br, dawison@machengenharia.com.br"
+    def __init__(self, db_manager=None):
         self.db_manager = db_manager
-    
+        self.email_destinatario = "setordecompras@machengenharia.com.br, dawison@machengenharia.com.br"
+        
+        # Carregar configurações ao inicializar
+        self.smtp_server = None
+        self.smtp_port = None
+        self.email_remetente = None
+        self.senha = None
+        self.usar_tls = True
+        
+        # Carregar as configurações do arquivo
+        if not self.carregar_configuracao_email():
+            salvar_erro("Falha ao carregar configurações de e-mail. Verifique o arquivo email_config.json")
+            raise RuntimeError("Falha ao carregar configurações de e-mail. Verifique o arquivo email_config.json")
+
+    def carregar_configuracao_email(self):
+        '''Carrega as configurações de e-mail a partir do arquivo .env (formato JSON)'''
+        try:
+            # Caminho do arquivo de configuração
+            config_path = r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\email_config.env'
+            
+            # Verificar se o arquivo existe
+            if not os.path.exists(config_path):
+                raise FileNotFoundError(f"Arquivo de configuração não encontrado: {config_path}")
+            
+            # Ler o arquivo .env como JSON
+            with open(config_path, 'r', encoding='utf-8') as file:
+                config = json.load(file)
+            
+            # Validar se todas as chaves necessárias estão presentes
+            vars_necessarias = ["smtp_server", "smtp_port", "smtp_user", "smtp_password", "email_remetente", "usar_tls"]
+            falta_vars = [var for var in vars_necessarias if var not in config]
+            
+            if falta_vars:
+                raise KeyError(f"As seguintes variáveis estão ausentes no arquivo de configuração: {', '.join(falta_vars)}")
+            
+            # Atribuir os valores às variáveis da classe
+            self.smtp_server = config["smtp_server"]
+            self.smtp_port = int(config["smtp_port"])
+            self.email_remetente = config["email_remetente"]
+            self.senha = config["smtp_password"]
+            self.usar_tls = config.get("usar_tls", True)  # Padrão True se não especificado
+            
+            print("Configurações de e-mail carregadas com sucesso!")
+            return True
+            
+        except FileNotFoundError as e:
+            erro_msg = f"Arquivo de configuração não encontrado: {str(e)}"
+            print(erro_msg)
+            salvar_erro(erro_msg)
+            return False
+        except json.JSONDecodeError as e:
+            erro_msg = f"Erro ao decodificar o arquivo JSON: {str(e)}"
+            print(erro_msg)
+            salvar_erro(erro_msg)
+            return False
+        except KeyError as e:
+            erro_msg = f"Erro nas configurações de e-mail: {str(e)}"
+            print(erro_msg)
+            salvar_erro(erro_msg)
+            return False
+        except Exception as e:
+            erro_msg = f"Erro ao carregar configurações de e-mail: {str(e)}"
+            print(erro_msg)
+            salvar_erro(erro_msg)
+            return False
+
     def verificar_entregas_proximas(self, entregas):
         """Verifica se há entregas atrasadas ou nos próximos 3 dias"""
         hoje = datetime.now().date()
@@ -409,10 +472,30 @@ class EmailManager:
             """
             
             mensagem.attach(MIMEText(corpo, 'html'))
-            
-            with smtplib.SMTP_SSL(self.smtp_server, self.smtp_port) as servidor:
-                servidor.login(self.email_remetente, self.senha)
-                servidor.send_message(mensagem)
+
+            # Usar SMTP_SSL ou SMTP baseado na porta configurada
+            try:
+                if self.smtp_port == 465:
+                    # Porta 465: usar SMTP_SSL
+                    with smtplib.SMTP_SSL(self.smtp_server, self.smtp_port, timeout=30) as servidor:
+                        servidor.login(self.email_remetente, self.senha)
+                        servidor.send_message(mensagem)
+                        print(f"E-mail enviado via SMTP_SSL (porta {self.smtp_port})")
+                else:
+                    # Porta 587 ou outras: usar SMTP + STARTTLS
+                    with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=30) as servidor:
+                        servidor.ehlo()  # Identificar o cliente
+                        servidor.starttls()  # Ativar TLS
+                        servidor.ehlo()  # Reidentificar após TLS
+                        servidor.login(self.email_remetente, self.senha)
+                        servidor.send_message(mensagem)
+                        print(f"E-mail enviado via SMTP+STARTTLS (porta {self.smtp_port})")
+            except smtplib.SMTPAuthenticationError:
+                raise Exception("Erro de autenticação. Verifique usuário e senha no arquivo de configuração.")
+            except smtplib.SMTPException as smtp_error:
+                raise Exception(f"Erro SMTP: {str(smtp_error)}")
+            except Exception as conn_error:
+                raise Exception(f"Erro de conexão: {str(conn_error)}")
             
             # Registrar envio no histórico
             if self.db_manager:
