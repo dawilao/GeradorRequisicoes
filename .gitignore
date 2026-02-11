@@ -1,3 +1,10 @@
+# Sensitive data and environment files
+email_config.env
+
+# Unnecessary files
+new.txt
+commit.txt
+
 .vscode/
 *.pyc
 *.xlsx

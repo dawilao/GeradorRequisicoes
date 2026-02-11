@@ -12,7 +12,7 @@ def get_version():
         return VERSION
     except Exception as e:
         # Versão fallback caso não consiga importar
-        return "3.1.0"
+        return "3.2.0"
 
 def check_for_updates():
     """Verifica se há uma versão mais recente disponível."""

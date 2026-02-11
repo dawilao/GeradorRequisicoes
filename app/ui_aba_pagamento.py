@@ -31,8 +31,12 @@ class AbaPagamento(ctk.CTkFrame):
         self.pack(fill="both", expand=True)
         self.tabview = tabview
         self.nome_completo_usuario = nome_completo_usuario
-        self.contratos = contratos  # Lista de contratos
         self.notificacao = NotificationManager(master=None)
+
+        # Lista de contratos
+        self.contratos = contratos
+        # Lista de contratos apenas com os últimos 4 dígitos
+        self.contratos_digitos = [self._contrato_digitos(c) for c in contratos] if contratos else []
 
         # Variavel para passar parâmetro da tela principal para o gerador_excel
         self.root = tela_para_notifcacao
@@ -107,7 +111,7 @@ class AbaPagamento(ctk.CTkFrame):
         service_types = [
             "ABASTECIMENTO", "ADIANTAMENTO/PAGAMENTO PARCEIRO", "AQUISIÇÃO COM OS",
             "AQUISIÇÃO SEM OS", "CARRETO", "COMPRA IN LOCO", "ENVIO DE MATERIAL",
-            "ESTACIONAMENTO/PEDÁGIO", "HOSPEDAGEM", "ORÇAMENTO APROVADO",
+            "ESTACIONAMENTO", "HOSPEDAGEM", "ORÇAMENTO APROVADO", "PEDÁGIO",
             "PREST. SERVIÇO/MÃO DE OBRA", "REEMBOLSO COM OS", "REEMBOLSO SEM OS",
             "REEMBOLSO UBER", "RELATÓRIO EXTRA", "SOLICITAÇÃO COM OS",
             "SOLICITAÇÃO SEM OS", "TRANSPORTADORA"
@@ -218,12 +222,12 @@ class AbaPagamento(ctk.CTkFrame):
     def _create_secao_fornecedor(self):
         """Cria a seção de fornecedor"""
         ctk.CTkLabel(self, text="NOME FORNEC./BENEF.:").grid(
-            row=8, column=0, sticky="w", padx=(10, 10)
+            row=10, column=0, sticky="w", padx=(10, 10)
         )
         
         self.nome_fornecedor_entry = CustomEntry(self)
         self.nome_fornecedor_entry.grid(
-            row=8, column=1, sticky="ew", padx=(0, 10), pady=2
+            row=10, column=1, sticky="ew", padx=(0, 10), pady=2
         )
         self.widgets_para_limpar.append(self.nome_fornecedor_entry)
 
@@ -255,7 +259,7 @@ class AbaPagamento(ctk.CTkFrame):
     def _create_secao_pagamento(self):
         """Cria a seção de pagamento"""
         ctk.CTkLabel(self, text="TIPO DE PAGAMENTO:").grid(
-            row=12, column=0, sticky="w", padx=(10, 10)
+            row=13, column=0, sticky="w", padx=(10, 10)
         )
         
         self.tipo_pagamento_combobox = CustomComboBox(
@@ -264,7 +268,7 @@ class AbaPagamento(ctk.CTkFrame):
             command=self._adiciona_campo_pix
         )
         self.tipo_pagamento_combobox.grid(
-            row=12, column=1, sticky="ew", padx=(0, 10), pady=2
+            row=13, column=1, sticky="ew", padx=(0, 10), pady=2
         )
         self.tipo_pagamento_combobox.set("")
         
@@ -300,12 +304,12 @@ class AbaPagamento(ctk.CTkFrame):
         self.gerar_button = ctk.CTkButton(
             self, text="GERAR", command=self._gerar_solicitacao
         )
-        self.gerar_button.grid(row=16, column=0, sticky="ew", padx=(10, 10), pady=10)
+        self.gerar_button.grid(row=17, column=0, sticky="ew", padx=(10, 10), pady=10)
         
         self.limpar_button = ctk.CTkButton(
             self, text="LIMPAR", width=150, command=self._limpar_dados
         )
-        self.limpar_button.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=10)
+        self.limpar_button.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=10)
     
     def _create_switches(self):
         """Cria os switches de configuração"""
@@ -314,20 +318,20 @@ class AbaPagamento(ctk.CTkFrame):
             self, text="Auto-Cópia",
             variable=self.switch_autocopia_var, onvalue=True, offvalue=False
         )
-        self.switch_autocopia.grid(row=17, column=0, sticky="n", padx=(0, 10), pady=10)
+        self.switch_autocopia.grid(row=18, column=0, sticky="n", padx=(0, 10), pady=10)
         
         self.switch_gerar_excel_var = tk.BooleanVar(value=True)
         self.switch_gerar_excel = ctk.CTkSwitch(
             self, text="Gerar Excel",
             variable=self.switch_gerar_excel_var, onvalue=True, offvalue=False
         )
-        self.switch_gerar_excel.grid(row=17, column=1, sticky="n", padx=(0, 10), pady=10)
+        self.switch_gerar_excel.grid(row=18, column=1, sticky="n", padx=(0, 10), pady=10)
     
     def _create_area_texto(self):
         """Cria a área de texto para solicitação"""
         self.texto_solicitacao = ctk.CTkTextbox(self)
         self.texto_solicitacao.grid(
-            row=18, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew"
+            row=20, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew"
         )
         self.widgets_para_limpar.append(self.texto_solicitacao)
     
@@ -335,7 +339,11 @@ class AbaPagamento(ctk.CTkFrame):
         """Configura o layout após criação dos widgets"""
         # Esta função pode ser expandida para configurações específicas de layout
         pass
-    
+
+    def _contrato_digitos(self, contrato: str) -> str:
+        """Retorna os últimos 4 dígitos do contrato"""
+        return contrato[-4:] if len(contrato) >= 4 else contrato
+
     # Event handlers
     def _on_muda_tipo_servico(self, choice: str):
         """Handler para mudança no tipo de serviço"""
@@ -434,6 +442,12 @@ class AbaPagamento(ctk.CTkFrame):
             self.frame_caixa_itens_pagamento,
             self.opcao_os_parceiro_label, self.opcao_os_parceiro_combobox,
         ]
+
+        if hasattr(self, 'modalidade_compra_label'):
+            conditional_widgets.extend([
+                self.modalidade_compra_label,
+                self.modalidade_compra_entry
+            ])
         
         for widget in conditional_widgets:
             widget.grid_forget()
@@ -451,12 +465,43 @@ class AbaPagamento(ctk.CTkFrame):
         for entry in clear_entries:
             entry.delete(0, tk.END)
 
+    def _configure_campo_modalidade_compra(self, tipo_servico: str):
+        """Configura campo de modalidade de compra"""
+        # Verifica se os widgets já existem
+        if not hasattr(self, 'modalidade_compra_label'):
+            config_campo = [
+                ("MODALIDADE DE COMPRA:", "modalidade_compra"),
+            ]
+
+            for label_text, attr_name in config_campo:
+                label = ctk.CTkLabel(self, text=label_text)
+                
+                if tipo_servico == "ENVIO DE MATERIAL":
+                    combobox = CustomComboBox(self, values=["CORRETIVA DIÁRIA", "SEM OS", "ORÇAMENTO APROVADO"])
+                else:
+                    combobox = CustomComboBox(self, values=["CORRETIVA DIÁRIA", "ORÇAMENTO APROVADO"])
+
+                setattr(self, f"{attr_name}_label", label)
+                setattr(self, f"{attr_name}_entry", combobox)
+                self.widgets_para_limpar.append(combobox)
+        
+        # Exibir o campo na interface
+        self.modalidade_compra_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
+        self.modalidade_compra_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+        self.modalidade_compra_entry.set("")
+
     def _configure_service_specific_fields(self, tipo_servico: str):
         """Configura campos específicos baseado no tipo de serviço"""
         if tipo_servico == "PREST. SERVIÇO/MÃO DE OBRA":
             self._configure_campo_competencia()
-        elif tipo_servico in {"ABASTECIMENTO", "ESTACIONAMENTO/PEDÁGIO", "HOSPEDAGEM", 
-                             "SOLICITAÇÃO COM OS", "SOLICITAÇÃO SEM OS", "COMPRA IN LOCO"}:
+        elif tipo_servico in {
+            "ESTACIONAMENTO", "PEDÁGIO", "HOSPEDAGEM", 
+            "SOLICITAÇÃO COM OS", "ENVIO DE MATERIAL"
+        }:
+            self._configure_campos_tecnicos()
+            self._configure_campo_modalidade_compra(tipo_servico)
+                
+        elif tipo_servico in {"ABASTECIMENTO", "COMPRA IN LOCO", "SOLICITAÇÃO SEM OS"}: # Sem o campo modalidade de compra
             self._configure_campos_tecnicos()
         
         # Configurar campos para serviços com lista de itens
@@ -476,8 +521,8 @@ class AbaPagamento(ctk.CTkFrame):
         tipo_servico = self.tipo_servico_combobox.get()
 
         if tipo_servico in {"COMPRA IN LOCO"}:
-            self.tecnicos_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
-            self.tecnicos_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)           
+            self.tecnicos_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
+            self.tecnicos_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)           
         else:
             self.tecnicos_label.grid(row=2, column=0, sticky="w", padx=(10, 10))
             self.tecnicos_entry.grid(row=2, column=1, sticky="ew", padx=(0, 10), pady=2)
@@ -554,16 +599,16 @@ class AbaPagamento(ctk.CTkFrame):
         self.valor_entry.grid_forget()
 
         if tipo_servico == "REEMBOLSO UBER":
-            self.saida_destino_label.grid(row=3, column=0, sticky="w", padx=(10, 10))
-            self.saida_destino_entry.grid(row=3, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.saida_destino_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
+            self.saida_destino_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
             self.saida_destino_entry.configure(placeholder_text="Informe a saída e o destino")
 
-        self.motivo_label.grid(row=4, column=0, sticky="w", padx=(10, 10))
-        self.motivo_entry.grid(row=4, column=1, sticky="ew", padx=(0, 10), pady=2)
+        self.motivo_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
+        self.motivo_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
         self.motivo_entry.configure(placeholder_text="Informe o motivo")
         
-        self.valor_caixa_itens_label.grid(row=5, column=0, sticky="w", padx=(10, 10))
-        self.valor_caixa_itens_entry.grid(row=5, column=1, sticky="ew", padx=(0, 10), pady=2)
+        self.valor_caixa_itens_label.grid(row=6, column=0, sticky="w", padx=(10, 10))
+        self.valor_caixa_itens_entry.grid(row=6, column=1, sticky="ew", padx=(0, 10), pady=2)
         self.valor_caixa_itens_entry.configure(placeholder_text="Informe o valor")
 
         self._configure_labels_dos_itens()
@@ -621,9 +666,9 @@ class AbaPagamento(ctk.CTkFrame):
     def _show_pref_age_os_opcionais(self):
         """Mostra campos opcionais de prefixo, agência e OS"""
         fields_config = [
-            (self.prefixo_label, self.prefixo_entry, 5),
-            (self.agencia_label, self.agencia_entry, 6),
-            (self.os_label, self.os_entry, 7)
+            (self.prefixo_label, self.prefixo_entry, 6),
+            (self.agencia_label, self.agencia_entry, 7),
+            (self.os_label, self.os_entry, 8)
         ]
         
         for label, entry, row in fields_config:
@@ -634,9 +679,9 @@ class AbaPagamento(ctk.CTkFrame):
     def _show_pref_age_os_obrigatorios(self):
         """Mostra campos obrigatórios de prefixo, agência e OS"""
         fields_config = [
-            (self.prefixo_label, self.prefixo_entry, 5),
-            (self.agencia_label, self.agencia_entry, 6),
-            (self.os_label, self.os_entry, 7)
+            (self.prefixo_label, self.prefixo_entry, 6),
+            (self.agencia_label, self.agencia_entry, 7),
+            (self.os_label, self.os_entry, 8)
         ]
         
         for label, entry, row in fields_config:
@@ -650,7 +695,7 @@ class AbaPagamento(ctk.CTkFrame):
         
         if tipo_servico in {"PREST. SERVIÇO/MÃO DE OBRA", 
                            "ADIANTAMENTO/PAGAMENTO PARCEIRO"}:
-            opcoes_pagamento = ["PIX"]
+            opcoes_pagamento = ["PIX", "BOLETO"]
         elif tipo_servico in {"ORÇAMENTO APROVADO", "AQUISIÇÃO SEM OS", "AQUISIÇÃO COM OS",
                              "ENVIO DE MATERIAL", "TRANSPORTADORA"}:
             opcoes_pagamento = ["PIX", "VEXPENSES", "FATURAMENTO"]
@@ -673,7 +718,7 @@ class AbaPagamento(ctk.CTkFrame):
         acquisition_configs = {
             "AQUISIÇÃO COM OS": ["CORRETIVA DIÁRIA", "LOCAÇÃO"],
             "AQUISIÇÃO SEM OS": ["EPI", "CRACHÁ", "FERRAMENTAS", "FARDAMENTO", "ESTOQUE", "UTILIDADES"],
-            "COMPRA IN LOCO": ["CORRETIVA DIÁRIA", "SEM OS", "ORÇAMENTO APROVADO"]
+            "COMPRA IN LOCO": ["CORRETIVA DIÁRIA", "ORÇAMENTO APROVADO"]
         }
         
         if tipo_servico in acquisition_configs:
@@ -832,7 +877,7 @@ class AbaPagamento(ctk.CTkFrame):
             widget.destroy()
 
         if len(self.itens_pagamento) > 0:
-            self.frame_lista_itens_pagamento.grid(row=11, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=(0, 10))
+            self.frame_lista_itens_pagamento.grid(row=12, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=(0, 10))
         else:
             self.frame_lista_itens_pagamento.grid_forget()
 
@@ -1051,12 +1096,12 @@ class AbaPagamento(ctk.CTkFrame):
 
         # Mostrar ou esconder campos para PIX
         if tipo_pagamento == 'PIX':
-            self.tipo_chave_pix_label.grid(row=13, column=0, sticky="w", padx=(10, 10))
-            self.tipo_chave_pix_combobox.grid(row=13, column=1, sticky="ew", padx=(0, 10), pady=2)
-            self.chave_pix_label.grid(row=14, column=0, sticky="w", padx=(10, 10))
-            self.chave_pix_entry.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
-            self.nome_benef_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
-            self.nome_benef_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.tipo_chave_pix_label.grid(row=14, column=0, sticky="w", padx=(10, 10))
+            self.tipo_chave_pix_combobox.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.chave_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
+            self.chave_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.nome_benef_pix_label.grid(row=16, column=0, sticky="w", padx=(10, 10))
+            self.nome_benef_pix_entry.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
         else:
             self.tipo_chave_pix_label.grid_forget()
             self.tipo_chave_pix_combobox.grid_forget()
@@ -1081,10 +1126,10 @@ class AbaPagamento(ctk.CTkFrame):
             self.chave_pix_entry.delete(0, tk.END)
             self.nome_benef_pix_entry.delete(0, tk.END)
         else:
-            self.chave_pix_label.grid(row=14, column=0, sticky="w", padx=(10, 10))
-            self.chave_pix_entry.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
-            self.nome_benef_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
-            self.nome_benef_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.chave_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
+            self.chave_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.nome_benef_pix_label.grid(row=16, column=0, sticky="w", padx=(10, 10))
+            self.nome_benef_pix_entry.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
     
     def _gerar_solicitacao(self):
         """Gera a solicitação de pagamento"""
@@ -1096,6 +1141,12 @@ class AbaPagamento(ctk.CTkFrame):
         prefixo = valida_prefixo(self.prefixo_entry.get())
         agencia = arrumar_texto(self.agencia_entry.get().upper())
         os_num = valida_os(self.os_entry.get())
+        
+        # Verificar se o campo modalidade existe antes de acessá-lo
+        if hasattr(self, 'modalidade_compra_entry'):
+            modalidade = arrumar_texto(self.modalidade_compra_entry.get().upper())
+        else:
+            modalidade = ""
         
         if tipo_servico == "ENVIO DE MATERIAL":
             contrato = "ESCRITÓRIO"
@@ -1125,6 +1176,14 @@ class AbaPagamento(ctk.CTkFrame):
             tipo_chave_pix = arrumar_texto(self.tipo_chave_pix_combobox.get())
             chave_pix = arrumar_texto(self.chave_pix_entry.get())
             nome_benef_pix = arrumar_texto(self.nome_benef_pix_entry.get().upper())
+
+        if (contrato not in {"ESCRITÓRIO", "RELATÓRIO EXTRA", "AQUISIÇÃO SEM OS", "SOLICITAÇÃO SEM OS"}
+            and prefixo and agencia and os_num):
+            # Formatar o campo projeto
+            prefixo_projeto = prefixo.replace("/00", "").replace("/", "") if prefixo else ""
+            projeto = arrumar_texto(f"{self._contrato_digitos(contrato)}/{prefixo_projeto}/{agencia.replace(" ", "")}/{os_num}")
+        else:
+            projeto = ""
 
         departamento, sigla_contrato = acessa_bd_contratos(contrato)
         print(f"Departamento: {departamento}, Sigla: {sigla_contrato}")
@@ -1167,12 +1226,15 @@ class AbaPagamento(ctk.CTkFrame):
                 campos_obrigatorios.append((descricao_utilidades, "DESCRIÇÃO UTILIDADES"))
         elif tipo_servico == "ENVIO DE MATERIAL":
             campos_obrigatorios.remove((contrato, "CONTRATO"))
-        elif tipo_servico in {"ESTACIONAMENTO/PEDÁGIO", "HOSPEDAGEM"}:
+            campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
+            campos_obrigatorios.append((modalidade, "MODALIDADE DA COMPRA"))
+        elif tipo_servico in {"ESTACIONAMENTO", "PEDÁGIO", "HOSPEDAGEM"}:
             campos_obrigatorios.extend([
                 (tecnicos, "TÉCNICOS"),
                 (prefixo, "PREFIXO"),
                 (agencia, "AGÊNCIA"),
-                (os_num, "OS")
+                (os_num, "OS"),
+                (modalidade, "MODALIDADE DA COMPRA")
             ])        
         elif tipo_servico in {"ORÇAMENTO APROVADO"}:
             campos_obrigatorios.extend([
@@ -1202,6 +1264,9 @@ class AbaPagamento(ctk.CTkFrame):
             
             if tipo_servico in {"SOLICITAÇÃO SEM OS", "SOLICITAÇÃO COM OS"}:
                 campos_obrigatorios.append((tecnicos, "TÉCNICOS"))
+
+            if tipo_servico == "SOLICITAÇÃO COM OS":
+                campos_obrigatorios.append((modalidade, "MODALIDADE DA COMPRA"))
 
         if tipo_pagamento == "PIX" and tipo_chave_pix != "QR CODE":
             campos_obrigatorios.extend([
@@ -1270,15 +1335,18 @@ class AbaPagamento(ctk.CTkFrame):
                 f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
             )
             texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"PROJETO: {projeto}\n\n" if projeto else ""
             texto += f"COMPETÊNCIA: {competencia}\n\n"
             texto += f"PORCENTAGEM DO ADIANTAMENTO: {porcentagem}%\n\n"
             texto += f"VALOR: R$ {valor_tab1}\n\n"
+        
         elif tipo_servico == "AQUISIÇÃO COM OS":
             texto = (
                 f"Solicito o pagamento para {nome_fornecedor}, referente à obra: "
                 f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
             )
             texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+            texto += f"PROJETO: {projeto}\n\n" if projeto else ""
             texto += f"VALOR: R$ {valor_tab1}\n\n"
 
         elif tipo_servico == "COMPRA IN LOCO":
@@ -1288,6 +1356,7 @@ class AbaPagamento(ctk.CTkFrame):
                     f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
                 )
                 texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+                texto += f"PROJETO: {projeto}\n\n" if projeto else ""
                 texto += f"TÉCNICOS: {tecnicos}\n\n"
                 texto += f"VALOR: R$ {valor_tab1}\n\n"
             else:
@@ -1295,6 +1364,7 @@ class AbaPagamento(ctk.CTkFrame):
                     f"Solicito o pagamento para {nome_fornecedor}, para {contrato}.\n\n"
                 )
                 texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
+                texto += f"PROJETO: {projeto}\n\n" if projeto else ""
                 texto += f"TÉCNICOS: {tecnicos}\n\n"
                 texto += f"VALOR: R$ {valor_tab1}\n\n"
 
@@ -1305,7 +1375,7 @@ class AbaPagamento(ctk.CTkFrame):
                 texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}: {descricao_utilidades}\n\n"
             else:
                 texto += f"SERVIÇO: {tipo_servico} - {tipo_aquisicao}\n\n"
-
+            
             texto += f"VALOR: R$ {valor_tab1}\n\n"
         
         elif tipo_servico in {"REEMBOLSO COM OS", "SOLICITAÇÃO COM OS"}:
@@ -1314,9 +1384,13 @@ class AbaPagamento(ctk.CTkFrame):
                 f"{prefixo} - {agencia} - {os_num}, para {contrato}.\n\n"
             )
             texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"PROJETO: {projeto}\n\n" if projeto else ""
 
             if tecnicos:
                 texto += f"TÉCNICOS: {tecnicos}\n\n"
+
+            if tipo_servico == "SOLICITAÇÃO COM OS":
+                texto += f"MODALIDADE DA COMPRA: {modalidade}\n\n"
 
             if len(self.itens_pagamento) == 1:
                 item = self.itens_pagamento[0]
@@ -1348,18 +1422,35 @@ class AbaPagamento(ctk.CTkFrame):
         elif tipo_servico == "ABASTECIMENTO":
             texto = (
                 f"Solicito o pagamento ao fornecedor {nome_fornecedor}, referente ao "
-                f"abastecimento dos técnicos {tecnicos}, para {contrato}.\n\n"
+                f"abastecimento, para {contrato}.\n\n"
             )
             texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"PROJETO: {projeto}\n\n" if projeto else ""
+            texto += f"TÉCNICOS: {tecnicos}\n\n"
             texto += f"VALOR: R$ {valor_tab1}\n\n"
         
-        elif tipo_servico == "ESTACIONAMENTO/PEDÁGIO":
+        elif tipo_servico == "ESTACIONAMENTO":
             texto = (
-                f"Solicito o pagamento ao fornecedor {nome_fornecedor}, pelo estacionamento/pedágio "
-                f"dos técnicos {tecnicos}, referente à obra: {prefixo} - {agencia} - {os_num}, "
+                f"Solicito o pagamento ao fornecedor {nome_fornecedor}, pelo estacionamento "
+                f"referente à obra: {prefixo} - {agencia} - {os_num}, "
                 f"para {contrato}.\n\n"
             )
             texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"PROJETO: {projeto}\n\n" if projeto else ""
+            texto += f"TÉCNICOS: {tecnicos}\n\n"
+            texto += f"MODALIDADE DA COMPRA: {modalidade}\n\n"
+            texto += f"VALOR: R$ {valor_tab1}\n\n"
+
+        elif tipo_servico == "PEDÁGIO":
+            texto = (
+                f"Solicito o pagamento ao fornecedor {nome_fornecedor}, pelo pedágio "
+                f"referente à obra: {prefixo} - {agencia} - {os_num}, "
+                f"para {contrato}.\n\n"
+            )
+            texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"PROJETO: {projeto}\n\n" if projeto else ""
+            texto += f"TÉCNICOS: {tecnicos}\n\n"
+            texto += f"MODALIDADE DA COMPRA: {modalidade}\n\n"
             texto += f"VALOR: R$ {valor_tab1}\n\n"
         
         elif tipo_servico == "REEMBOLSO UBER":
@@ -1373,6 +1464,7 @@ class AbaPagamento(ctk.CTkFrame):
                     f"para {contrato}.\n\n"
                 )
                 texto += f"SERVIÇO: {tipo_servico}\n\n"
+                texto += f"PROJETO: {projeto}\n\n" if projeto else ""
                 texto += f"MOTIVO: {item['motivo']}\n\n"
                 texto += f"*VALOR: R$ {valor_tab1}*\n\n"
             else:
@@ -1383,6 +1475,7 @@ class AbaPagamento(ctk.CTkFrame):
                     else f"Solicito reembolso referente ao deslocamento de {nome_fornecedor} para {contrato}.\n\n"
                 )
                 texto += f"SERVIÇO: {tipo_servico}\n\n"
+                texto += f"PROJETO: {projeto}\n\n" if projeto else ""
                 texto += "DESLOCAMENTOS:\n"
                 for idx, item in enumerate(self.itens_pagamento, start=1):
                     texto += f"{idx}. {item['saida_e_destino']} - {item['motivo']} (R$ {item['valor']})\n"
@@ -1395,11 +1488,19 @@ class AbaPagamento(ctk.CTkFrame):
                 f"para {contrato}.\n\n"
             )
             texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"PROJETO: {projeto}\n\n" if projeto else ""
+            texto += f"MODALIDADE DA COMPRA: {modalidade}\n\n"
             texto += f"VALOR: R$ {valor_tab1}\n\n"
         
         elif tipo_servico == "ENVIO DE MATERIAL":
             texto = f"Solicito o pagamento ao fornecedor {nome_fornecedor}.\n\n"
             texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"PROJETO: {projeto}\n\n" if projeto else ""
+
+            if tecnicos:
+                texto += f"TÉCNICOS: {tecnicos}\n\n"
+
+            texto += f"MODALIDADE DA COMPRA: {modalidade}\n\n"
             texto += f"VALOR: R$ {valor_tab1}\n\n"
         
         elif tipo_servico == "RELATÓRIO EXTRA":
@@ -1423,6 +1524,7 @@ class AbaPagamento(ctk.CTkFrame):
                         f"Solicito o pagamento para {nome_fornecedor}, referente as obras listadas abaixo, para {contrato}:\n\n"
                     )
                 texto += f"SERVIÇO: {tipo_servico}\n\n"
+                texto += f"PROJETO: {projeto}\n\n" if projeto else ""
                 texto += f"COMPETÊNCIA: {competencia}\n\n"
                 
                 for item in self.itens_pagamento:
@@ -1434,6 +1536,7 @@ class AbaPagamento(ctk.CTkFrame):
                     f"Solicito o pagamento para {nome_fornecedor}, referente ao listado abaixo, para {contrato}:\n\n"
                 )
                 texto += f"SERVIÇO: {tipo_servico}\n\n"
+                texto += f"PROJETO: {projeto}\n\n" if projeto else ""
                 texto += f"COMPETÊNCIA: {competencia}\n\n"
 
                 for item in self.itens_pagamento:
@@ -1454,6 +1557,7 @@ class AbaPagamento(ctk.CTkFrame):
                 else f"Solicito o pagamento ao fornecedor {nome_fornecedor}, para {contrato}.\n\n"
             )
             texto += f"SERVIÇO: {tipo_servico}\n\n"
+            texto += f"PROJETO: {projeto}\n\n" if projeto else ""
             texto += f"VALOR: R$ {valor_tab1}\n\n"
 
         if tipo_pagamento == "FATURAMENTO":
