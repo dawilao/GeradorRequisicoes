@@ -195,25 +195,35 @@ class DatabaseManagerEntregas:
     
     def obter_horario_envio_hoje(self):
             """
-            Retorna apenas o horário (HH:MM:SS) do alerta enviado hoje.
+            Retorna apenas o horário (HH:MM) do alerta enviado hoje.
             Retorna None se não houver envio.
             """
             conn = self.get_connection()
             cursor = conn.cursor()
             hoje = datetime.now().strftime("%Y-%m-%d")
             
-            # Busca especificamente a coluna de data e hora
-            cursor.execute("SELECT data_hora_envio FROM historico_alertas WHERE data_envio = ?", (hoje,))
+            # Busca o registro mais recente de hoje ordenando por data_hora_envio
+            cursor.execute("""
+                SELECT data_hora_envio 
+                FROM historico_alertas 
+                WHERE data_envio = ? 
+                ORDER BY data_hora_envio DESC 
+                LIMIT 1
+            """, (hoje,))
             resultado = cursor.fetchone()
             conn.close()
             
             if resultado and resultado[0]:
                 # String formatada como "2026-02-10 11:55:00"
                 try:
-                    return resultado[0].split(' ')[1][:5]  # Retorna apenas HH:MM
-                except IndexError:
+                    horario = resultado[0].split(' ')[1][:5]  # Retorna apenas HH:MM
+                    print(f"[DEBUG] Horário recuperado do BD: {horario} (registro completo: {resultado[0]})")
+                    return horario
+                except (IndexError, AttributeError) as e:
+                    print(f"[DEBUG] Erro ao extrair horário: {e}")
                     return resultado[0]
             
+            print(f"[DEBUG] Nenhum alerta encontrado para hoje ({hoje})")
             return None
 
 
@@ -1271,8 +1281,10 @@ class AbaPrazoEntregas(ctk.CTkFrame):
             self.titulo_lista.configure(text=f"({len(self.db.obter_entregas())}) Entregas Cadastradas")
     
     def atualizar_entregas(self):
-        """Atualiza a lista de entregas"""
+        """Atualiza a lista de entregas e o status dos alertas"""
         self.carregar_entregas()
+        # Atualizar também o label de status dos alertas
+        self.atualizar_label_status()
         self.notification_manager.show_notification(
             "Lista de entregas atualizada!",
             notify_type=NotifyType.INFO,
@@ -1390,6 +1402,49 @@ class AbaPrazoEntregas(ctk.CTkFrame):
                     duration=6000
                 )
     
+    def atualizar_label_status(self):
+        """Atualiza o label de status dos alertas verificando o histórico do banco de dados"""
+        try:
+            print(f"[DEBUG] Iniciando atualização do label de status...")
+            # Verificar se já foi enviado hoje
+            if self.db.verificar_alerta_enviado_hoje():
+                horario_envio = self.db.obter_horario_envio_hoje()
+                print(f"[DEBUG] Alerta já enviado hoje. Horário: {horario_envio}")
+                texto = f"✅ Alerta enviado hoje às {horario_envio}\nPróximo envio: amanhã"
+                self.label_status.configure(
+                    text=texto,
+                    text_color="#4CAF50"
+                )
+                print(f"[DEBUG] Label atualizado com: {texto}")
+            else:
+                print(f"[DEBUG] Nenhum alerta enviado hoje")
+                # Verificar se há entregas próximas
+                entregas = self.db.obter_entregas()
+                entregas_proximas = self.email_manager.verificar_entregas_proximas(entregas)
+                
+                if entregas_proximas:
+                    texto = f"⚠️ {len(entregas_proximas)} entrega(s) próxima(s)\nClique em 'Enviar Agora'"
+                    self.label_status.configure(
+                        text=texto,
+                        text_color="#ff9800"
+                    )
+                    print(f"[DEBUG] Label atualizado com: {texto}")
+                else:
+                    texto = "ℹ️ Sem entregas próximas hoje\nSistema aguardando"
+                    self.label_status.configure(
+                        text=texto,
+                        text_color="#2196F3"
+                    )
+                    print(f"[DEBUG] Label atualizado com: {texto}")
+        except Exception as e:
+            print(f"[ERRO] Erro ao atualizar label de status: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            self.label_status.configure(
+                text="❌ Erro ao verificar status",
+                text_color="#f44336"
+            )
+    
     def enviar_alertas_thread(self):
         """Envia alertas de e-mail em uma thread separada (acionamento manual)"""
         def enviar():
@@ -1399,23 +1454,28 @@ class AbaPrazoEntregas(ctk.CTkFrame):
             if entregas_proximas:
                 sucesso, mensagem = self.email_manager.enviar_alerta(entregas_proximas)
                 if sucesso:
+                    print(f"[INFO] E-mail enviado com sucesso!")
                     self.notification_manager.show_notification(
                         mensagem,
                         notify_type=NotifyType.SUCCESS,
                         duration=5000
                     )
+                    # Atualizar label de status após envio (na thread principal com delay maior)
+                    self.root.after(300, self.atualizar_label_status)
                 else:
                     # Pergunta ao usuário se deseja enviar mesmo assim
                     if messagebox.askyesno("Confirmação", "Alerta já enviado hoje. Deseja enviar mesmo assim?"):
                         sucesso, mensagem = self.email_manager.enviar_alerta(entregas_proximas, force_send=True)
                         if sucesso:
                             # Enviar e-mail mesmo assim
+                            print(f"[INFO] E-mail enviado com sucesso (forçado)!")
                             self.notification_manager.show_notification(
                                 mensagem,
                                 notify_type=NotifyType.SUCCESS,
                                 duration=5000
                             )
-
+                            # Atualizar label de status após envio (na thread principal com delay maior)
+                            self.root.after(300, self.atualizar_label_status)
                         else:
                             self.notification_manager.show_notification(
                                 mensagem,
@@ -1423,11 +1483,14 @@ class AbaPrazoEntregas(ctk.CTkFrame):
                                 duration=6000
                             )
             else:
+                print(f"[INFO] Não há entregas próximas para alertar")
                 self.notification_manager.show_notification(
                     "Não há entregas próximas para alertar.",
                     notify_type=NotifyType.INFO,
                     duration=4000
                 )
+                # Atualizar label de status mesmo sem entregas (na thread principal)
+                self.root.after(300, self.atualizar_label_status)
         
         thread = threading.Thread(target=enviar, daemon=True)
         thread.start()
