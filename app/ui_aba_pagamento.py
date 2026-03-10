@@ -71,7 +71,7 @@ class AbaPagamento(ctk.CTkFrame):
         
         # Configuração de grid
         self.grid_rowconfigure(4, weight=1)
-        self.grid_rowconfigure(18, weight=1)
+        self.grid_rowconfigure(19, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
     
@@ -222,12 +222,12 @@ class AbaPagamento(ctk.CTkFrame):
     def _create_secao_fornecedor(self):
         """Cria a seção de fornecedor"""
         ctk.CTkLabel(self, text="NOME FORNEC./BENEF.:").grid(
-            row=10, column=0, sticky="w", padx=(10, 10)
+            row=13, column=0, sticky="w", padx=(10, 10)
         )
         
         self.nome_fornecedor_entry = CustomEntry(self)
         self.nome_fornecedor_entry.grid(
-            row=10, column=1, sticky="ew", padx=(0, 10), pady=2
+            row=13, column=1, sticky="ew", padx=(0, 10), pady=2
         )
         self.widgets_para_limpar.append(self.nome_fornecedor_entry)
 
@@ -259,7 +259,7 @@ class AbaPagamento(ctk.CTkFrame):
     def _create_secao_pagamento(self):
         """Cria a seção de pagamento"""
         ctk.CTkLabel(self, text="TIPO DE PAGAMENTO:").grid(
-            row=13, column=0, sticky="w", padx=(10, 10)
+            row=14, column=0, sticky="w", padx=(10, 10)
         )
         
         self.tipo_pagamento_combobox = CustomComboBox(
@@ -268,7 +268,7 @@ class AbaPagamento(ctk.CTkFrame):
             command=self._adiciona_campo_pix
         )
         self.tipo_pagamento_combobox.grid(
-            row=13, column=1, sticky="ew", padx=(0, 10), pady=2
+            row=14, column=1, sticky="ew", padx=(0, 10), pady=2
         )
         self.tipo_pagamento_combobox.set("")
         
@@ -304,12 +304,12 @@ class AbaPagamento(ctk.CTkFrame):
         self.gerar_button = ctk.CTkButton(
             self, text="GERAR", command=self._gerar_solicitacao
         )
-        self.gerar_button.grid(row=17, column=0, sticky="ew", padx=(10, 10), pady=10)
+        self.gerar_button.grid(row=18, column=0, sticky="ew", padx=(10, 10), pady=10)
         
         self.limpar_button = ctk.CTkButton(
             self, text="LIMPAR", width=150, command=self._limpar_dados
         )
-        self.limpar_button.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=10)
+        self.limpar_button.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=10)
     
     def _create_switches(self):
         """Cria os switches de configuração"""
@@ -318,20 +318,20 @@ class AbaPagamento(ctk.CTkFrame):
             self, text="Auto-Cópia",
             variable=self.switch_autocopia_var, onvalue=True, offvalue=False
         )
-        self.switch_autocopia.grid(row=18, column=0, sticky="n", padx=(0, 10), pady=10)
+        self.switch_autocopia.grid(row=19, column=0, sticky="n", padx=(0, 10), pady=10)
         
         self.switch_gerar_excel_var = tk.BooleanVar(value=True)
         self.switch_gerar_excel = ctk.CTkSwitch(
             self, text="Gerar Excel",
             variable=self.switch_gerar_excel_var, onvalue=True, offvalue=False
         )
-        self.switch_gerar_excel.grid(row=18, column=1, sticky="n", padx=(0, 10), pady=10)
+        self.switch_gerar_excel.grid(row=19, column=1, sticky="n", padx=(0, 10), pady=10)
     
     def _create_area_texto(self):
         """Cria a área de texto para solicitação"""
         self.texto_solicitacao = ctk.CTkTextbox(self)
         self.texto_solicitacao.grid(
-            row=20, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew"
+            row=21, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="nsew"
         )
         self.widgets_para_limpar.append(self.texto_solicitacao)
     
@@ -1096,12 +1096,12 @@ class AbaPagamento(ctk.CTkFrame):
 
         # Mostrar ou esconder campos para PIX
         if tipo_pagamento == 'PIX':
-            self.tipo_chave_pix_label.grid(row=14, column=0, sticky="w", padx=(10, 10))
-            self.tipo_chave_pix_combobox.grid(row=14, column=1, sticky="ew", padx=(0, 10), pady=2)
-            self.chave_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
-            self.chave_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
-            self.nome_benef_pix_label.grid(row=16, column=0, sticky="w", padx=(10, 10))
-            self.nome_benef_pix_entry.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.tipo_chave_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
+            self.tipo_chave_pix_combobox.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.chave_pix_label.grid(row=16, column=0, sticky="w", padx=(10, 10))
+            self.chave_pix_entry.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.nome_benef_pix_label.grid(row=17, column=0, sticky="w", padx=(10, 10))
+            self.nome_benef_pix_entry.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=2)
         else:
             self.tipo_chave_pix_label.grid_forget()
             self.tipo_chave_pix_combobox.grid_forget()
@@ -1126,10 +1126,10 @@ class AbaPagamento(ctk.CTkFrame):
             self.chave_pix_entry.delete(0, tk.END)
             self.nome_benef_pix_entry.delete(0, tk.END)
         else:
-            self.chave_pix_label.grid(row=15, column=0, sticky="w", padx=(10, 10))
-            self.chave_pix_entry.grid(row=15, column=1, sticky="ew", padx=(0, 10), pady=2)
-            self.nome_benef_pix_label.grid(row=16, column=0, sticky="w", padx=(10, 10))
-            self.nome_benef_pix_entry.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.chave_pix_label.grid(row=16, column=0, sticky="w", padx=(10, 10))
+            self.chave_pix_entry.grid(row=16, column=1, sticky="ew", padx=(0, 10), pady=2)
+            self.nome_benef_pix_label.grid(row=17, column=0, sticky="w", padx=(10, 10))
+            self.nome_benef_pix_entry.grid(row=17, column=1, sticky="ew", padx=(0, 10), pady=2)
     
     def _gerar_solicitacao(self):
         """Gera a solicitação de pagamento"""
@@ -1284,6 +1284,7 @@ class AbaPagamento(ctk.CTkFrame):
         campos_vazios = [nome for valor, nome in campos_obrigatorios if not valor]
 
         if campos_vazios:
+            print(f"Campos vazios: {campos_vazios}")
             if campos_vazios == ["DESCRIÇÃO DO ITEM"]:
                 self.notificacao.show_notification("Campo DESCRIÇÃO DO ITEM\nPor favor, adicione um item à lista.", NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF")
                 return
