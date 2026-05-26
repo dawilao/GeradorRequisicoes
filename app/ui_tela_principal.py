@@ -47,7 +47,7 @@ def on_return_press(event):
             aba_dados_aquisicao.gerar_texto_aquisicao()
 
 def janela_principal(nome_completo_usuario, abas_permitidas):
-    global aba_dados_pagamento, aba_dados_email, aba_dados_aquisicao
+    global aba_dados_pagamento, aba_dados_email, aba_dados_aquisicao, tabview
 
     # Configuração da interface gráfica
     root = ctk.CTk()

@@ -257,6 +257,11 @@ def acessa_bd_contratos(contrato: str = None):
 
     except Exception as e:
         print(f"Erro ao acessar o banco de dados: {e}")
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
         if contrato is None:
             # Lista de fallback
             contratos = [
@@ -308,6 +313,11 @@ def acessa_bd_usuarios():
 
     except Exception as e:
         print(f"Erro ao acessar o banco de dados: {e}")
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
         # Valores padrão caso ocorra erro
         todos_usuarios = [
             'ADRIANA BARRETO', 'AMANDA SAMPAIO', 'CARLOS ALBERTO',
@@ -323,8 +333,8 @@ def acessa_bd_usuarios():
             'JADSON JUNIOR',
         ]
         usuarios_varios_dept = [
-            'AMANDA SAMPAIO', 'DAWISON NASCIMENTO', 
-            'TÁCIO BARBOSA', 'TAIANE MARQUES', 'ROSANA SILVA'
+            'AMANDA SAMPAIO', 'DAWISON NASCIMENTO',
+            'TÁCIO BARBOSA', 'TAIANE MARQUES', 'ROSANA SILVA',
             'MIGUEL MARQUES',
         ]
         return todos_usuarios, usuarios_varios_dept

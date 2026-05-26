@@ -217,13 +217,10 @@ class DatabaseManagerEntregas:
                 # String formatada como "2026-02-10 11:55:00"
                 try:
                     horario = resultado[0].split(' ')[1][:5]  # Retorna apenas HH:MM
-                    print(f"[DEBUG] Horário recuperado do BD: {horario} (registro completo: {resultado[0]})")
                     return horario
-                except (IndexError, AttributeError) as e:
-                    print(f"[DEBUG] Erro ao extrair horário: {e}")
+                except (IndexError, AttributeError):
                     return resultado[0]
-            
-            print(f"[DEBUG] Nenhum alerta encontrado para hoje ({hoje})")
+
             return None
 
 
@@ -243,8 +240,7 @@ class EmailManager:
         
         # Carregar as configurações do arquivo
         if not self.carregar_configuracao_email():
-            salvar_erro("Falha ao carregar configurações de e-mail. Verifique o arquivo email_config.json")
-            raise RuntimeError("Falha ao carregar configurações de e-mail. Verifique o arquivo email_config.json")
+            raise RuntimeError("Falha ao carregar configurações de e-mail. Verifique o arquivo email_config.env")
 
     def carregar_configuracao_email(self):
         '''Carrega as configurações de e-mail a partir do arquivo .env (formato JSON)'''
@@ -273,29 +269,27 @@ class EmailManager:
             self.email_remetente = config["email_remetente"]
             self.senha = config["smtp_password"]
             self.usar_tls = config.get("usar_tls", True)  # Padrão True se não especificado
-            
-            print("Configurações de e-mail carregadas com sucesso!")
             return True
             
         except FileNotFoundError as e:
             erro_msg = f"Arquivo de configuração não encontrado: {str(e)}"
             print(erro_msg)
-            salvar_erro(erro_msg)
+            salvar_erro("EmailManager", e)
             return False
         except json.JSONDecodeError as e:
             erro_msg = f"Erro ao decodificar o arquivo JSON: {str(e)}"
             print(erro_msg)
-            salvar_erro(erro_msg)
+            salvar_erro("EmailManager", e)
             return False
         except KeyError as e:
             erro_msg = f"Erro nas configurações de e-mail: {str(e)}"
             print(erro_msg)
-            salvar_erro(erro_msg)
+            salvar_erro("EmailManager", e)
             return False
         except Exception as e:
             erro_msg = f"Erro ao carregar configurações de e-mail: {str(e)}"
             print(erro_msg)
-            salvar_erro(erro_msg)
+            salvar_erro("EmailManager", e)
             return False
 
     def verificar_entregas_proximas(self, entregas):
@@ -506,13 +500,12 @@ class EmailManager:
                 raise Exception(f"Erro SMTP: {str(smtp_error)}")
             except Exception as conn_error:
                 raise Exception(f"Erro de conexão: {str(conn_error)}")
-            
+
             # Registrar envio no histórico
             if self.db_manager:
                 entregas_ids = [entrega[0] for entrega in entregas_proximas]
                 self.db_manager.registrar_envio_alerta(entregas_ids)
-            
-            print("E-mail de alerta enviado com sucesso!")
+
             return True, f"Alerta enviado com sucesso para {len(entregas_proximas)} entrega(s)!"
             
         except Exception as e:
@@ -811,12 +804,18 @@ class AbaPrazoEntregas(ctk.CTkFrame):
 
         self.nome_completo_usuario = nome_completo_usuario or "Usuário"
         
-        # Caminho do banco de dados
-        db_path = r"G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\prazo_entrega.db"
-        
+        # Caminhos do banco de dados (corporativo preferido; local como fallback)
+        _db_path_corp = r"G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\prazo_entrega.db"
+        _db_path_local = r"app\bd\prazo_entrega.db"
+        db_path = _db_path_corp if os.path.isdir(os.path.dirname(_db_path_corp)) else _db_path_local
+
         # Inicializar gerenciadores
         self.db = DatabaseManagerEntregas(db_path)
-        self.email_manager = EmailManager(db_manager=self.db)
+        try:
+            self.email_manager = EmailManager(db_manager=self.db)
+        except (RuntimeError, Exception):
+            # Configuração de e-mail indisponível (ex: drive corporativo desconectado)
+            self.email_manager = None
 
         # Lista de contratos
         self.contratos = contratos
@@ -1025,7 +1024,7 @@ class AbaPrazoEntregas(ctk.CTkFrame):
         btn_limpar.grid(row=0, column=4, padx=(0, 5))
         
         # Botão Atualizar
-        btn_atualizar = ctk.CTkButton(frame_topo, text="Atualizar", 
+        btn_atualizar = ctk.CTkButton(frame_topo, text="Atualizar",
                                      command=self.atualizar_entregas,
                                      width=100, height=35,
                                      fg_color="#1f6aa5", hover_color="#144870")
@@ -1290,8 +1289,6 @@ class AbaPrazoEntregas(ctk.CTkFrame):
             notify_type=NotifyType.INFO,
             duration=2000
         )
-        # Feedback no console também
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Lista de entregas atualizada")
     
     def iniciar_edicao(self, entrega_data):
         """Inicia o modo de edição preenchendo o formulário com os dados da entrega"""
@@ -1405,41 +1402,38 @@ class AbaPrazoEntregas(ctk.CTkFrame):
     def atualizar_label_status(self):
         """Atualiza o label de status dos alertas verificando o histórico do banco de dados"""
         try:
-            print(f"[DEBUG] Iniciando atualização do label de status...")
             # Verificar se já foi enviado hoje
             if self.db.verificar_alerta_enviado_hoje():
                 horario_envio = self.db.obter_horario_envio_hoje()
-                print(f"[DEBUG] Alerta já enviado hoje. Horário: {horario_envio}")
                 texto = f"✅ Alerta enviado hoje às {horario_envio}\nPróximo envio: amanhã"
                 self.label_status.configure(
                     text=texto,
                     text_color="#4CAF50"
                 )
-                print(f"[DEBUG] Label atualizado com: {texto}")
             else:
-                print(f"[DEBUG] Nenhum alerta enviado hoje")
                 # Verificar se há entregas próximas
+                if self.email_manager is None:
+                    self.label_status.configure(
+                        text="⚠️ Configuração de e-mail indisponível\nFunção de alertas desativada",
+                        text_color="#ff9800"
+                    )
+                    return
                 entregas = self.db.obter_entregas()
                 entregas_proximas = self.email_manager.verificar_entregas_proximas(entregas)
-                
+
                 if entregas_proximas:
                     texto = f"⚠️ {len(entregas_proximas)} entrega(s) próxima(s)\nClique em 'Enviar Agora'"
                     self.label_status.configure(
                         text=texto,
                         text_color="#ff9800"
                     )
-                    print(f"[DEBUG] Label atualizado com: {texto}")
                 else:
                     texto = "ℹ️ Sem entregas próximas hoje\nSistema aguardando"
                     self.label_status.configure(
                         text=texto,
                         text_color="#2196F3"
                     )
-                    print(f"[DEBUG] Label atualizado com: {texto}")
         except Exception as e:
-            print(f"[ERRO] Erro ao atualizar label de status: {str(e)}")
-            import traceback
-            traceback.print_exc()
             self.label_status.configure(
                 text="❌ Erro ao verificar status",
                 text_color="#f44336"
@@ -1447,113 +1441,99 @@ class AbaPrazoEntregas(ctk.CTkFrame):
     
     def enviar_alertas_thread(self):
         """Envia alertas de e-mail em uma thread separada (acionamento manual)"""
+        if self.email_manager is None:
+            self.notification_manager.show_notification(
+                "Configuração de e-mail indisponível.\nVerifique o arquivo email_config.env.",
+                notify_type=NotifyType.WARNING,
+                duration=5000
+            )
+            return
+
+        # Verificar "já enviado hoje" na thread principal (messagebox não é thread-safe)
+        force_send = False
+        if self.email_manager.db_manager and self.email_manager.db_manager.verificar_alerta_enviado_hoje():
+            force_send = messagebox.askyesno(
+                "Confirmação", "Alerta já enviado hoje. Deseja enviar mesmo assim?"
+            )
+            if not force_send:
+                return
+
         def enviar():
             entregas = self.db.obter_entregas()
             entregas_proximas = self.email_manager.verificar_entregas_proximas(entregas)
-            
-            if entregas_proximas:
-                sucesso, mensagem = self.email_manager.enviar_alerta(entregas_proximas)
-                if sucesso:
-                    print(f"[INFO] E-mail enviado com sucesso!")
-                    self.notification_manager.show_notification(
-                        mensagem,
-                        notify_type=NotifyType.SUCCESS,
-                        duration=5000
-                    )
-                    # Atualizar label de status após envio (na thread principal com delay maior)
-                    self.root.after(300, self.atualizar_label_status)
-                else:
-                    # Pergunta ao usuário se deseja enviar mesmo assim
-                    if messagebox.askyesno("Confirmação", "Alerta já enviado hoje. Deseja enviar mesmo assim?"):
-                        sucesso, mensagem = self.email_manager.enviar_alerta(entregas_proximas, force_send=True)
-                        if sucesso:
-                            # Enviar e-mail mesmo assim
-                            print(f"[INFO] E-mail enviado com sucesso (forçado)!")
-                            self.notification_manager.show_notification(
-                                mensagem,
-                                notify_type=NotifyType.SUCCESS,
-                                duration=5000
-                            )
-                            # Atualizar label de status após envio (na thread principal com delay maior)
-                            self.root.after(300, self.atualizar_label_status)
-                        else:
-                            self.notification_manager.show_notification(
-                                mensagem,
-                                notify_type=NotifyType.WARNING,
-                                duration=6000
-                            )
-            else:
-                print(f"[INFO] Não há entregas próximas para alertar")
-                self.notification_manager.show_notification(
+
+            if not entregas_proximas:
+                self.root.after(0, lambda: self.notification_manager.show_notification(
                     "Não há entregas próximas para alertar.",
                     notify_type=NotifyType.INFO,
                     duration=4000
-                )
-                # Atualizar label de status mesmo sem entregas (na thread principal)
+                ))
                 self.root.after(300, self.atualizar_label_status)
-        
+                return
+
+            sucesso, mensagem = self.email_manager.enviar_alerta(entregas_proximas, force_send=force_send)
+            notify_type = NotifyType.SUCCESS if sucesso else NotifyType.WARNING
+            self.root.after(0, lambda m=mensagem, t=notify_type: self.notification_manager.show_notification(
+                m, notify_type=t, duration=5000
+            ))
+            if sucesso:
+                self.root.after(300, self.atualizar_label_status)
+
         thread = threading.Thread(target=enviar, daemon=True)
         thread.start()
     
     def verificar_e_enviar_alertas_inicializacao(self):
         """Verifica e envia alertas automaticamente ao abrir o programa"""
+        if self.email_manager is None:
+            self.root.after(0, lambda: self.label_status.configure(
+                text="⚠️ Configuração de e-mail indisponível\nFunção de alertas desativada",
+                text_color="#ff9800"
+            ))
+            return
+
         def enviar_automatico():
             try:
                 agora = datetime.now()
-                print(f"[{agora.strftime('%Y-%m-%d %H:%M:%S')}] Verificando necessidade de envio de alertas...")
                 
                 # Verificar se já foi enviado hoje
                 if self.db.verificar_alerta_enviado_hoje():
-                    print(f"[INFO] Alerta já foi enviado hoje às {self.db.obter_horario_envio_hoje()}. Próximo envio será amanhã.")
-                    self.label_status.configure(
-                        text=f"✅ Alerta já enviado hoje às {self.db.obter_horario_envio_hoje()}\nPróximo envio: amanhã",
+                    horario = self.db.obter_horario_envio_hoje()
+                    self.root.after(0, lambda h=horario: self.label_status.configure(
+                        text=f"✅ Alerta já enviado hoje às {h}\nPróximo envio: amanhã",
                         text_color="#4CAF50"
-                    )
+                    ))
                     return
-                
+
                 # Buscar entregas próximas
                 entregas = self.db.obter_entregas()
                 entregas_proximas = self.email_manager.verificar_entregas_proximas(entregas)
-                
+
                 if entregas_proximas:
-                    print(f"[INFO] Encontradas {len(entregas_proximas)} entrega(s) próxima(s). Enviando alerta...")
                     sucesso, mensagem = self.email_manager.enviar_alerta(entregas_proximas)
-                    
+                    n = len(entregas_proximas)
+
                     if sucesso:
-                        print(f"[SUCESSO] {mensagem}")
-                        self.label_status.configure(
-                            text=f"✅ Alerta enviado com sucesso\n{len(entregas_proximas)} entrega(s) próxima(s)",
+                        self.root.after(0, lambda _n=n: self.label_status.configure(
+                            text=f"✅ Alerta enviado com sucesso\n{_n} entrega(s) próxima(s)",
                             text_color="#4CAF50"
-                        )
+                        ))
                     else:
-                        print(f"[ERRO] {mensagem}")
-                        self.label_status.configure(
+                        self.root.after(0, lambda: self.label_status.configure(
                             text="❌ Erro ao enviar alerta\nVerifique os logs",
                             text_color="#f44336"
-                        )
+                        ))
                 else:
-                    print("[INFO] Não há entregas próximas para alertar hoje.")
-                    self.label_status.configure(
+                    self.root.after(0, lambda: self.label_status.configure(
                         text="ℹ️ Sem entregas próximas hoje",
                         text_color="#2196F3"
-                    )
+                    ))
                     
             except Exception as e:
-                erro_msg = f"Erro na verificação automática: {str(e)}"
-                print(f"[ERRO] {erro_msg}")
-                
-                erro_salvo = salvar_erro(self.nome_completo_usuario, erro_msg)
-                
-                if erro_salvo:
-                    self.label_status.configure(
-                        text="❌ Erro na verificação automática\nErro registrado no log.",
-                        text_color="#f44336"
-                    )
-                else:
-                    self.label_status.configure(
-                        text=f"❌ Erro na verificação automática\nErro: {str(e)}",
-                        text_color="#f44336"
-                    )
+                salvar_erro(self.nome_completo_usuario, e)
+                self.root.after(0, lambda _e=e: self.label_status.configure(
+                    text=f"❌ Erro na verificação automática\nErro: {str(_e)}",
+                    text_color="#f44336"
+                ))
         
         # Executar em thread separada para não bloquear a interface
         thread = threading.Thread(target=enviar_automatico, daemon=True)

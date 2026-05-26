@@ -10,12 +10,12 @@ try:
     import app.componentes as componentes
     from .CTkDatePicker import CTkDatePicker
     from .CTkFloatingNotifications import *
+    from .config import DB_DADOS_PATHS
 except ImportError:
     import componentes as componentes
     from CTkDatePicker import CTkDatePicker
     from CTkFloatingNotifications import *
-
-CAMINHO_BD = r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\dados.db'
+    from config import DB_DADOS_PATHS
 
 class AbaDadosPagamentos(ctk.CTkFrame):
     def __init__(self, master, root, tabview="DADOS PAGAMENTOS", **kwargs):
@@ -37,8 +37,17 @@ class AbaDadosPagamentos(ctk.CTkFrame):
         self.inicializar_banco()
         self._construir_widgets()
 
+    def _get_conn(self) -> sqlite3.Connection:
+        """Retorna conexão SQLite usando o primeiro caminho acessível (com fallback local)."""
+        for path in DB_DADOS_PATHS:
+            try:
+                return sqlite3.connect(path)
+            except sqlite3.Error:
+                continue
+        raise sqlite3.Error("Não foi possível conectar ao banco de dados em nenhum dos caminhos.")
+
     def inicializar_banco(self):
-        with sqlite3.connect(CAMINHO_BD) as conn:
+        with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute("PRAGMA table_info(registros)")
             colunas = [coluna[1] for coluna in cursor.fetchall()]
@@ -70,7 +79,6 @@ class AbaDadosPagamentos(ctk.CTkFrame):
 
         if estado != self.estado_anterior:
             self.estado_anterior = estado
-            print(f"Estado da janela mudou para: {estado}")
 
             # Detecta janela maximizada no Windows
             if estado == 'zoomed':
@@ -87,8 +95,8 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             estado = self.root.state()
             if estado == 'zoomed':
                 tamanho = 9999  # Se maximizada, não quebra a linha
-        except Exception:
-            print("Erro ao verificar o estado da janela. Erro: ", str(e))
+        except Exception as e:
+            pass  # estado indisponível — usa tamanho padrão
             pass
 
         return '\n'.join([texto[i:i+tamanho] for i in range(0, len(texto), tamanho)])
@@ -156,7 +164,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
         self.registro_atual = registros[index][0]
         self.lido_atual = registros[index][-1]
 
-        with sqlite3.connect(CAMINHO_BD) as conn:
+        with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM registros WHERE rowid = ?", (self.registro_atual,))
             dados = cursor.fetchone()
@@ -180,7 +188,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             self.frame_listagem = None
 
     def exibir_dados(self):
-        with sqlite3.connect(CAMINHO_BD) as conn:
+        with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT rowid, * FROM registros ORDER BY id DESC, data_criacao DESC, hora_criacao DESC LIMIT 300")
             registros = cursor.fetchall()
@@ -200,34 +208,12 @@ class AbaDadosPagamentos(ctk.CTkFrame):
             )
             return
 
-        with sqlite3.connect(CAMINHO_BD) as conn:
+        with self._get_conn() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT rowid, * FROM registros WHERE data_criacao = ? ORDER BY id DESC LIMIT 300", (data,))
             registros = cursor.fetchall()
 
         self.exibir_registros_em_frame(registros, titulo=f"Registros em {data}")
-
-    def mostrar_dados_selecionados(self, index, registros):
-        self.registro_atual = registros[index][0]
-        self.lido_atual = registros[index][-1]
-
-        with sqlite3.connect(CAMINHO_BD) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM registros WHERE rowid = ?", (self.registro_atual,))
-            dados = cursor.fetchone()
-
-        self.preencher_campos(dados)
-
-        self.botao_marcar_lido.grid_forget()
-        self.botao_marcar_nao_lido.grid_forget()
-        self.botao_deletar.grid_forget()
-
-        if self.lido_atual:
-            self.botao_marcar_nao_lido.grid(row=4, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
-        else:
-            self.botao_marcar_lido.grid(row=4, column=0, sticky="w", padx=(10, 10), pady=(0, 10))
-
-        self.botao_deletar.grid(row=4, column=1, sticky="e", padx=(10, 10), pady=(0, 10))
 
     def preencher_campos(self, dados):
         nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, contrato, motivo, valor, tipo_pagamento, tecnicos, saida_destino, competencia, porcentagem, tipo_aquisicao, data_criacao, hora_criacao, lido = dados[1:]
@@ -245,7 +231,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
 
     def marcar_como_lido(self):
         if self.registro_atual:
-            with sqlite3.connect(CAMINHO_BD) as conn:
+            with self._get_conn() as conn:
                 cursor = conn.cursor()
                 cursor.execute("UPDATE registros SET lido = 1 WHERE rowid = ?", (self.registro_atual,))
                 conn.commit()
@@ -255,7 +241,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
 
     def marcar_como_nao_lido(self):
         if self.registro_atual:
-            with sqlite3.connect(CAMINHO_BD) as conn:
+            with self._get_conn() as conn:
                 cursor = conn.cursor()
                 cursor.execute("UPDATE registros SET lido = 0 WHERE rowid = ?", (self.registro_atual,))
                 conn.commit()
@@ -272,7 +258,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
         if self.registro_atual:
             resposta = messagebox.askyesno("Confirmar", "Tem certeza que deseja deletar este registro?")
             if resposta:
-                with sqlite3.connect(CAMINHO_BD) as conn:
+                with self._get_conn() as conn:
                     cursor = conn.cursor()
                     cursor.execute("DELETE FROM registros WHERE rowid = ?", (self.registro_atual,))
                     conn.commit()
