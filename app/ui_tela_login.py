@@ -125,7 +125,7 @@ class LoginManager:
             entry_nova_senha (CustomEntry): Campo de entrada da nova senha.
         """
         usuario = entry_usuario_alt.get().strip()
-        senha_atual = entry_nova_senha.get()
+        senha_atual = entry_senha_atual.get()
         nova_senha = entry_nova_senha.get()
 
         # Verificar campos vazios
@@ -174,30 +174,17 @@ class LoginManager:
 
         except sqlite3.Error as e_altera_senha:
             handle_error(
-                e_altera_senha,
+                "_alterar_senha",
                 f"Erro ao alterar a senha: {e_altera_senha}",
-                "Não foi possível alterar a senha no banco de dados."
+                self.janela_alterar
             )
 
     def _voltar_para_login(self):
         """Volta para a tela de login principal."""
         if self.janela_alterar:
             self.janela_alterar.destroy()
-        
+
         self.criar_janela_login()
-    
-    def _set_window_icon(self, window):
-            """Define o ícone da janela usando o primeiro caminho válido encontrado."""
-            for path in self.icon_path:
-                if exists(path):
-                    try:
-                        window.iconbitmap(path)
-                        return  # Se conseguiu definir o ícone, encerra a função
-                    except Exception as e:
-                        print(f"Erro ao carregar o ícone de {path}: {e}")
-                        continue  # Tenta o próximo caminho se houver erro
-            
-            print("Não foi possível carregar o ícone de nenhum dos caminhos disponíveis")
 
     def criar_janela_alterar_senha(self):
         """

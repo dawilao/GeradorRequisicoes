@@ -27,11 +27,13 @@ except ImportError:
 
 locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil')
 
-def on_return_press(event):
-    # Verifica qual aba está selecionada
-    aba_atual = tabview.get()  # Retorna o nome da aba selecionada
-    print(f"Aba atual: {aba_atual}")
+# Inicializar variáveis globais para evitar NameError em on_return_press
+aba_dados_pagamento = None
+aba_dados_email = None
+aba_dados_aquisicao = None
+tabview = None
 
+def on_return_press(event):
     aba_atual = tabview.get()
 
     if aba_atual == "PAGAMENTO":
@@ -67,9 +69,7 @@ def janela_principal(nome_completo_usuario, abas_permitidas):
 
     # Define a aba que estará visível por padrão
     if abas_permitidas:
-        tabview.set(abas_permitidas[0])  # Define a primeira aba como a aba ativa (opcional)
-
-    print("Abas permitidas:", abas_permitidas)
+        tabview.set(abas_permitidas[0])
 
     root.bind("<Return>", on_return_press)
 
