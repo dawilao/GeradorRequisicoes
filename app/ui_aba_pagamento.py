@@ -7,6 +7,7 @@ import customtkinter as ctk
 import tkinter as tk
 from datetime import datetime
 import pyperclip
+import threading
 from typing import List, Dict, Any, Optional
 from os.path import splitext
 
@@ -49,6 +50,8 @@ class AbaPagamento(ctk.CTkFrame):
 
         # Variável para controle dos itens_pagamento
         self.itens_pagamento = []
+        # Lista para reutilização de frames de itens (evita destruir/recriar desnecessariamente)
+        self._item_frames = []
 
         self.aparece_lista_itens_aba_pagamentos = {
             "RELATÓRIO EXTRA", "ADIANTAMENTO/PAGAMENTO PARCEIRO",
@@ -872,38 +875,64 @@ class AbaPagamento(ctk.CTkFrame):
         if hasattr(self, "_atualizar_lista_itens_pagamento"):
             self._atualizar_lista_itens_pagamento()
 
-    def _atualizar_lista_itens_pagamento(self):
-        for widget in self.frame_lista_itens_pagamento.winfo_children():
-            widget.destroy()
+    def _criar_frame_item(self, index: int, item: Dict[str, str]):
+        """Cria um frame para um item da lista."""
+        row_frame = ctk.CTkFrame(self.frame_lista_itens_pagamento, width=400)
+        row_frame.grid(row=index, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
 
-        if len(self.itens_pagamento) > 0:
+        label = ctk.CTkLabel(
+            row_frame,
+            text=item["descricao"],
+            anchor="w", justify="left", wraplength=340
+        )
+        label.grid(row=0, column=0, padx=2)
+
+        btn_editar = ctk.CTkButton(
+            row_frame, text="Editar", width=30,
+            command=lambda i=index: self._editar_item_pagamento(i)
+        )
+        btn_editar.grid(row=0, column=1, padx=2)
+
+        btn_excluir = ctk.CTkButton(
+            row_frame, text="❌", width=30,
+            fg_color="red", hover_color="darkred",
+            command=lambda i=index: self._remover_item_pagamento(i)
+        )
+        btn_excluir.grid(row=0, column=2, padx=2)
+
+        return {"frame": row_frame, "label": label, "btn_editar": btn_editar, "btn_excluir": btn_excluir}
+
+    def _atualizar_frame_item(self, index: int, item: Dict[str, str], frame_data: Dict):
+        """Atualiza o conteúdo de um frame existente."""
+        frame_data["label"].configure(text=item["descricao"])
+        # Rebindar callbacks com novo índice
+        frame_data["btn_editar"].configure(command=lambda i=index: self._editar_item_pagamento(i))
+        frame_data["btn_excluir"].configure(command=lambda i=index: self._remover_item_pagamento(i))
+
+    def _atualizar_lista_itens_pagamento(self):
+        """Atualiza a lista de itens, reutilizando frames quando possível."""
+        qtd_atual = len(self.itens_pagamento)
+        qtd_frames = len(self._item_frames)
+
+        # Mostrar/esconder o container
+        if qtd_atual > 0:
             self.frame_lista_itens_pagamento.grid(row=12, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=(0, 10))
         else:
             self.frame_lista_itens_pagamento.grid_forget()
 
-        for index, item in enumerate(self.itens_pagamento):
-            self.row_frame_pagamento = ctk.CTkFrame(self.frame_lista_itens_pagamento, width=400)
-            self.row_frame_pagamento.grid(row=index, column=0, columnspan=2, sticky="ew", padx=(10, 10), pady=5)
+        # Se a quantidade mudou, destruir antigos e criar novos
+        if qtd_atual != qtd_frames:
+            for frame_data in self._item_frames:
+                frame_data["frame"].destroy()
+            self._item_frames.clear()
 
-            self.label_itens_gerados_pagamento = ctk.CTkLabel(
-                self.row_frame_pagamento,
-                text=item["descricao"],
-                anchor="w", justify="left", wraplength=340
-            )
-            self.label_itens_gerados_pagamento.grid(row=0, column=0, padx=2)
-
-            self.btn_editar_item_pagamento = ctk.CTkButton(
-                self.row_frame_pagamento, text="Editar", width=30, 
-                command=lambda i=index: self._editar_item_pagamento(i)
-            )
-            self.btn_editar_item_pagamento.grid(row=0, column=1, padx=2)
-
-            self.btn_excluir_item_pagamento = ctk.CTkButton(
-                self.row_frame_pagamento, text="❌", width=30, 
-                fg_color="red", hover_color="darkred", 
-                command=lambda i=index: self._remover_item_pagamento(i)
-            )
-            self.btn_excluir_item_pagamento.grid(row=0, column=2, padx=2)
+            for index, item in enumerate(self.itens_pagamento):
+                frame_data = self._criar_frame_item(index, item)
+                self._item_frames.append(frame_data)
+        else:
+            # Quantidade é igual, apenas atualizar labels e callbacks
+            for index, item in enumerate(self.itens_pagamento):
+                self._atualizar_frame_item(index, item, self._item_frames[index])
 
     def _editar_item_pagamento(self, index: int):
         self.editando_item_pagamento = index
@@ -1646,7 +1675,8 @@ class AbaPagamento(ctk.CTkFrame):
                 competencia=competencia,
             )
 
-            gerar_excel(dados)
+            thread = threading.Thread(target=gerar_excel, args=(dados,), daemon=True)
+            thread.start()
 
     def identifica_preenchimento_pref_os_age(self, prefixo, agencia, os_num):
         ''''''

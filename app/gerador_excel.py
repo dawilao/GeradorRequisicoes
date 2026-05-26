@@ -133,15 +133,15 @@ def gerar_excel(dados: DadosRequisicao):
 
     def notificar_salvamento_erro(resultado_salvamento):
         if resultado_salvamento is True:
-            notification_manager.show_notification(
+            dados.root.after(0, lambda: notification_manager.show_notification(
                 "Arquivo de erro salvo na pasta de erros.",
                 NotifyType.WARNING, bg_color="#404040", text_color="#FFFF00"
-            )
+            ))
         else:
-            notification_manager.show_notification(
+            dados.root.after(0, lambda: notification_manager.show_notification(
                 f"Falha ao salvar arquivo de erro:\n{resultado_salvamento}",
                 NotifyType.ERROR, bg_color="#404040", text_color="#FF0000"
-            )
+            ))
 
     try:
         caminho_modelo = Path(
@@ -150,10 +150,10 @@ def gerar_excel(dados: DadosRequisicao):
         )
 
         if not os.path.exists(caminho_modelo):
-            notification_manager.show_notification(
+            dados.root.after(0, lambda: notification_manager.show_notification(
                 "Arquivo modelo não encontrado!",
                 NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
-            )
+            ))
             return
 
         try:
@@ -171,10 +171,10 @@ def gerar_excel(dados: DadosRequisicao):
             shutil.copy(caminho_modelo, nome_arquivo_destino)
 
         except Exception as e:
-            notification_manager.show_notification(
+            dados.root.after(0, lambda: notification_manager.show_notification(
                 f"Falha ao definir diretório: {e}",
                 NotifyType.WARNING, bg_color="#404040", text_color="#FFFFFF"
-            )
+            ))
             resultado_salvamento = salvar_erro(dados.nome_usuario, e)
             notificar_salvamento_erro(resultado_salvamento)
             return
@@ -333,53 +333,51 @@ def gerar_excel(dados: DadosRequisicao):
         workbook.save(nome_arquivo_destino)
         workbook.close()
 
-        notification_manager.show_notification(
+        dados.root.after(0, lambda: notification_manager.show_notification(
             "Sucesso!\nArquivo salvo no local selecionado.\nAbrindo o arquivo...",
             NotifyType.SUCCESS, bg_color="#404040", text_color="#FFFFFF"
-        )
+        ))
 
-        try:
-            time.sleep(1.2)
+        def abrir_explorer_callback():
+            try:
+                # Caminho da área de trabalho do usuário
+                desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
 
-            # Caminho da área de trabalho do usuário
-            desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+                # Verifica se o destino não é a área de trabalho
+                if os.path.normcase(os.path.normpath(caminho_destino)) != os.path.normcase(os.path.normpath(desktop_path)):
+                    try:
+                        abrir_explorer_se_necessario(os.path.normpath(caminho_destino))
+                    except Exception as e:
+                        dados.root.after(0, lambda: notification_manager.show_notification(
+                            f"Arquivo salvo, mas erro ao abrir o Explorer: {e}",
+                            NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+                        ))
+                        resultado_salvamento = salvar_erro(dados.nome_usuario, e)
+                        notificar_salvamento_erro(resultado_salvamento)
+            except FileNotFoundError as e_arquivo:
+                dados.root.after(0, lambda: notification_manager.show_notification(
+                    "Arquivo não encontrado após a geração.",
+                    NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
+                ))
 
-            # Verifica se o destino não é a área de trabalho
-            if os.path.normcase(os.path.normpath(caminho_destino)) != os.path.normcase(os.path.normpath(desktop_path)):
-                try:
-                    abrir_explorer_se_necessario(os.path.normpath(caminho_destino))
-                except Exception as e:
-                    notification_manager.show_notification(
-                        f"Arquivo salvo, mas erro ao abrir o Explorer: {e}",
-                        NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
-                    )
-                    resultado_salvamento = salvar_erro(dados.nome_usuario, e)
-                    notificar_salvamento_erro(resultado_salvamento)
-
-            time.sleep(1.2)
-
+        def abrir_arquivo_callback():
             try:
                 os.startfile(nome_arquivo_destino)
             except Exception as e:
-                notification_manager.show_notification(
+                dados.root.after(0, lambda: notification_manager.show_notification(
                     f"Erro ao abrir o arquivo: {e}",
                     NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
-                )
+                ))
                 resultado_salvamento = salvar_erro(dados.nome_usuario, e)
                 notificar_salvamento_erro(resultado_salvamento)
-                return
 
-        except FileNotFoundError as e_arqvivo:
-            notification_manager.show_notification(
-                "Arquivo não encontrado após a geração.",
-                NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
-            )
-            raise Exception("Arquivo não encontrado após a geração.") from e_arquivo
+        dados.root.after(1200, abrir_explorer_callback)
+        dados.root.after(2400, abrir_arquivo_callback)
             
     except Exception as e:  # Captura genérica usada como fallback para evitar crash na interface
-        notification_manager.show_notification(
+        dados.root.after(0, lambda: notification_manager.show_notification(
             f"Erro ao gerar o arquivo Excel",
             NotifyType.ERROR, bg_color="#404040", text_color="#FFFFFF"
-        )
+        ))
         resultado_salvamento = salvar_erro(dados.nome_usuario, e)
         notificar_salvamento_erro(resultado_salvamento)

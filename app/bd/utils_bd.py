@@ -3,6 +3,7 @@ Módulo para gerenciar operações de banco de dados relacionadas a usuários e 
 """
 
 import sqlite3
+import functools
 from typing import Optional, Tuple
 
 try:
@@ -19,13 +20,13 @@ class DatabaseManager:
     def _get_connection(self, outros_paths: list = None) -> sqlite3.Connection:
         """
         Estabelece conexão com o banco de dados.
-        
+
         Args:
             outros_paths (list, opcional): Lista de caminhos alternativos para tentar a conexão.
 
         Returns:
             sqlite3.Connection: Conexão com o banco de dados.
-            
+
         Raises:
             sqlite3.Error: Se não conseguir conectar a nenhum dos caminhos.
         """
@@ -33,10 +34,17 @@ class DatabaseManager:
 
         for db_path in paths_para_iterar:
             try:
-                return sqlite3.connect(db_path)
+                conn = sqlite3.connect(db_path)
+                # Criar índice para otimizar queries com LOWER(nome_usuario)
+                try:
+                    conn.execute("CREATE INDEX IF NOT EXISTS idx_usuario_lower ON dados_login(LOWER(nome_usuario))")
+                    conn.commit()
+                except sqlite3.Error:
+                    pass  # índice já existe ou BD read-only — não crítico
+                return conn
             except sqlite3.Error:
                 continue
-        
+
         raise sqlite3.Error("Não foi possível conectar ao banco de dados em nenhum dos caminhos.")
     
     def validar_credenciais(self, usuario: str, senha: str) -> Optional[Tuple[str, str]]:
@@ -189,6 +197,14 @@ def conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefix
         )
         ''')
 
+        # Criar índices para otimizar queries
+        try:
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_registros_data ON registros(data_criacao)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_registros_id ON registros(id)")
+            conn.commit()
+        except sqlite3.Error:
+            pass  # índices já existem ou BD read-only — não crítico
+
         inserir_dados(cursor, conn, nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num,
             contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
             porcentagem, tipo_aquisicao)
@@ -197,6 +213,7 @@ def conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefix
         if conn is not None:
             conn.close()
 
+@functools.lru_cache(maxsize=None)
 def acessa_bd_contratos(contrato: str = None):
     """
     Se 'contrato' for fornecido, retorna (departamento, sigla) do contrato.
@@ -253,6 +270,7 @@ def acessa_bd_contratos(contrato: str = None):
         else:
             return ("", "Sigla não encontrada")
 
+@functools.lru_cache(maxsize=None)
 def acessa_bd_usuarios():
     """
     Retorna uma lista de todos os usuários cadastrados no banco de dados.

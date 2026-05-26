@@ -182,7 +182,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
     def exibir_dados(self):
         with sqlite3.connect(CAMINHO_BD) as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT rowid, * FROM registros ORDER BY id DESC, data_criacao DESC, hora_criacao DESC")
+            cursor.execute("SELECT rowid, * FROM registros ORDER BY id DESC, data_criacao DESC, hora_criacao DESC LIMIT 300")
             registros = cursor.fetchall()
 
         self.exibir_registros_em_frame(registros)
@@ -202,7 +202,7 @@ class AbaDadosPagamentos(ctk.CTkFrame):
 
         with sqlite3.connect(CAMINHO_BD) as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT rowid, * FROM registros WHERE data_criacao = ? ORDER BY id DESC", (data,))
+            cursor.execute("SELECT rowid, * FROM registros WHERE data_criacao = ? ORDER BY id DESC LIMIT 300", (data,))
             registros = cursor.fetchall()
 
         self.exibir_registros_em_frame(registros, titulo=f"Registros em {data}")
