@@ -5,6 +5,7 @@ Organizado em classes e métodos para melhor manutenibilidade
 
 import customtkinter as ctk
 import tkinter as tk
+from tkinter import messagebox
 from datetime import datetime
 import pyperclip
 import threading
@@ -304,15 +305,15 @@ class AbaPagamento(ctk.CTkFrame):
     
     def _create_botoes_de_acao(self):
         """Cria os botões de ação"""
-        self.gerar_button = ctk.CTkButton(
-            self, text="GERAR", command=self._gerar_solicitacao
-        )
-        self.gerar_button.grid(row=18, column=0, sticky="ew", padx=(10, 10), pady=10)
-        
         self.limpar_button = ctk.CTkButton(
             self, text="LIMPAR", width=150, command=self._limpar_dados
         )
-        self.limpar_button.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=10)
+        self.limpar_button.grid(row=18, column=0, sticky="ew", padx=(10, 10), pady=10)
+
+        self.gerar_button = ctk.CTkButton(
+            self, text="GERAR", command=self._gerar_solicitacao
+        )
+        self.gerar_button.grid(row=18, column=1, sticky="ew", padx=(0, 10), pady=10)
     
     def _create_switches(self):
         """Cria os switches de configuração"""
@@ -1711,6 +1712,9 @@ class AbaPagamento(ctk.CTkFrame):
     def _limpar_dados(self):
         """Limpa todos os dados dos campos"""
         if self.editando_item_pagamento is None:
+            resposta = messagebox.askyesno("Confirmar limpeza", "Deseja limpar todos os campos?")
+            if not resposta:
+                return
             # Limpar os widgets da Tab 1
             for widget in self.widgets_para_limpar:
                 if isinstance(widget, ctk.CTkEntry):
