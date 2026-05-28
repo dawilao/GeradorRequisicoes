@@ -12,6 +12,7 @@ class NotificationPanel(ctk.CTkFrame):
         self.pack_propagate(False)
         self.duration = duration
         self.manager = manager
+        self._after_id = None
 
         self.line_frame = ctk.CTkFrame(self, width=5, height=height, fg_color=notify_type.line_color)
         self.line_frame.place(relx=0, rely=0, anchor="nw")
@@ -24,8 +25,14 @@ class NotificationPanel(ctk.CTkFrame):
 
         self.manager.add_notification(self)
 
-        self.after(duration, self.remove_notification)
+        self._after_id = self.after(duration, self.remove_notification)
+
+    def cancel(self):
+        if self._after_id:
+            self.after_cancel(self._after_id)
+            self._after_id = None
 
     def remove_notification(self):
+        self._after_id = None
         self.manager.remove_notification(self)
         self.destroy()

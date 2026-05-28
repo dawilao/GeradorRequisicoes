@@ -37,6 +37,7 @@ class LoginManager:
         self.db_manager = DatabaseManager()
         self.root_login = None
         self.janela_alterar = None
+        self._botao_login = None
         self.notificacao = NotificationManager(master=None)
         self.icon_manager = IconManager()
 
@@ -53,7 +54,10 @@ class LoginManager:
             entry_usuario (CustomEntry): Campo de entrada do nome de usuário.
             entry_senha (CustomEntry): Campo de entrada da senha.
         """
-        from .ui_tela_principal import janela_principal
+        try:
+            from .ui_tela_principal import janela_principal
+        except ImportError:
+            from ui_tela_principal import janela_principal
 
         usuario = entry_usuario.get().strip().lower()
         senha = entry_senha.get()
@@ -65,6 +69,7 @@ class LoginManager:
                 nome_completo_usuario = resultado[0]
                 abas_permitidas = resultado[1].split(",")
                 messagebox.showinfo("Login sucedido", f"Bem vindo, {nome_completo_usuario.title()}!")
+                self.notificacao.clear_all()
                 root_login.destroy()
                 janela_principal(nome_completo_usuario, abas_permitidas)
             else:
@@ -160,12 +165,14 @@ class LoginManager:
 
             # Alterar a senha no banco de dados
             if self.db_manager.alterar_senha(usuario, nova_senha):
+                self.notificacao.clear_all()
+                self.janela_alterar.destroy()
+                self.notificacao.master = self.root_login
+                self.root_login.bind("<Return>", lambda enter: self._botao_login.invoke())
                 self.notificacao.show_notification(
                     "Sua senha foi alterada com sucesso!",
                     NotifyType.SUCCESS, bg_color="#404040", text_color="#FFFFFF"
                 )
-                self.janela_alterar.destroy()
-                self.criar_janela_login()
             else:
                 self.notificacao.show_notification(
                     "Erro ao alterar a senha!",
@@ -181,10 +188,11 @@ class LoginManager:
 
     def _voltar_para_login(self):
         """Volta para a tela de login principal."""
+        self.notificacao.clear_all()
+        self.notificacao.master = self.root_login
         if self.janela_alterar:
             self.janela_alterar.destroy()
-
-        self.criar_janela_login()
+        self.root_login.bind("<Return>", lambda enter: self._botao_login.invoke())
 
     def criar_janela_alterar_senha(self):
         """
@@ -195,17 +203,17 @@ class LoginManager:
         atende aos critérios de segurança e, caso tudo esteja correto, atualiza a senha 
         no banco de dados.
         """
-        if self.root_login:
-            self.root_login.destroy()
-
-        # Criar janela de alteração de senha
-        self.janela_alterar = ctk.CTk()
+        # Criar janela de alteração de senha como filha modal de root_login
+        self.janela_alterar = ctk.CTkToplevel(self.root_login)
         self.janela_alterar.title("Gerador de Requisições - Alterar Senha")
         self.janela_alterar.geometry("380x450")
         self.janela_alterar.resizable(False, False)
-        ctk.set_default_color_theme("green")
-        
+        self.janela_alterar.grab_set()
+        self.janela_alterar.focus_force()
+        self.janela_alterar.protocol("WM_DELETE_WINDOW", self._voltar_para_login)
+        self.root_login.unbind("<Return>")
         self.icon_manager.set_window_icon(self.janela_alterar)
+        self.notificacao.master = self.janela_alterar
         
         frame = ctk.CTkFrame(master=self.janela_alterar)
         frame.pack(fill="both", expand=True, padx=5, pady=5)
@@ -266,15 +274,13 @@ class LoginManager:
         )
         botao_voltar.grid(row=9, column=1, sticky="ew", pady=(10, 5))
 
-        self.janela_alterar.mainloop()
-
     def criar_janela_login(self):
         """
         Cria e exibe a interface gráfica de login do sistema.
-        
+
         Permite que o usuário insira seu nome de usuário e senha,
         faça login, altere sua senha ou encerre o programa.
-        
+
         Returns:
             tuple: Tupla contendo (root_login, entry_usuario, entry_senha)
         """
@@ -284,6 +290,7 @@ class LoginManager:
         self.root_login.resizable(False, False)
         ctk.set_default_color_theme("green")
 
+        self.notificacao.master = self.root_login
         self.icon_manager.set_window_icon(self.root_login)
 
         # Título da janela
@@ -311,32 +318,30 @@ class LoginManager:
         entry_senha.pack(pady=(0,20))
 
         # Botão de login
-        botao_login = ctk.CTkButton(
+        self._botao_login = ctk.CTkButton(
             master=self.root_login,
             text="Login",
             command=lambda: self.validacao_login(self.root_login, entry_usuario, entry_senha)
         )
-        botao_login.pack(pady=(0,15))
+        self._botao_login.pack(pady=(0,15))
 
         # Botão para sair
-        botao_sair = ctk.CTkButton(
-            master=self.root_login, 
-            text="Sair", 
+        ctk.CTkButton(
+            master=self.root_login,
+            text="Sair",
             fg_color="#B31312",
-            hover_color="Dark red", 
+            hover_color="Dark red",
             command=self.root_login.destroy
-        )
-        botao_sair.pack(pady=(0,15))
+        ).pack(pady=(0,15))
 
         # Botão para alterar senha
-        botao_alterar_senha = ctk.CTkButton(
+        ctk.CTkButton(
             master=self.root_login,
             text="Alterar Senha",
             command=self.criar_janela_alterar_senha
-        )
-        botao_alterar_senha.pack(pady=(0,13))
+        ).pack(pady=(0,13))
 
-        self.root_login.bind("<Return>", lambda enter: botao_login.invoke())
+        self.root_login.bind("<Return>", lambda enter: self._botao_login.invoke())
 
         versao_atual = get_version()
         label_versao = ctk.CTkLabel(
