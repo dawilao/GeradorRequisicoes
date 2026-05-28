@@ -1038,8 +1038,8 @@ class AbaPagamento(ctk.CTkFrame):
                 "descricao": f"{saida_e_destino} - {motivo} - R$ {valor}"
             }
         else:
-            motivo = arrumar_texto(motivo_entry.get().upper().strip())
-            valor = verificar_se_numero(valor_caixa_itens_entry.get())
+            motivo = arrumar_texto(self.motivo_entry.get().upper().strip())
+            valor = verificar_se_numero(self.valor_caixa_itens_entry.get())
 
             # Verificações de campos obrigatórios
             if not motivo and not valor:
