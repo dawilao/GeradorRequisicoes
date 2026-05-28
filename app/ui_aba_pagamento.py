@@ -306,7 +306,7 @@ class AbaPagamento(ctk.CTkFrame):
     def _create_botoes_de_acao(self):
         """Cria os botões de ação"""
         self.limpar_button = ctk.CTkButton(
-            self, text="LIMPAR", width=150, command=self._limpar_dados
+            self, text="LIMPAR", width=150, fg_color="#CC0000", hover_color="#AA0000", command=self._limpar_dados
         )
         self.limpar_button.grid(row=18, column=0, sticky="ew", padx=(10, 10), pady=10)
 
@@ -1604,6 +1604,8 @@ class AbaPagamento(ctk.CTkFrame):
             else:
                 texto += f"Segue PIX {tipo_chave_pix} ⬇\n\n{chave_pix}"
                 texto += f"\n\n{nome_benef_pix}" if nome_benef_pix else ""
+        elif tipo_pagamento == "BOLETO":
+            texto += "Pagamento via BOLETO"
         else:
             texto += "Pagamento via VEXPENSES"
 

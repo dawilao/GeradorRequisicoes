@@ -184,16 +184,18 @@ class AbaEmail(ctk.CTkFrame):
             text="GERAR", 
             command=self.gerar_texto_email
         )
-        self.gerar_button.grid(row=12, column=0, sticky="ew", padx=(10, 10), pady=10)
+        self.gerar_button.grid(row=12, column=1, sticky="ew", padx=(10, 10), pady=10)
         
         # Botão Limpar
         limpar_button = ctk.CTkButton(
             self, 
             text="LIMPAR", 
-            width=150, 
+            width=150,
+            fg_color="#CC0000",
+            hover_color="#AA0000",
             command=self.limpar_dados
         )
-        limpar_button.grid(row=12, column=1, sticky="ew", padx=(0, 10), pady=10)
+        limpar_button.grid(row=12, column=0, sticky="ew", padx=(0, 10), pady=10)
         
         # Switch Auto-Cópia
         self.switch_autocopia_var = tk.BooleanVar(value=True)

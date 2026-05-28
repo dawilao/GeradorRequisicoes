@@ -208,12 +208,12 @@ class AbaAquisicao(ctk.CTkFrame):
 
         #row = 17
         self.gerar_button = ctk.CTkButton(self, text="GERAR", command=self.gerar_texto_aquisicao)
-        self.gerar_button.grid(row=21, column=0, sticky="ew", padx=(10, 10), pady=10)
+        self.gerar_button.grid(row=21, column=1, sticky="ew", padx=(10, 10), pady=10)
 
         # root.bind("<Return>", on_return_press)
 
-        self.limpar_button = ctk.CTkButton(self, text="LIMPAR", width=150, command=self.limpar_dados)
-        self.limpar_button.grid(row=21, column=1, sticky="ew", padx=(0, 10), pady=10)
+        self.limpar_button = ctk.CTkButton(self, text="LIMPAR", width=150, fg_color="#CC0000", hover_color="#AA0000", command=self.limpar_dados)
+        self.limpar_button.grid(row=21, column=0, sticky="ew", padx=(0, 10), pady=10)
 
         #row = 18
         self.switch_autocopia_frame_var = tk.BooleanVar(value=True)
