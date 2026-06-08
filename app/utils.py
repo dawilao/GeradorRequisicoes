@@ -4,15 +4,17 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, Toplevel, Button, Label
 from os.path import exists
 
+try:
+    from .config import ICON_PATHS
+except ImportError:
+    from config import ICON_PATHS
+
 
 class IconManager:
     """Gerencia o carregamento de ícones da aplicação."""
-    
+
     def __init__(self):
-        self.icon_paths = [
-            r'app/assets/GerReq_icon.ico',
-            r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\assets\GerReq_icon.ico',
-        ]
+        self.icon_paths = ICON_PATHS
 
     def set_window_icon(self, window):
         """Define o ícone da janela usando o primeiro caminho válido encontrado."""

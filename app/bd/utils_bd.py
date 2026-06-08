@@ -3,27 +3,30 @@ Módulo para gerenciar operações de banco de dados relacionadas a usuários e 
 """
 
 import sqlite3
+import functools
 from typing import Optional, Tuple
+
+try:
+    from ..config import DB_LOGIN_PATHS, DB_DADOS_PATHS, DB_CONTRATOS_PATHS
+except ImportError:
+    from config import DB_LOGIN_PATHS, DB_DADOS_PATHS, DB_CONTRATOS_PATHS
 
 class DatabaseManager:
     """Gerenciador de operações do banco de dados."""
-    
+
     def __init__(self):
-        self.db_paths = [
-            r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\login.db',
-            r'app\bd\login.db'
-        ]
+        self.db_paths = DB_LOGIN_PATHS
     
     def _get_connection(self, outros_paths: list = None) -> sqlite3.Connection:
         """
         Estabelece conexão com o banco de dados.
-        
+
         Args:
             outros_paths (list, opcional): Lista de caminhos alternativos para tentar a conexão.
 
         Returns:
             sqlite3.Connection: Conexão com o banco de dados.
-            
+
         Raises:
             sqlite3.Error: Se não conseguir conectar a nenhum dos caminhos.
         """
@@ -31,10 +34,17 @@ class DatabaseManager:
 
         for db_path in paths_para_iterar:
             try:
-                return sqlite3.connect(db_path)
+                conn = sqlite3.connect(db_path)
+                # Criar índice para otimizar queries com LOWER(nome_usuario)
+                try:
+                    conn.execute("CREATE INDEX IF NOT EXISTS idx_usuario_lower ON dados_login(LOWER(nome_usuario))")
+                    conn.commit()
+                except sqlite3.Error:
+                    pass  # índice já existe ou BD read-only — não crítico
+                return conn
             except sqlite3.Error:
                 continue
-        
+
         raise sqlite3.Error("Não foi possível conectar ao banco de dados em nenhum dos caminhos.")
     
     def validar_credenciais(self, usuario: str, senha: str) -> Optional[Tuple[str, str]]:
@@ -125,69 +135,85 @@ class DatabaseManager:
             conn.close()
 
 
-def conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
+def conecta_banco_pagamentos(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num,
         contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
         porcentagem, tipo_aquisicao):
-    def inserir_dados(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
+    def inserir_dados(cursor, conn, nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num,
         contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
         porcentagem, tipo_aquisicao):
         # Obtendo a data e hora atuais
         from datetime import datetime
         data_criacao = datetime.now().strftime('%d/%m/%Y')
         hora_criacao = datetime.now().strftime('%H:%M:%S')
-        
+
         cursor.execute('''
         INSERT INTO registros (
-            nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
+            nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num,
             contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
             porcentagem, tipo_aquisicao, data_criacao, hora_criacao
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
+        ''', (nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num,
             contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
             porcentagem, tipo_aquisicao, data_criacao, hora_criacao))
-        
+
         conn.commit()
 
-    def fechar_conexao():
-        conn.close()
-
+    conn = None
     try:
-        conn = sqlite3.connect(r'app\bd\dados.db')
-    except Exception:
-        conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\dados.db')
-    
-    cursor = conn.cursor()
+        # Tentar abrir conexão com os paths configurados
+        for db_path in DB_DADOS_PATHS:
+            try:
+                conn = sqlite3.connect(db_path)
+                break
+            except sqlite3.Error:
+                continue
 
-    # Criar uma tabela no banco de dados
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS registros (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome_usuario TEXT,
-        tipo_servico TEXT,
-        nome_fornecedor TEXT,
-        prefixo TEXT,
-        agencia TEXT,
-        os_num TEXT,
-        contrato TEXT,
-        motivo TEXT,
-        valor REAL,
-        tipo_pagamento TEXT,
-        tecnicos TEXT,
-        saida_destino TEXT,
-        competencia TEXT,
-        porcentagem TEXT,
-        tipo_aquisicao TEXT,
-        data_criacao TEXT, 
-        hora_criacao TEXT
-    )
-    ''')
+        if conn is None:
+            raise sqlite3.Error("Não foi possível conectar ao banco de dados em nenhum dos caminhos.")
 
-    inserir_dados(nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num, 
-        contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
-        porcentagem, tipo_aquisicao)
+        cursor = conn.cursor()
 
-    fechar_conexao()
+        # Criar uma tabela no banco de dados
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS registros (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_usuario TEXT,
+            tipo_servico TEXT,
+            nome_fornecedor TEXT,
+            prefixo TEXT,
+            agencia TEXT,
+            os_num TEXT,
+            contrato TEXT,
+            motivo TEXT,
+            valor REAL,
+            tipo_pagamento TEXT,
+            tecnicos TEXT,
+            saida_destino TEXT,
+            competencia TEXT,
+            porcentagem TEXT,
+            tipo_aquisicao TEXT,
+            data_criacao TEXT,
+            hora_criacao TEXT
+        )
+        ''')
 
+        # Criar índices para otimizar queries
+        try:
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_registros_data ON registros(data_criacao)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_registros_id ON registros(id)")
+            conn.commit()
+        except sqlite3.Error:
+            pass  # índices já existem ou BD read-only — não crítico
+
+        inserir_dados(cursor, conn, nome_usuario, tipo_servico, nome_fornecedor, prefixo, agencia, os_num,
+            contrato, motivo, valor, tipo_pagamento, tecnicos, competencia,
+            porcentagem, tipo_aquisicao)
+
+    finally:
+        if conn is not None:
+            conn.close()
+
+@functools.lru_cache(maxsize=None)
 def acessa_bd_contratos(contrato: str = None):
     """
     Se 'contrato' for fornecido, retorna (departamento, sigla) do contrato.
@@ -201,12 +227,16 @@ def acessa_bd_contratos(contrato: str = None):
         - Lista de contratos ordenada se contrato for None.
     """
     try:
-        try:
-            conn = sqlite3.connect(r'app\bd\contratos.db')
-        except sqlite3.Error:
-            conn = sqlite3.connect(
-                r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\contratos.db'
-            )
+        conn = None
+        for db_path in DB_CONTRATOS_PATHS:
+            try:
+                conn = sqlite3.connect(db_path)
+                break
+            except sqlite3.Error:
+                continue
+
+        if conn is None:
+            raise sqlite3.Error("Não foi possível conectar ao banco de dados em nenhum dos caminhos.")
 
         cursor = conn.cursor()
 
@@ -227,6 +257,11 @@ def acessa_bd_contratos(contrato: str = None):
 
     except Exception as e:
         print(f"Erro ao acessar o banco de dados: {e}")
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
         if contrato is None:
             # Lista de fallback
             contratos = [
@@ -240,6 +275,7 @@ def acessa_bd_contratos(contrato: str = None):
         else:
             return ("", "Sigla não encontrada")
 
+@functools.lru_cache(maxsize=None)
 def acessa_bd_usuarios():
     """
     Retorna uma lista de todos os usuários cadastrados no banco de dados.
@@ -248,12 +284,16 @@ def acessa_bd_usuarios():
         - Lista de usuários.
     """
     try:
-        try:
-            conn = sqlite3.connect(r'G:\Meu Drive\17 - MODELOS\PROGRAMAS\Gerador de Requisições\app\bd\login.db')
-        except sqlite3.Error:
-            conn = sqlite3.connect(
-                r'app\bd\login.db'
-            )
+        conn = None
+        for db_path in DB_LOGIN_PATHS:
+            try:
+                conn = sqlite3.connect(db_path)
+                break
+            except sqlite3.Error:
+                continue
+
+        if conn is None:
+            raise sqlite3.Error("Não foi possível conectar ao banco de dados em nenhum dos caminhos.")
 
         cursor = conn.cursor()
         cursor.execute("SELECT nome_completo, varios_departamentos FROM dados_login")
@@ -273,6 +313,11 @@ def acessa_bd_usuarios():
 
     except Exception as e:
         print(f"Erro ao acessar o banco de dados: {e}")
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
         # Valores padrão caso ocorra erro
         todos_usuarios = [
             'ADRIANA BARRETO', 'AMANDA SAMPAIO', 'CARLOS ALBERTO',
@@ -288,8 +333,8 @@ def acessa_bd_usuarios():
             'JADSON JUNIOR',
         ]
         usuarios_varios_dept = [
-            'AMANDA SAMPAIO', 'DAWISON NASCIMENTO', 
-            'TÁCIO BARBOSA', 'TAIANE MARQUES', 'ROSANA SILVA'
+            'AMANDA SAMPAIO', 'DAWISON NASCIMENTO',
+            'TÁCIO BARBOSA', 'TAIANE MARQUES', 'ROSANA SILVA',
             'MIGUEL MARQUES',
         ]
         return todos_usuarios, usuarios_varios_dept
