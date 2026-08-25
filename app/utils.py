@@ -1,5 +1,6 @@
 import re
 import traceback
+import unicodedata
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, Toplevel, Button, Label
 from os.path import exists
@@ -85,6 +86,13 @@ def retorna_competencia(hoje=None, competencia=None):
 
 def arrumar_texto(texto):
     return ' '.join(texto.strip().split()) if texto else ''
+
+def remover_acentos(texto):
+    """Remove acentos gráficos (agudo, til, circunflexo, crase, trema...) do texto."""
+    if not texto:
+        return ''
+    texto_normalizado = unicodedata.normalize('NFKD', texto)
+    return ''.join(c for c in texto_normalizado if not unicodedata.combining(c))
 
 def verificar_se_numero(texto):
     if not texto:
